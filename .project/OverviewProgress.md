@@ -2,7 +2,7 @@
 > อ่านตามลำดับ: plan.md (plan_id: QAQC — active · shortcut Use QA QC) → plan-grd.md (แผน GRD จบแล้ว + คิว GRD-P5..P9) → decisions.md → hermes-standard/REQUIREMENTS.md (บัญชีความต้องการ 66 ข้อ)
 
 # Overview & Progress — Hermes Agent
-อัปเดตล่าสุด: 2026-07-14 (เคลียร์ branch codex ค้าง + main สะอาดตรง origin) · branch งาน: `main` · main HEAD = origin/main `7087b8fcd` · ป้าย: [fact] เว้นแต่ระบุ
+อัปเดตล่าสุด: 2026-07-14 (Use Migrate Web P1-P3-I1 · Close Chat) · branch งาน: `control_webengine_flow` HEAD `aa868a18f` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
 - **2026-07-14 (แชท Fable · branch `control_webengine_flow`): Shortcut `Use Migrate Web` — P1+P2 จบ · P3-I1 จบ · รอสลับ Opus ทำ I2** [fact]
@@ -34,9 +34,9 @@
 - สาย JARVIS v2: รอเจ้าของทดสอบเสียง P0 แล้วเปิดแชตใหม่ส่ง Use AI Relay [fact]
 
 ## งานถัดไป
-1. **เจ้าของจะเปิด branch ใหม่จาก `main` สะอาด** ทำงานรอบใหม่ (main พร้อมแล้ว 2026-07-14)
-2. GRD-P5 Monitor Hub เริ่มเมื่อเจ้าของสั่ง (แผน GRD merged main แล้ว PR #16)
-3. GRD-P6..P8 รอเจ้าของส่ง "ปัญหาชุดสุดท้าย" ก่อนล็อกดีไซน์
+1. **MW-P3-I2 (Opus · branch `control_webengine_flow`)**: เขียนเครื่องมือ 7 ตัวของ Use Migrate Web (เริ่ม work-locks) ตามแผนส่งมอบใน `.project/plan.md` → Use New Chat + Use AI Relay
+2. MW-P3-I3/I4 (test ID + สัญญา §13) · MW-P4 ทดสอบจริง RoadSafeFund · MW-P5 ปิด 1 PR (เจ้าของกด merge)
+3. (คิวเดิม) GRD-P5..P8 + QAQC-P5 รอเจ้าของสั่ง
 
 ## ข้อห้าม/กติกาล็อก
 - ห้ามเขียนความจำทำงานต่อลง `.hermes/` หรือ root — เขียน `.project/` เท่านั้น (Schema v1.2)
