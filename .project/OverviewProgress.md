@@ -5,6 +5,13 @@
 อัปเดตล่าสุด: 2026-07-14 (เคลียร์ branch codex ค้าง + main สะอาดตรง origin) · branch งาน: `main` · main HEAD = origin/main `7087b8fcd` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
+- **2026-07-14 (แชท Fable · branch `control_webengine_flow`): Shortcut `Use Migrate Web` — P1+P2 จบ · P3-I1 จบ · รอสลับ Opus ทำ I2** [fact]
+  - **แผน MW ทั้งหมดอยู่ `.project/plan.md` หัวข้อ "Plan — MW"** (แผน active จริงของ branch นี้ · plan-anchor ยังอ่าน QAQC เป็นหลัก → เลขงาน MW ใช้ --no-plan)
+  - P1: วิเคราะห์ 5 ชุดข้อมูล (FLOW v2 + Workshop + TOR 3 โปรเจกต์ + คลัง Obsidian + คำสั่งเพิ่ม) → บัญชี 55 กลุ่ม + จุดเคาะ 13 จุด เจ้าของอนุมัติครบ
+  - P2: SPEC v1.2 (`.project/mw-spec-draft.md`) เจ้าของอนุมัติ · เครื่องตรวจ `scripts/mw-spec-check.py` PASS (ตารางแม่ 55/55 · baseline sha256)
+  - P3-I1: prompt `use-migrate-web.md` + `use-migrate-web-flow13.md` (เนื้อต้นฉบับ 439 บรรทัดตรง 100% + embedded_sha256) + registry row — Codex ตรวจ 2 รอบ แก้ครบ
+  - **งานถัดไปของแชทใหม่ (Opus): `Use New Chat` → `Use AI Relay` → ทำ MW-P3-I2 ตามแผนส่งมอบใน plan.md (เครื่องมือ 7 ตัว เริ่มที่ I2d work-locks)** · ข้อจำกัด relay บนเครื่องนี้จดไว้ในแผนแล้ว (review พัง → ใช้ cross-check MCP)
+
 - **2026-07-14: เคลียร์ของค้างส่งต่อทีมอื่น — main สะอาดตรง origin/main** [fact · ตรวจ git state จริง tier 3]
   - ต้นเหตุ: branch `codex/block-ai-worktree-creation` (Codex สร้าง 07-12) ค้างอยู่ พร้อม dirty 19 แก้+8 ใหม่ · วันรุ่งขึ้น (07-13) งานชุดเดียวกันถูกทำใหม่สะอาดกว่า merge เข้า origin/main ผ่าน PR #30/#31/#32/#33 + portal routing ไปแล้ว → branch นี้กลายเป็นของซ้ำ
   - ทำ: ปัก 2 tag กันตก (`archive/codex-block-worktree-2026-07-12`→`c185b8a0b` เก็บ `CONTROL-CENTER-DESIGN.md`+worktree-block tests · `archive/local-main-orphan-2026-07-11`→`3bcfabfb9` เก็บ orphan DEC-036) + patch สำรอง 3181 บรรทัดใน scratchpad
