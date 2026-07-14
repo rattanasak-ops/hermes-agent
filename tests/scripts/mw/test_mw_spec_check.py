@@ -28,17 +28,24 @@ def _grow(code: str, verdict: str = "[G] §10-2") -> str:
     return f"| {code} | desc | ref | {verdict} |"
 
 
-def _prep(monkeypatch, tmp_path, map_rows, test_defs):
-    """Point module globals at fixtures; map_rows = list of (code, tool, tid, status)."""
+def _prep(monkeypatch, tmp_path, map_rows, test_defs, raw_body=None):
+    """Point module globals at fixtures; map_rows = list of (code, tool, tid, status).
+
+    map_rows entries may be raw pre-joined strings (for duplicate/edge fixtures).
+    raw_body: if given, used verbatim as the test file body instead of test_defs.
+    """
     lines = ["| row | tool | test_id | status |", "|---|---|---|---|"]
     for r in map_rows:
-        lines.append("| " + " | ".join(r) + " |")
+        lines.append(r if isinstance(r, str) else "| " + " | ".join(r) + " |")
     mp = tmp_path / "map.md"
     mp.write_text("\n".join(lines), encoding="utf-8")
 
     tdir = tmp_path / "tests"
     tdir.mkdir()
-    body = "\n".join(f"def {t}():\n    pass\n" for t in test_defs)
+    if raw_body is not None:
+        body = raw_body
+    else:
+        body = "\n".join(f"def {t}():\n    pass\n" for t in test_defs)
     (tdir / "test_x.py").write_text(body, encoding="utf-8")
 
     monkeypatch.setattr(msc, "MAP_FILE", mp)
@@ -50,7 +57,7 @@ def test_all_mapped_ok(tmp_path, monkeypatch):
     errors = []
     tally = msc.check_g_testid_map([_grow("I1-05")], errors)
     assert errors == []
-    assert "mapped 1" in tally
+    assert "mapped(verified) 1" in tally
 
 
 def test_missing_from_map_fails(tmp_path, monkeypatch):
@@ -79,7 +86,7 @@ def test_allowed_external_tag_ok(tmp_path, monkeypatch):
     errors = []
     tally = msc.check_g_testid_map([_grow("I4-02", "[G] §10-9")], errors)
     assert errors == []
-    assert "external 1" in tally
+    assert "external(unverified-here) 1" in tally
 
 
 def test_stale_map_row_fails(tmp_path, monkeypatch):
@@ -108,7 +115,97 @@ def test_r_style_row_is_detected(tmp_path, monkeypatch):
     errors = []
     tally = msc.check_g_testid_map([_grow("I3-R7", "[G] §10-4")], errors)
     assert errors == []
-    assert "1 [G] rows" in tally
+    assert "1 [G]" in tally
+
+
+# --- hardening after GPT-5 review (5 false-pass paths) ---------------------
+
+def test_duplicate_map_row_fails(tmp_path, monkeypatch):
+    _prep(
+        monkeypatch,
+        tmp_path,
+        [
+            "| I1-05 | §10-2 | test_pg | mapped |",
+            "| I1-05 | §10-8 | mw-backend-check | pending-i2e |",
+        ],
+        ["test_pg"],
+    )
+    errors = []
+    msc.check_g_testid_map([_grow("I1-05")], errors)
+    assert any("แถวซ้ำ" in e for e in errors)
+
+
+def test_skipped_test_is_not_valid_proof(tmp_path, monkeypatch):
+    body = "import pytest\n\n@pytest.mark.skip\ndef test_skipped():\n    pass\n"
+    _prep(monkeypatch, tmp_path, [("I1-05", "§10-2", "test_skipped", "mapped")], [], raw_body=body)
+    errors = []
+    msc.check_g_testid_map([_grow("I1-05")], errors)
+    assert any("skip" in e for e in errors)
+
+
+def test_comment_or_string_def_not_counted(tmp_path, monkeypatch):
+    body = 'x = "def test_fake(): pass"\n# def test_fake():\n'
+    _prep(monkeypatch, tmp_path, [("I1-05", "§10-2", "test_fake", "mapped")], [], raw_body=body)
+    errors = []
+    msc.check_g_testid_map([_grow("I1-05")], errors)
+    assert any("ไม่พบ test" in e for e in errors)
+
+
+def test_g_outside_verdict_column_flagged(tmp_path, monkeypatch):
+    _prep(monkeypatch, tmp_path, [("I1-05", "§10-2", "test_pg", "mapped")], ["test_pg"])
+    # [G] wrongly placed in the 2nd column (desc), verdict has none
+    bad = "| I1-05 | [G] desc | ref | plain |"
+    errors = []
+    msc.check_g_testid_map([bad], errors)
+    assert any("นอกช่องคำตัดสิน" in e for e in errors)
+
+
+def test_pending_non_backend_tool_fails(tmp_path, monkeypatch):
+    _prep(monkeypatch, tmp_path, [("I1-05", "§10-2", "mw-backend-check", "pending-i2e")], [])
+    errors = []
+    msc.check_g_testid_map([_grow("I1-05")], errors)
+    assert any("pending ได้เฉพาะ §10-8" in e for e in errors)
+
+
+def test_pending_makes_tally_incomplete(tmp_path, monkeypatch):
+    _prep(monkeypatch, tmp_path, [("I1-01", "§10-8", "mw-backend-check", "pending-i2e")], [])
+    errors = []
+    tally = msc.check_g_testid_map([_grow("I1-01", "[G] §10-8")], errors)
+    assert errors == []
+    assert "INCOMPLETE" in tally
+
+
+def test_map_tool_mismatch_master_fails(tmp_path, monkeypatch):
+    # master row is §10-2 but map claims §10-8 pending → mismatch error
+    _prep(monkeypatch, tmp_path, [("I1-05", "§10-8", "mw-backend-check", "pending-i2e")], [])
+    errors = []
+    msc.check_g_testid_map([_grow("I1-05", "[G] §10-2")], errors)
+    assert any("ไม่ตรงเครื่องมือในตารางแม่" in e for e in errors)
+
+
+def test_g_after_verdict_column_flagged(tmp_path, monkeypatch):
+    _prep(monkeypatch, tmp_path, [("I1-05", "§10-2", "test_pg", "mapped")], ["test_pg"])
+    # [G] appears in an EXTRA column after the verdict cell
+    bad = "| I1-05 | desc | ref | plain | [G] extra |"
+    errors = []
+    msc.check_g_testid_map([bad], errors)
+    assert any("นอกช่องคำตัดสิน" in e for e in errors)
+
+
+def test_strict_mode_fails_on_pending(tmp_path, monkeypatch):
+    monkeypatch.setenv("MW_SPEC_REQUIRE_G13_COMPLETE", "1")
+    _prep(monkeypatch, tmp_path, [("I1-01", "§10-8", "mw-backend-check", "pending-i2e")], [])
+    errors = []
+    msc.check_g_testid_map([_grow("I1-01", "[G] §10-8")], errors)
+    assert any("strict" in e for e in errors)
+
+
+def test_default_mode_pending_not_fail(tmp_path, monkeypatch):
+    monkeypatch.delenv("MW_SPEC_REQUIRE_G13_COMPLETE", raising=False)
+    _prep(monkeypatch, tmp_path, [("I1-01", "§10-8", "mw-backend-check", "pending-i2e")], [])
+    errors = []
+    msc.check_g_testid_map([_grow("I1-01", "[G] §10-8")], errors)
+    assert errors == []
 
 
 def test_real_repo_passes_with_g13_tally():
