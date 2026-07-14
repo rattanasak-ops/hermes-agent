@@ -225,3 +225,4 @@
 - ยังรัน `pytest` ทั้ง Hermes repository ไม่ได้ใน worktree นี้ เพราะไม่มี `.venv`/`venv`; Python ระบบ 3.9 เก่าเกินโค้ด และ bundled Python ไม่มี PyYAML/pytest stack ของโครงการ
 - ข้อนี้ไม่ถูกนับเป็น test failure แต่ก่อน merge ควรรัน CI หรือ `scripts/run_tests.sh` ใน environment มาตรฐานของ Hermes
 - `hermes cron status` รุ่นปัจจุบันตรวจเฉพาะ Gateway จึงยังพิมพ์คำเตือนแม้ launchd/systemd timer ทำงานอยู่; หลักฐานอัตโนมัติให้อ่านจากสถานะตัวตั้งเวลาของระบบและประวัติ `Last run: ok` ของงานทั้ง 4 รายการ
+- Vault หลักบน Notebook ตามหลัง `origin/main` 2 commit และมีไฟล์ค้างของแชทอื่น 5 รายการ จึงไม่ดึงทับ; แหล่งกลางบน GitLab รวม WTL แล้วที่ `faadbd626375a0d039ca611c2a44450907ff7ed3` และตัวติดตั้ง Worktree บน Notebook ไม่ขึ้นกับการดึง Vault รอบนี้
