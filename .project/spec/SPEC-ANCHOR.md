@@ -1,10 +1,10 @@
 ---
 memory-schema: v1.2
 spec_id: SPEC-ANCHOR
-status: draft
+status: building        # approved (เจ้าของเคาะ) → โค้ด+test เสร็จ · รอ merge (Zone แดง) → done
 linked_plan: SPEC-CENTRAL
-owner_approved: false
-updated: 2026-07-14
+owner_approved: true     # เจ้าของพิมพ์ "approve" 2026-07-15
+updated: 2026-07-15
 ---
 
 # สเปค: ให้ plan-anchor ใส่เนื้อสเปคลงใบสั่งงาน (brief) ของ AI Relay
@@ -16,9 +16,9 @@ updated: 2026-07-14
 - ทำอะไร: เพิ่มให้ `plan-anchor --emit-brief` ดึง `.project/spec/<spec_id>.md` มาผนวกในใบสั่งงาน ถ้ามี  [fact]
 - ทำไม: คนเขียนโค้ด (Codex/Grok) เห็นสเปคเต็มในใบสั่ง ลดงานหลุดสเปค = ป้องกันการพลาดสะสม  [fact]
 
-## 2. จุดต้องเคลียร์ก่อนเขียนโค้ด
-- [ ] ไม่มีไฟล์ spec → ทำงานเดิม (เฟส+ข้อห้ามจาก plan.md) เฉย ๆ ใช่ไหม → คาดว่าใช่ (ของเก่าต้องไม่พัง)  [assumption]
-- [ ] spec_id มาจาก plan_id ตรง ๆ หรือ field แยกใน plan.md?  [assumption]
+## 2. จุดที่เคลียร์แล้ว (สมองตัดสิน 2026-07-15)
+- [x] ไม่มีไฟล์ spec → ทำงานเดิม (เฟส+ข้อห้ามจาก plan.md) เฉย ๆ · ยืนยันด้วย test A3 (ของเก่าไม่พัง)  [fact]
+- [x] convention: ไฟล์สเปคหลักของแผน = `.project/spec/<plan_id>.md` (derive อัตโนมัติ · override ด้วย `--spec` ได้)  [fact]
 
 ## 3. ขอบเขต
 - ทำ (in): แก้ `plan-anchor` โหมด emit-brief + test
@@ -33,9 +33,11 @@ updated: 2026-07-14
 ## 5. ตารางแม่กันหาย
 | รหัส | สิ่งที่ต้องมี | จุดพิสูจน์ path:line | สถานะ |
 |---|---|---|:---:|
-| A1 | โค้ดอ่าน spec ถ้ามี ผนวกใน brief | plan-anchor (รอ verify path) | ☐ |
-| A2 | test เคส "มี spec → brief มีเนื้อ" | test file | ☐ |
-| A3 | test เคส "ไม่มี spec → ไม่พัง" | test file | ☐ |
+| A1 | โค้ดอ่าน spec ถ้ามี ผนวกใน brief | `scripts/ai-relay/plan-anchor.py` `read_spec()` + `brief_lines()` | ✅ |
+| A2 | test เคส "มี spec → brief มีเนื้อ" | `test_plan_anchor.py::test_emit_brief_includes_spec_when_present` | ✅ |
+| A3 | test เคส "ไม่มี spec → ไม่พัง" | `test_plan_anchor.py::test_emit_brief_without_spec_unchanged` | ✅ |
+
+> gate: `venv/bin/python -m pytest scripts/ai-relay/tests/test_plan_anchor.py -q` → **11 passed** (2026-07-15)
 
 ## 6. ส่งต่อ AI Relay
 - status = draft → ยังห้ามเขียนโค้ด (รอเจ้าของอนุมัติ + เคลียร์จุดข้อ 2)
