@@ -30,6 +30,79 @@ def fail(msgs):
         print(f"  ✗ {m}")
     return 1
 
+MAP_FILE = ROOT / ".project" / "mw-g-testid-map.md"
+TESTS_DIR = ROOT / "tests" / "scripts" / "mw"
+ALLOWED_EXTERNAL = {"ds-check", "hermes-write-permit", "gitleaks", "Use QA QC"}
+_MAP_ROW_RE = re.compile(
+    r"^\|\s*(I\d+-R?\d+)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(mapped|external|pending-i2e)\s*\|"
+)
+
+
+def _collect_test_defs() -> set:
+    defs = set()
+    if not TESTS_DIR.exists():
+        return defs
+    for tf in TESTS_DIR.glob("*.py"):
+        for name in re.findall(r"^def (test_\w+)\(", tf.read_text(encoding="utf-8"), flags=re.M):
+            defs.add(name)
+    return defs
+
+
+def check_g_testid_map(rows, errors) -> str:
+    """ด่าน 6 (§13.1): ทุกแถว [G] ต้องมีใน mw-g-testid-map + test id ที่มีจริง.
+
+    คืนข้อความสรุป tally · เติม error เข้า list เมื่อพบปัญหา (fail closed).
+    """
+    # เก็บ [G] row codes จากตารางแม่
+    g_rows = []
+    for l in rows:
+        cells = l.split("|")
+        verdict_cell = cells[4] if len(cells) > 4 else ""
+        m = re.match(r"^\| (I\d+-R?\d+)", l)
+        if m and "[G]" in verdict_cell:
+            g_rows.append(m.group(1))
+
+    if not MAP_FILE.exists():
+        errors.append(f"§13.1: ไม่พบ {MAP_FILE} (ตาราง [G]→test id)")
+        return "§13.1: ไม่มีไฟล์ map"
+
+    entries = {}
+    for ml in MAP_FILE.read_text(encoding="utf-8").splitlines():
+        mm = _MAP_ROW_RE.match(ml)
+        if mm:
+            entries[mm.group(1)] = (mm.group(2).strip(), mm.group(3).strip(), mm.group(4).strip())
+
+    test_defs = _collect_test_defs()
+    n_mapped = n_external = n_pending = 0
+    for code in g_rows:
+        if code not in entries:
+            errors.append(f"§13.1: แถว [G] {code} ไม่มีใน mw-g-testid-map.md")
+            continue
+        _tool, tid, status = entries[code]
+        if status == "mapped":
+            if tid not in test_defs:
+                errors.append(f"§13.1: {code} mapped แต่ไม่พบ test '{tid}' ใน tests/scripts/mw/")
+            else:
+                n_mapped += 1
+        elif status == "external":
+            if tid not in ALLOWED_EXTERNAL:
+                errors.append(f"§13.1: {code} external tag '{tid}' ไม่อยู่ในชุดที่อนุญาต {sorted(ALLOWED_EXTERNAL)}")
+            else:
+                n_external += 1
+        elif status == "pending-i2e":
+            n_pending += 1
+
+    gset = set(g_rows)
+    for code in entries:
+        if code not in gset:
+            errors.append(f"§13.1: mw-g-testid-map มีแถว {code} ที่ไม่ใช่ [G] ในตารางแม่ (stale)")
+
+    return (
+        f"§13.1: {len(g_rows)} [G] rows · mapped {n_mapped} · "
+        f"external {n_external} · pending-i2e {n_pending}"
+    )
+
+
 def main() -> int:
     errors = []
     if not SPEC.exists():
@@ -92,9 +165,17 @@ def main() -> int:
             if actual != sha:
                 errors.append(f"baseline: sha256 ไม่ตรง {fp.name} (ต้นทางถูกแก้หลังจดทะเบียน — หยุด แจ้งเจ้าของ)")
 
+    # ด่าน 6: §13.1 — ทุกแถว [G] ต้องผูก test id จริงใน .project/mw-g-testid-map.md
+    g13_tally = check_g_testid_map(rows, errors)
+
     if errors:
         return fail(errors)
-    print(f"MW-SPEC-CHECK: PASS — ตารางแม่ {len(rows)}/{EXPECTED_ROWS} · [G] อ้างเครื่องมือครบ · § อ้างอิงครบ · จุดเคาะ 13/13 · baseline sha256 ตรง {len(re.findall(chr(92)+'| /', BASELINE.read_text())) if BASELINE.exists() else 0} ไฟล์")
+    print(
+        f"MW-SPEC-CHECK: PASS — ตารางแม่ {len(rows)}/{EXPECTED_ROWS} · "
+        f"[G] อ้างเครื่องมือครบ · § อ้างอิงครบ · จุดเคาะ 13/13 · "
+        f"baseline sha256 ตรง {len(re.findall(chr(92)+'| /', BASELINE.read_text())) if BASELINE.exists() else 0} ไฟล์ · "
+        f"{g13_tally}"
+    )
     return 0
 
 if __name__ == "__main__":
