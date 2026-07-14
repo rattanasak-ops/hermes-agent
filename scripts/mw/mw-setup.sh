@@ -39,39 +39,63 @@ installed=0
 failed=0
 echo "== mw-setup: ติดตั้งเครื่องมือ MW เข้า $BIN_DIR =="
 
+clobber=0
 for pair in $TOOLS; do
   name="${pair%%:*}"
   rel="${pair##*:}"
   src="$MW_DIR/$rel"
-  # normalize (../mw-spec-check.py → scripts/mw-spec-check.py)
-  src="$(cd "$(dirname "$src")" && pwd)/$(basename "$src")"
+  # normalize (../mw-spec-check.py → scripts/mw-spec-check.py) — กัน dir หายแล้ว cd fail เงียบ
+  src_dir="$(dirname "$src")"
+  if [ ! -d "$src_dir" ]; then
+    echo "  ❌ ไม่พบโฟลเดอร์: $src_dir"
+    failed=$((failed + 1))
+    continue
+  fi
+  src="$(cd "$src_dir" && pwd)/$(basename "$src")"
   if [ ! -f "$src" ]; then
     echo "  ❌ ไม่พบไฟล์: $src"
     failed=$((failed + 1))
     continue
   fi
-  chmod +x "$src" 2>/dev/null || true
-  ln -sf "$src" "$BIN_DIR/$name"
+  # กัน ln ทับข้อมูลจริงของผู้ใช้
+  target="$BIN_DIR/$name"
+  if [ -L "$target" ]; then
+    # symlink เดิม (รวม symlink-ชี้-โฟลเดอร์) → ลบทิ้งก่อน แล้วค่อยสร้างใหม่
+    # (กัน `ln -sf` เดินตาม symlink-ชี้-โฟลเดอร์ ไปสร้างลิงก์ทับไฟล์ข้างใน — GPT-5 รอบ 2)
+    rm -f "$target"
+  elif [ -e "$target" ]; then
+    # มีอยู่จริงและไม่ใช่ symlink = ไฟล์/โฟลเดอร์จริงของผู้ใช้ → ไม่แตะ
+    echo "  ❌ $name: มีไฟล์จริงอยู่แล้วที่ $target — ไม่เขียนทับ (ลบเองก่อนถ้าต้องการ)"
+    clobber=$((clobber + 1))
+    continue
+  fi
+  # เครื่องมือ commit เป็น 755 อยู่แล้ว · chmod เฉพาะเมื่อยังไม่ executable (ไม่ทำ repo dirty)
+  if [ ! -x "$src" ]; then
+    chmod +x "$src" 2>/dev/null || true
+  fi
+  # target ถูกลบไปแล้วถ้าเป็น symlink → ln -s ธรรมดา (ไม่ใช้ -f จะไม่เดินตาม symlink)
+  ln -s "$src" "$target"
   installed=$((installed + 1))
 done
 
-echo "== ยิงทดสอบจริง (--help ต้อง exit 0) =="
+echo "== ยิงทดสอบจริง (เรียกตรงผ่าน symlink · ทดสอบ shebang+exec ตามที่โฆษณา) =="
 smoke_fail=0
 for pair in $TOOLS; do
   name="${pair%%:*}"
   bin="$BIN_DIR/$name"
-  [ -e "$bin" ] || continue
-  if "$PYTHON" "$bin" --help >/dev/null 2>&1; then
+  [ -L "$bin" ] || continue
+  # เรียกตรง (ไม่ผ่าน $PYTHON) เพื่อพิสูจน์ว่า `$name --help` ใช้ได้จริง (shebang+exec bit)
+  if "$bin" --help >/dev/null 2>&1; then
     echo "  ✅ $name"
   else
-    echo "  ❌ $name (รัน --help ไม่ผ่าน)"
+    echo "  ❌ $name (เรียกตรง --help ไม่ผ่าน — เช็ก shebang/exec bit)"
     smoke_fail=$((smoke_fail + 1))
   fi
 done
 
-echo "== สรุป: symlink $installed ตัว · ทดสอบไม่ผ่าน $smoke_fail · หาไฟล์ไม่เจอ $failed =="
-if [ "$smoke_fail" -ne 0 ] || [ "$failed" -ne 0 ]; then
-  echo "ยังไม่พร้อม 100% — แก้รายการ ❌ ก่อน (ตรวจ Python/ไฟล์)" >&2
+echo "== สรุป: symlink $installed ตัว · ทดสอบไม่ผ่าน $smoke_fail · หาไฟล์ไม่เจอ $failed · ทับไม่ได้ $clobber =="
+if [ "$smoke_fail" -ne 0 ] || [ "$failed" -ne 0 ] || [ "$clobber" -ne 0 ]; then
+  echo "ยังไม่พร้อม 100% — แก้รายการ ❌ ก่อน (ตรวจ Python/ไฟล์/ไฟล์ชนชื่อ)" >&2
   exit 1
 fi
 
