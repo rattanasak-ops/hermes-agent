@@ -18,14 +18,14 @@ tags:
   - tokens
   - accessibility
 status: active
-version: "2.4"
+version: "3.0"
 created: 2026-06-26
-updated: 2026-07-05
+updated: 2026-07-15
 schema: memory-schema-v1.1
 standard_ref: design-system-standard-v2/
 ---
 
-# Use Create Design System / Use Design System (v2.3 · 2026-07-05)
+# Use Create Design System / Use Design System (v3.0 · 2026-07-15)
 
 ## เลือกตัวไหนในกลุ่มงานดีไซน์ (ป้ายบอกทาง · 2026-07-04)
 
@@ -43,7 +43,7 @@ standard_ref: design-system-standard-v2/
 >
 > หน้าที่: พิมพ์คำสั่งนี้ในโปรเจกต์ไหนก็ได้ แล้ว AI จะ (0) ถามก่อนว่าจะทำ Design System สำหรับ "หน้าเว็บ (Front)" หรือ "ระบบหลังบ้าน (Application)" (1) อ่านเป้าหมาย/แผนธุรกิจ → เสนอบุคลิกดีไซน์โดยอิงดีไซน์ระดับโลกตามโหมดที่เลือก (2) ค้นของเดิม + ประเมินช่องว่าง (3) หยุดถามเจ้าของเรื่องสีแบรนด์ 4 สี + น้ำหนัก แล้วต่อยอดเป็นชุดสีครบ (4) สร้างไฟล์มาตรฐาน + ปรับโปรเจกต์ให้ตรงมาตรฐานแบบไม่พังของเดิม
 >
-> มาตรฐานกลางตัวจริงที่คำสั่งนี้ยึด (v2.3): ชุด `design-system-standard-v2/` ใน repo Hermes Agent (spec + emotion-matrix + checklist 77 + tokens + tools + ENTRY-FOR-OTHER-PROJECTS.md) · **หาชุดได้ทั้ง Mac (โฟลเดอร์ local) และ VPS/เครื่องอื่น: `git clone --depth 1 https://github.com/rattanasak-ops/hermes-agent.git` แล้วใช้ `design-system-standard-v2/`** — อย่าฝัง path เครื่องเดียว · ไฟล์เก่า `60-Design/design-systems/design-system-standard.md` เป็นฉบับอ้างอิงประวัติ ไม่ใช่ตัวรัน
+> มาตรฐานกลางตัวจริงที่คำสั่งนี้ยึด (v2.3): ชุด `design-system-standard-v2/` ใน repo Hermes Agent (spec + emotion-matrix + checklist 77 + tokens + tools + ENTRY-FOR-OTHER-PROJECTS.md) · **หาชุดได้ทั้ง Mac (โฟลเดอร์ local) และ VPS/เครื่องอื่น: `git clone --depth 1 https://github.com/rattanasak-ops/hermes-agent.git` แล้วใช้ `design-system-standard-v2/`** — อย่าฝัง path เครื่องเดียว · ไฟล์เก่า `60-Design/design-systems/design-system-standard.md` (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12) เป็นฉบับอ้างอิงประวัติ ไม่ใช่ตัวรัน
 
 ## ใหม่ v2.1 · เครื่องมือรันจบในตัว — โปรเจกต์ไม่ต้องอ่านมาตรฐานเอง
 
@@ -56,8 +56,9 @@ standard_ref: design-system-standard-v2/
 3. `.project/DesignSystem.md` — สรุปการตัดสินใจ 1 หน้า (โหมด · preset · ลูกโซ่ F · คะแนนล่าสุด) ให้ AI แชทถัดไปอ่านต่อ
 ต้นทาง seed กลาง: `design-system-standard-v2/` ใน repo Hermes Agent (Mac local หรือ clone จาก GitHub — ดู path portable ข้างบน) · สมองของเครื่องมือ — เจ้าของไม่ต้องเปิด
 
-### ลำดับรันเต็ม (v2.2): H → F → G → A → B/C → E → D
+### ลำดับรันเต็ม (v3): H → U → F → G(core) → A → B/C → (Packs ตามงาน) → D
 - **H · บริบทโครงการ (ก่อนทุกอย่าง · spec/05-project-identity.md):** หาอ่านเอกสารที่โปรเจกต์มีอยู่แล้ว — ไฟล์แบรนด์ canonical / แผนธุรกิจ / แผนการตลาด / roadmap → กรอกบัตรประจำตัวโครงการ (ชื่อ·วิสัยทัศน์·พันธกิจ·ภาษานำ·เฟส) + เหตุผลทุกสีผูกพันธกิจ + ตาราง pain→คำตอบดีไซน์ + ตรวจความสอดคล้องข้ามเอกสาร (โค้ด vs เอกสารขัดกัน = รายงาน ห้ามเลือกเอง) · ปิดงานดีไซน์ทุกครั้งต้องผ่าน Direction Check 4 คำถาม · ทุก showcase มีปุ่มสลับ TH/EN
+- **U · UX Foundation (ก่อนแตะดีไซน์ · spec/06-ux-foundation.md):** กฎ UX 7 ข้อ (Hick/Fitts/Jakob/Miller/Tesler/Doherty/Aesthetic-Usability) + มาตรฐาน Flow 6 อย่าง (ทางเข้า/ขั้นถัดไป/ความคืบหน้า/แก้พลาด/ยืนยันสำเร็จ/ไม่มีทางตัน) + ทดสอบ 5 วินาที + Layout Anti-patterns · ตอบ "คนใช้ยังไง" ก่อนตอบ "สวยยังไง"
 - **F · คน/แบรนด์ (ก่อน token เสมอ):** กรอกลูกโซ่ แบรนด์(archetype 12)→เป้าหมาย→Persona(+floor)→**แรงจูงใจ**→อารมณ์ 6 แกน(รวม Luxe)→ฟังก์ชัน · ตาม `spec/02-emotion-matrix.md`
 - **G · ธุรกิจ/conversion:** ถ้าเป็น SaaS/งานขาย เตรียมชิ้นส่วน G1-G8 (hero positioning · หน้าราคา · funnel · trust · onboarding · ลำดับเล่าเรื่อง · อีเมล · จุดวัดผล) ตาม `spec/04-business-conversion.md` · ข้อความดึงจากผล Use Business Plan ห้ามแต่งเอง
 - **A-C · token + ของจริง:** สร้าง/อัปเดต token 3 ชั้น + component ตามเช็กลิสต์ 77 หัวข้อ (H8+A17+B13+C9+D9+E7+F6+G8)
@@ -90,6 +91,19 @@ standard_ref: design-system-standard-v2/
 ### คุมดีไซน์ทั้งโปรเจกต์ (ทำให้ "ใช้ระบบเดียวกันจริง")
 ผูก `ds-check.py --mode error` เข้า CI → ใครเขียนสี/ขนาดฝังตายตัวใหม่ = build แดง เข้าไม่ได้
 = ทุกหน้าถูกบังคับให้ใช้ token จากคลังกลางเท่านั้น
+
+### กฎ SERIOUS S1 · ห้ามงานดูเป็น AI (Anti-AI-Slop · เหนือทุกชั้น)
+งานที่ส่งต้องดูเหมือนคนออกแบบ ไม่ใช่ค่าตั้งต้น AI (ฟอนต์ Inter ทุกที่ / ไล่สีม่วง-คราม / การ์ดมนเงานุ่มเท่ากันทุกใบ / สมมาตรตายตัว) · เกณฑ์ผ่าน: ติดสัญญาณกลิ่น AI ไม่เกิน 1 จุด + รัน `Use Impeccable` ผ่าน (ด่าน D12) · รายละเอียดเต็ม `design-system-standard-v2/spec/07-anti-ai-slop.md` + ตาราง S1 ในเช็กลิสต์
+
+### ด่านเครื่องตรวจชั้นแบรนด์ ds-gate (ใหม่ v3.0 · ห้ามข้าม)
+- เริ่มโปรเจกต์: ยังไม่มี `.project/DesignSystem.md` → รัน `python3 design-system-standard-v2/tools/ds-gate.py --init` ได้แม่แบบ แล้วกรอกชั้น H/U/F ให้ครบ
+- ก่อนเข้า PHASE 3 (ด่านสี): ต้องรัน `python3 design-system-standard-v2/tools/ds-gate.py --layer all` แล้ว exit 0 เท่านั้น · ไม่ผ่าน = ห้ามสร้าง token/แตะโค้ด (fail-closed · ตรวจเนื้อจริง ไม่ใช่แค่มีไฟล์)
+
+### ด่านวินัยงาน D14-D17 (บทเรียน Root Admin DS พัง 2 วัน · 2026-07-15)
+- D14 กัน tree ชน: เช็ก `git branch --show-current`+`git status` ก่อนเขียนทุกครั้ง · จบ 1 ชิ้น commit ทันที ห้ามค้างข้ามเทิร์น
+- D15 UI verify tier 4: เคลม/ส่ง URL ต้องเปิดเบราว์เซอร์ถ่ายภาพจริง + บรรยาย 1 บรรทัด · curl 200 ไม่นับ
+- D16 เครื่องพร้อม: งานหนักเช็กแรมก่อน · webpack/dev เพี้ยน = restart + ล้าง cache build ก่อนเดินต่อ
+- D17 ข้อห้ามโปรเจกต์: อ่าน `.project/decisions.md` + Locked Decisions ก่อนทำ · จด "ข้อห้ามที่เกี่ยว" ลง DesignSystem.md · ห้ามแตะโปรเจกต์นอกขอบเขต (BOI/MOL/Master/Reveal)
 
 ## Shortcut
 
@@ -124,7 +138,7 @@ system ที่ตรงกับ "มาตรฐานกลางของ�
 
 [ขั้น 0 — อ่านความจำ + มาตรฐานก่อนวางแผน · บังคับ]
 - อ่าน `.project/OverviewProgress.md` + `.project/plan.md` + `.project/decisions.md` (Memory Schema v1.2 · ไฟล์เก่า handoff/.hermes = fallback อ่านได้ ย้ายตาม §1b) · ห้ามรื้อ decision เดิมโดยไม่บอก
-- อ่านมาตรฐานกลาง design-system-standard.md (ที่ราก repo ถ้ามี ไม่งั้นใช้ฉบับใน 60-Design/design-systems/)
+- อ่านมาตรฐานกลาง design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12) (ที่ราก repo ถ้ามี ไม่งั้นใช้ฉบับใน 60-Design/design-systems/)
 - หาความจำไม่เจอ = บอกว่าไม่พบ ไม่เดาว่าเคยทำอะไร
 
 [กฎเหล็ก — อ่านก่อนทำทุกครั้ง]
@@ -148,7 +162,7 @@ system ที่ตรงกับ "มาตรฐานกลางของ�
 
 # PHASE 1 — ค้นหา (Discovery)
 สแกนทั้งโปรเจกต์ว่ามี design system เดิมไหม ค้นด้วย pattern:
-  มาตรฐาน: design-system-standard.md, DESIGN_SYSTEM*.md, CLAUDE.md, AGENTS.md, .cursor/rules/*
+  มาตรฐาน: design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12), DESIGN_SYSTEM*.md, CLAUDE.md, AGENTS.md, .cursor/rules/*
   Token/Theme: **/*token*.{css,json,js,ts}, **/ds-tokens.*, **/ci.*, **/dna.*, **/theme*.{css,ts,js,json},
                **/tokens/**, **/globals.css, tailwind.config.*, postcss.config.*, :root{ --... }
   หน้า DS: **/design-system*, **/style-guide*, .storybook/**, **/*.stories.*
@@ -161,6 +175,7 @@ system ที่ตรงกับ "มาตรฐานกลางของ�
 บอกด้วยว่าของเดิมส่วนไหน "ดี ควรเก็บ" และส่วนไหน "ควรปรับ"
 
 # PHASE 3 — ด่านสี (Color Gate · ขั้นใหม่ · หัวใจของเจ้าของงาน)
+- ด่านก่อนเข้า: `python3 design-system-standard-v2/tools/ds-gate.py --layer all` ต้อง exit 0 (ชั้น H/U/F ครบจริง) · ไม่ผ่าน = กลับไปกรอกก่อน ห้ามเดินต่อ
 - ถามเจ้าของ: "สีแบรนด์หลัก 4 สี จะใช้สีอะไร และน้ำหนัก/สัดส่วนเท่าไหร่" (เช่น สีหลัก/สีรอง/สีเน้น/สีกลาง)
 - จาก 4 สีนั้น AI ต่อยอดให้ครบเป็นชุดสีมาตรฐานอัตโนมัติ:
     semantic เต็ม (action/success/warning/danger/info/neutral) + surface/text/border + โหมดสว่าง+มืด
@@ -171,7 +186,7 @@ system ที่ตรงกับ "มาตรฐานกลางของ�
 - ถ้า Phase 1 ไม่เจอ design system เลย → GREENFIELD: scaffold ใหม่ทั้งชุด (token 3 ชั้น → component → showcase)
 - ถ้าเจอของเดิม → MIGRATION: ปรับของเดิมเข้ามาตรฐาน เก็บส่วนดี เปลี่ยนเฉพาะที่ไม่ตรง คงความเข้ากันได้เดิม
 - ก่อนลงมือจริง: ยืนยันโหมด in-place/showcase (กฎเหล็กข้อ 6) แล้วเสนอแผน (ลำดับงาน + ไฟล์ที่จะแตะ + ความเสี่ยง) "หยุดรอยืนยัน"
-ยึดมาตรฐานเหล่านี้ (รายละเอียดเต็มใน design-system-standard.md):
+ยึดมาตรฐานเหล่านี้ (รายละเอียดเต็มใน design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12)):
   - Token 3 ชั้น: primitive → semantic/alias → component · แยก 2 เลเยอร์ ci (แบรนด์/ลูกค้า) + dna (ระบบ/semantic)
        ห้ามใช้ primitive ตรง ๆ ใน component
   - รูปแบบไฟล์ token: W3C DTCG (2025.10) ใช้ $value/$type/$description แล้ว map เป็น CSS custom properties
@@ -207,21 +222,7 @@ checklist หมวดที่ยังขาด · แต่ละ claim ผ�
 
 - **รอบแรกของแต่ละโปรเจกต์**: ให้ AI รันถึงแค่ Phase 2 (รายงานช่องว่าง) ก่อน เจ้าของอ่าน/อนุมัติแผน ค่อยปล่อย Phase 4 — กัน AI รื้อมั่ว
 - **เว็บลูกค้าจริง (production เช่น MOL/DRA)**: เน้น MIGRATION + เข้ากันได้กับของเดิม อย่าให้ GREENFIELD ทับของเดิม
-- **อยากให้ทุกโปรเจกต์เหมือนกัน**: วาง design-system-standard.md + คำสั่งนี้ ลงทุก repo หรือทำเป็น shared template repo
-
-## Changelog
-
-- docs (2026-07-04): เพิ่มตารางป้ายบอกทางกลุ่มงานดีไซน์
-- v1.1 (2026-06-26): เพิ่ม "ขั้นเลือกโหมด" เป็นข้อแรกสุด — เจ้าของเลือกได้ว่าจะทำ Design System สำหรับ "หน้าเว็บ (Front)" หรือ "ระบบหลังบ้าน (Application)" · โหมดที่เลือกกำหนดชุดชิ้นส่วน/รูปแบบ/ความหนาแน่น/ตัวอย่างดีไซน์ที่หยิบมาอ้าง (PHASE 0 + PHASE 4 แตกตามโหมด) · ใช้รากฐานสี/โทเคน/มาตรฐาน/กฎกันพังร่วมกัน · ย้ำว่าเป็นคำสั่งกลางใช้ทุกโปรเจกต์ 30+ ตัว ไม่ผูกโปรเจกต์เดียว
-- v1.0 (2026-06-26): สร้างครั้งแรก · เย็บ 3 ส่วนเข้าด้วยกัน — Phase 0 (อ่านแผนธุรกิจ → เสนอแนวจากคลังดีไซน์ระดับโลก, ต่อยอดจากสกิล design-selector), Phase 1–2 + 4–5 (prompt มาตรฐาน 5 เฟสของเจ้าของงาน), Phase 3 ด่านสีใหม่ (ถาม 4 สีแบรนด์ → ต่อยอดชุดสีครบ + เช็ก WCAG) · ฝังกฎ migration INC-9085 · ยึดมาตรฐานกลาง design-system-standard.md
-
-## Graph Links
-
-- Parent hub: [[skills/prompt-shortcuts/Prompt Shortcuts|Prompt Shortcuts]]
-- Registry: [[ai-context/prompt-shortcut-registry|Prompt Shortcut Registry]]
-- Schema: [[skills/prompt-shortcuts/references/memory-schema|Memory Schema v1.1]]
-- Standard: [[60-Design/design-systems/design-system-standard|Design System Standard]]
-- Library: [[60-Design/design-systems/README|Design Systems Library]]
+- **อยากให้ทุกโปรเจกต์เหมือนกัน**: วาง design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12) + คำสั่งนี้ ลงทุก repo หรือทำเป็น shared template repo
 
 ## v2.4 (2026-07-07) · บทเรียนจากสนามจริง (OneManFleet 3 วัน) — บังคับ
 
@@ -233,3 +234,18 @@ checklist หมวดที่ยังขาด · แต่ละ claim ผ�
 4. **เช็คคำแปลไทยสื่อแบรนด์** + ห้ามตัวเข้มบนพื้นเข้ม / ตัวขาวเล็กบนแดงสด `#EC2C23`
 
 ⚠ **onemanfleet-ds.html = ตัวอย่างให้ดูโครงเท่านั้น ห้ามลอกสี/แบรนด์**: `design-system-standard-v2/preview/onemanfleet-ds.html` + `tokens/{front,admin}.tokens.json` เป็น **โครงตัวอย่าง 1 เคส** (สี/แบรนด์เป็นของ OneManFleet) — ลอกได้แค่ "โครงสร้าง/ลำดับชั้น/ชิ้นส่วน" เท่านั้น · **สี/แบรนด์/ข้อความต้องสร้างของโปรเจกต์เองผ่านด่านสี Phase 3** แล้วรัน `tools/brand-leak-check.sh` ให้ผ่าน (ต้องไม่เหลือสี OneManFleet `#E94560`/`#1A1A2E` ในหน้าโชว์โปรเจกต์)
+
+## Changelog
+
+- v3.0 (2026-07-15): sync กับเช็กลิสต์ v3.1 (97 หัวข้อ) — เพิ่มชั้น U · กฎ SERIOUS S1 + ด่าน D12 · ด่านเครื่อง ds-gate.py (H/U/F ต้องผ่านก่อน PHASE 3) · ด่านวินัยงาน D14-D17 จากบทเรียน Root Admin · แก้ version drift (ทะเบียนบอก v2.5 แต่ไฟล์จริง v2.4 ไม่มีของใหม่เลย = รากที่ทำให้โปรเจกต์จริงข้าม flow)
+- docs (2026-07-04): เพิ่มตารางป้ายบอกทางกลุ่มงานดีไซน์
+- v1.1 (2026-06-26): เพิ่ม "ขั้นเลือกโหมด" เป็นข้อแรกสุด — เจ้าของเลือกได้ว่าจะทำ Design System สำหรับ "หน้าเว็บ (Front)" หรือ "ระบบหลังบ้าน (Application)" · โหมดที่เลือกกำหนดชุดชิ้นส่วน/รูปแบบ/ความหนาแน่น/ตัวอย่างดีไซน์ที่หยิบมาอ้าง (PHASE 0 + PHASE 4 แตกตามโหมด) · ใช้รากฐานสี/โทเคน/มาตรฐาน/กฎกันพังร่วมกัน · ย้ำว่าเป็นคำสั่งกลางใช้ทุกโปรเจกต์ 30+ ตัว ไม่ผูกโปรเจกต์เดียว
+- v1.0 (2026-06-26): สร้างครั้งแรก · เย็บ 3 ส่วนเข้าด้วยกัน — Phase 0 (อ่านแผนธุรกิจ → เสนอแนวจากคลังดีไซน์ระดับโลก, ต่อยอดจากสกิล design-selector), Phase 1–2 + 4–5 (prompt มาตรฐาน 5 เฟสของเจ้าของงาน), Phase 3 ด่านสีใหม่ (ถาม 4 สีแบรนด์ → ต่อยอดชุดสีครบ + เช็ก WCAG) · ฝังกฎ migration INC-9085 · ยึดมาตรฐานกลาง design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12)
+
+## Graph Links
+
+- Parent hub: [[skills/prompt-shortcuts/Prompt Shortcuts|Prompt Shortcuts]]
+- Registry: [[ai-context/prompt-shortcut-registry|Prompt Shortcut Registry]]
+- Schema: [[skills/prompt-shortcuts/references/memory-schema|Memory Schema v1.1]]
+- Standard: [[60-Design/design-systems/design-system-standard|Design System Standard]]
+- Library: [[60-Design/design-systems/README|Design Systems Library]]
