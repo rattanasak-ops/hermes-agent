@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 HEADINGS = {
+    "H0": "## H0 เอกสารโปรเจกต์ที่อ่าน",
     "H1": "## H1 บัตรประจำตัวโครงการ",
     "H2": "## H2 เหตุผลการเลือกสี",
     "H3": "## H3 Pain → Design Response",
@@ -31,9 +32,10 @@ HEADINGS = {
 }
 
 LAYER_CODES = {
-    "H": ("H1", "H2", "H3", "H4", "H5", "H6", "H7", "D17"),
+    "H": ("H0", "H1", "H2", "H3", "H4", "H5", "H6", "H7"),
     "U": ("U1", "U2", "U3", "U4"),
     "F": ("F1", "F2", "F3", "F4", "F5", "F6", "F7"),
+    "D": ("D17",),
 }
 
 ARCHETYPES = (
@@ -44,6 +46,10 @@ ARCHETYPES = (
 TEMPLATE = """# Design System
 
 > กรอกทุกช่อง TODO ให้เป็นข้อมูลจริงก่อนเริ่มสร้าง token ชั้น A
+
+## H0 เอกสารโปรเจกต์ที่อ่าน
+- เอกสารที่อ่าน/แหล่ง: TODO
+- ผล conflict: TODO (เขียน "ไม่พบขัดกัน" หรือ "พบขัดกัน" พร้อมรายการ)
 
 ## H1 บัตรประจำตัวโครงการ
 | รายการ | ค่า |
@@ -69,6 +75,8 @@ TEMPLATE = """# Design System
 
 ## H4 สองภาษา
 - ภาษานำ: TODO
+- ปุ่มสลับภาษา: TODO
+- microcopy/ข้อความ 2 ภาษา: TODO
 - ฟอนต์ TH/ไทย: TODO
 - font EN/อังกฤษ: TODO
 
@@ -81,10 +89,12 @@ TEMPLATE = """# Design System
 | 4 | TODO | TODO |
 
 ## H6 ความสอดคล้องข้ามเอกสาร
-TODO: ใส่ตาราง conflict หรือข้อความ "ไม่พบขัดกัน"
+- แหล่งที่เทียบ: TODO
+- ผลตรวจ: TODO (ใส่ตาราง conflict หรือข้อความ "ไม่พบขัดกัน")
 
 ## H7 ลายเซ็นความเป็นคน
-- TODO
+- TODO: ลายเซ็นข้อที่ 1
+- TODO: ลายเซ็นข้อที่ 2
 
 ## ข้อห้ามที่เกี่ยว (D17)
 - TODO: ใส่ข้อห้ามที่เกี่ยว หรือเขียนว่า "ไม่มี"
@@ -116,6 +126,13 @@ Flow สำคัญ: TODO
 3. อะไรสำคัญ: TODO
 4. กดอะไรต่อ: TODO
 5. ถอยทางไหน: TODO
+โครงหน้า 6 ส่วน:
+- Context/บริบท: TODO
+- Primary action/แอ็กชันหลัก: TODO
+- Key information/ข้อมูลสำคัญ: TODO
+- Details/รายละเอียด: TODO
+- Support/ตัวช่วย: TODO
+- Exit/ทางออก: TODO
 
 ## U4 Anti-patterns
 - พระเอกของหน้า: TODO
@@ -157,10 +174,10 @@ Flow สำคัญ: TODO
 ## F7 Mood & Tone
 Mood: TODO
 
-| Do | Don't |
-|---|---|
-| TODO | TODO |
-| TODO | TODO |
+| Touchpoint | Do | Don't |
+|---|---|---|
+| เว็บ | TODO | TODO |
+| แอดมิน | TODO | TODO |
 """
 
 
@@ -214,6 +231,31 @@ def issue(code, detail):
     return {"code": code, "message": "[%s] %s" % (code, detail)}
 
 
+def validate_h0(lines):
+    body = "\n".join(lines)
+    document_match = re.search(
+        r"(?:เอกสารที่อ่าน|ชื่อไฟล์|แหล่ง)\s*[:|]\s*([^\n|]+)", body, re.I
+    )
+    document_value = document_match.group(1).strip(" -*\t") if document_match else ""
+    has_document = bool(document_value and not re.search(r"^(?:ไม่มี|ไม่พบ)(?:\s|$)", document_value))
+    no_documents = bool(re.search(r"(?:เอกสารที่อ่าน|ชื่อไฟล์|แหล่ง)\s*[:|]\s*(?:ไม่มี|ไม่พบ)", body, re.I))
+
+    if not has_document and not no_documents:
+        return "ต้องระบุเอกสารที่อ่านอย่างน้อย 1 รายการ หรือเขียนว่าไม่มีเอกสาร"
+    if no_documents:
+        owner_answers = ("พันธกิจ", "กลุ่มเป้าหมาย", "ปัญหาหลัก", "เฟสงาน")
+        missing = [label for label in owner_answers if not nonempty_value(body, re.escape(label))]
+        if missing:
+            return "ไม่มีเอกสารจึงต้องมีคำตอบเจ้าของ 4 ข้อ: พันธกิจ/กลุ่มเป้าหมาย/ปัญหาหลัก/เฟสงาน"
+
+    if "ไม่พบขัดกัน" in body:
+        return None
+    conflict = re.search(r"พบขัดกัน\s*[:：-]\s*(\S.{4,})", body)
+    if conflict:
+        return None
+    return "ต้องระบุผล conflict ว่าไม่พบขัดกัน หรือพบขัดกันพร้อมรายการ"
+
+
 def validate_h1(lines):
     rows = table_rows(lines)
     values = {row[0].lower(): row[1].strip() for row in rows if len(row) >= 2}
@@ -239,11 +281,12 @@ def validate_h4(lines):
     body = "\n".join(lines)
     checks = (
         nonempty_value(body, r"ภาษานำ"),
-        bool(re.search(r"(?:ฟอนต์|font)", body, re.I)),
-        bool(re.search(r"(?:TH|ไทย)", body, re.I)),
-        bool(re.search(r"(?:EN|อังกฤษ)", body, re.I)),
+        bool(re.search(r"(?:ปุ่มสลับ|สลับภาษา)", body, re.I)),
+        bool(re.search(r"(?:microcopy|ข้อความ\s*2\s*ภาษา)", body, re.I)),
+        bool(re.search(r"(?:ฟอนต์|font)[^\n]*(?:TH|ไทย)|(?:TH|ไทย)[^\n]*(?:ฟอนต์|font)", body, re.I)),
+        bool(re.search(r"(?:ฟอนต์|font)[^\n]*(?:EN|อังกฤษ)|(?:EN|อังกฤษ)[^\n]*(?:ฟอนต์|font)", body, re.I)),
     )
-    return None if all(checks) else "ต้องระบุภาษานำและคู่ฟอนต์ TH/EN ให้ครบ"
+    return None if all(checks) else "ต้องมีภาษานำ ปุ่มสลับภาษา microcopy/ข้อความ 2 ภาษา และคู่ฟอนต์ TH/EN ให้ครบ"
 
 
 def validate_h5(lines):
@@ -264,9 +307,25 @@ def validate_h5(lines):
 
 def validate_h6(lines):
     body = "\n".join(lines)
-    if "ไม่พบขัดกัน" in body or table_rows(lines):
+    source_match = re.search(r"(?:แหล่งที่เทียบ|ชื่อไฟล์|เอกสาร)\s*[:|]\s*([^\n|]+)", body, re.I)
+    source_value = source_match.group(1).strip(" -*\t") if source_match else ""
+    named_source = bool(
+        source_value
+        and not re.search(r"^(?:ไม่มี|ไม่พบขัดกัน|พบขัดกัน)(?:\s|$)", source_value)
+    )
+    named_file = bool(re.search(r"\b[^\s|]+\.(?:md|txt|pdf|docx?|ya?ml|json|css|tsx?|jsx?|html?)\b", body, re.I))
+    if (named_source or named_file) and ("ไม่พบขัดกัน" in body or table_rows(lines)):
         return None
-    return "ต้องมีตาราง conflict หรือข้อความ \"ไม่พบขัดกัน\""
+    return "ต้องระบุชื่อแหล่งที่เทียบอย่างน้อย 1 แหล่ง และมีตาราง conflict หรือข้อความ \"ไม่พบขัดกัน\""
+
+
+def validate_h7(lines):
+    body = " ".join(line.strip(" -*\t") for line in lines).strip()
+    entries = [line for line in lines if re.match(r"\s*(?:[-*]|\d+[.)])\s+", line)]
+    entries.extend(" | ".join(row) for row in table_rows(lines))
+    if len(entries) < 2 or len(body) < 60:
+        return "ลายเซ็นความเป็นคนต้องมีอย่างน้อย 2 รายการและเนื้อหารวมอย่างน้อย 60 ตัวอักษร"
+    return None
 
 
 def validate_content(lines, label):
@@ -305,8 +364,20 @@ def validate_u3(lines):
     questions = ("อยู่ไหน", "ทำอะไรได้", "อะไรสำคัญ", "กดอะไรต่อ", "ถอยทางไหน")
     found = sum(1 for term in questions if nonempty_value(body, re.escape(term)))
     has_page = nonempty_value(body, r"หน้าสำคัญ")
-    if found < 5 or not has_page:
-        return "ทดสอบ 5 วินาทีต้องตอบครบ 5 คำถามต่อหน้าสำคัญ — พบ %d" % found
+    page_parts = (
+        ("Context", "บริบท"),
+        ("Primary action", "แอ็กชันหลัก"),
+        ("Key information", "ข้อมูลสำคัญ"),
+        ("Details", "รายละเอียด"),
+        ("Support", "ตัวช่วย"),
+        ("Exit", "ทางออก"),
+    )
+    found_parts = sum(
+        1 for terms in page_parts
+        if any(nonempty_value(body, re.escape(term)) for term in terms)
+    )
+    if found < 5 or not has_page or found_parts < 6:
+        return "ทดสอบ 5 วินาทีต้องตอบครบ 5 คำถามและโครงหน้า 6 ส่วน — พบคำตอบ %d, ส่วนหน้า %d" % (found, found_parts)
     return None
 
 
@@ -351,6 +422,14 @@ def validate_f4(lines):
     return None
 
 
+def token_values_with_units(text):
+    return re.findall(
+        r"\d+(?:\.\d+)?\s*(?:px|ms|%|:1|×|°|deg)(?=\s|[,;|)]|$)",
+        text,
+        re.I,
+    )
+
+
 def validate_f5(lines):
     axes = ("ทางการ", "อบอุ่น", "พลัง", "ชัด", "หนาแน่น")
     valid = 0
@@ -359,12 +438,12 @@ def validate_f5(lines):
             if not row or axis not in row[0] or len(row) < 3:
                 continue
             score = re.search(r"(?<!\d)([1-5])(?!\d)", row[1])
-            numbers = re.findall(r"\d+(?:\.\d+)?", " ".join(row))
-            if score and len(numbers) >= 3:
+            token_values = token_values_with_units(" ".join(row[2:]))
+            if score and len(token_values) >= 3:
                 valid += 1
                 break
     if valid < 5:
-        return "ตารางอารมณ์ต้องมี >= 5 แกน พร้อมคะแนน 1-5 และตัวเลข token >= 3 ค่า — พบ %d แกน" % valid
+        return "ตารางอารมณ์ต้องมี >= 5 แกน พร้อมคะแนน 1-5 และค่า token ที่มีหน่วย >= 3 ค่า — พบ %d แกน" % valid
     return None
 
 
@@ -377,8 +456,9 @@ def validate_f7(lines):
         if len(moods) == 1:
             moods = [part for part in moods[0].split() if part]
     rows = [row for row in table_rows(lines) if len(row) >= 2 and row[0].strip() and row[1].strip()]
-    if not 5 <= len(moods) <= 8 or len(rows) < 2:
-        return "ต้องมีคำ mood 5-8 คำและตาราง do/don't >= 2 แถว — พบ mood %d คำ, ตาราง %d แถว" % (len(moods), len(rows))
+    touchpoints = sum(1 for term in ("เว็บ", "แอดมิน", "เอกสาร") if term in body)
+    if not 5 <= len(moods) <= 8 or len(rows) < 2 or touchpoints < 2:
+        return "ต้องมีคำ mood 5-8 คำ ตาราง do/don't >= 2 แถว และ touchpoint >= 2 จากเว็บ/แอดมิน/เอกสาร — พบ mood %d คำ, ตาราง %d แถว, touchpoint %d" % (len(moods), len(rows), touchpoints)
     return None
 
 
@@ -399,13 +479,14 @@ def validate_f6(lines):
 
 
 VALIDATORS = {
+    "H0": validate_h0,
     "H1": validate_h1,
     "H2": lambda lines: validate_table(lines, 2, 4, "ตารางเหตุผลสี"),
     "H3": lambda lines: validate_table(lines, 3, 2, "ตาราง Pain → Design Response"),
     "H4": validate_h4,
     "H5": validate_h5,
     "H6": validate_h6,
-    "H7": lambda lines: validate_content(lines, "ลายเซ็นความเป็นคน"),
+    "H7": validate_h7,
     "D17": lambda lines: validate_content(lines, "ข้อห้ามที่เกี่ยว (D17)"),
     "U1": validate_u1,
     "U2": validate_u2,
@@ -423,7 +504,7 @@ VALIDATORS = {
 
 def validate(text, layer):
     sections = split_sections(text)
-    codes = tuple(code for name in ("H", "U", "F") for code in LAYER_CODES[name]) if layer == "all" else LAYER_CODES[layer]
+    codes = tuple(code for name in ("H", "U", "F", "D") for code in LAYER_CODES[name]) if layer == "all" else LAYER_CODES[layer]
     errors = []
     for code in codes:
         if code not in sections:
@@ -434,16 +515,16 @@ def validate(text, layer):
             errors.append(issue(code, "ยังมี TODO ในหัวข้อนี้"))
             continue
         detail = VALIDATORS[code](lines)
-        if code == "F5" and not detail and re.search(r"Pack\s+Premium", text, re.I):
+        if code == "F5" and not detail and re.search(r"(?:Premium|Luxe)", text, re.I):
             luxe_rows = [row for row in table_rows(lines) if row and re.search(r"(?:Luxe|หรู)", row[0], re.I)]
             luxe_valid = any(
                 len(row) >= 3
                 and re.search(r"(?<!\d)([1-5])(?!\d)", row[1])
-                and len(re.findall(r"\d+(?:\.\d+)?", " ".join(row))) >= 3
+                and len(token_values_with_units(" ".join(row[2:]))) >= 3
                 for row in luxe_rows
             )
             if not luxe_valid:
-                detail = "ใช้ Pack Premium จึงต้องมีแกน Luxe พร้อมคะแนนและตัวเลข token >= 3 ค่า"
+                detail = "มี Premium/Luxe จึงต้องมีแกน Luxe พร้อมคะแนนและค่า token ที่มีหน่วย >= 3 ค่า"
         if detail:
             errors.append(issue(code, detail))
     return codes, errors
@@ -461,9 +542,9 @@ def print_result(payload, as_json):
 
 
 def parse_args(argv=None):
-    parser = ThaiArgumentParser(description="ตรวจชั้นแบรนด์ H/U/F ก่อนเริ่ม token ชั้น A")
+    parser = ThaiArgumentParser(description="ตรวจชั้นแบรนด์ H/U/F และข้อห้าม D ก่อนเริ่ม token ชั้น A")
     parser.add_argument("--file", default=".project/DesignSystem.md", help="ไฟล์ DesignSystem.md")
-    parser.add_argument("--layer", choices=("H", "U", "F", "all"), default="all")
+    parser.add_argument("--layer", choices=("H", "U", "F", "D", "all"), default="all")
     parser.add_argument("--json", action="store_true", help="แสดงผล JSON")
     parser.add_argument("--init", action="store_true", help="สร้างแม่แบบเมื่อไฟล์ยังไม่มี")
     return parser.parse_args(argv)

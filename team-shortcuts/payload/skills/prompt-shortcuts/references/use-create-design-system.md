@@ -43,7 +43,7 @@ standard_ref: design-system-standard-v2/
 >
 > หน้าที่: พิมพ์คำสั่งนี้ในโปรเจกต์ไหนก็ได้ แล้ว AI จะ (0) ถามก่อนว่าจะทำ Design System สำหรับ "หน้าเว็บ (Front)" หรือ "ระบบหลังบ้าน (Application)" (1) อ่านเป้าหมาย/แผนธุรกิจ → เสนอบุคลิกดีไซน์โดยอิงดีไซน์ระดับโลกตามโหมดที่เลือก (2) ค้นของเดิม + ประเมินช่องว่าง (3) หยุดถามเจ้าของเรื่องสีแบรนด์ 4 สี + น้ำหนัก แล้วต่อยอดเป็นชุดสีครบ (4) สร้างไฟล์มาตรฐาน + ปรับโปรเจกต์ให้ตรงมาตรฐานแบบไม่พังของเดิม
 >
-> มาตรฐานกลางตัวจริงที่คำสั่งนี้ยึด (v2.3): ชุด `design-system-standard-v2/` ใน repo Hermes Agent (spec + emotion-matrix + checklist 77 + tokens + tools + ENTRY-FOR-OTHER-PROJECTS.md) · **หาชุดได้ทั้ง Mac (โฟลเดอร์ local) และ VPS/เครื่องอื่น: `git clone --depth 1 https://github.com/rattanasak-ops/hermes-agent.git` แล้วใช้ `design-system-standard-v2/`** — อย่าฝัง path เครื่องเดียว · ไฟล์เก่า `60-Design/design-systems/design-system-standard.md` (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12) เป็นฉบับอ้างอิงประวัติ ไม่ใช่ตัวรัน
+> มาตรฐานกลางตัวจริงที่คำสั่งนี้ยึด (v2.3): ชุด `design-system-standard-v2/` ใน repo Hermes Agent (spec + emotion-matrix + checklist 77 (รุ่นปัจจุบัน v3.1 = 109 หัวข้อ) + tokens + tools + ENTRY-FOR-OTHER-PROJECTS.md) · **หาชุดได้ทั้ง Mac (โฟลเดอร์ local) และ VPS/เครื่องอื่น: `git clone --depth 1 https://github.com/rattanasak-ops/hermes-agent.git` แล้วใช้ `design-system-standard-v2/`** — อย่าฝัง path เครื่องเดียว · ไฟล์เก่า `60-Design/design-systems/design-system-standard.md` (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 109 หัวข้อ (Core 89 + Packs 20)) เป็นฉบับอ้างอิงประวัติ ไม่ใช่ตัวรัน
 
 ## ใหม่ v2.1 · เครื่องมือรันจบในตัว — โปรเจกต์ไม่ต้องอ่านมาตรฐานเอง
 
@@ -59,9 +59,9 @@ standard_ref: design-system-standard-v2/
 ### ลำดับรันเต็ม (v3): H → U → F → G(core) → A → B/C → (Packs ตามงาน) → D
 - **H · บริบทโครงการ (ก่อนทุกอย่าง · spec/05-project-identity.md):** หาอ่านเอกสารที่โปรเจกต์มีอยู่แล้ว — ไฟล์แบรนด์ canonical / แผนธุรกิจ / แผนการตลาด / roadmap → กรอกบัตรประจำตัวโครงการ (ชื่อ·วิสัยทัศน์·พันธกิจ·ภาษานำ·เฟส) + เหตุผลทุกสีผูกพันธกิจ + ตาราง pain→คำตอบดีไซน์ + ตรวจความสอดคล้องข้ามเอกสาร (โค้ด vs เอกสารขัดกัน = รายงาน ห้ามเลือกเอง) · ปิดงานดีไซน์ทุกครั้งต้องผ่าน Direction Check 4 คำถาม · ทุก showcase มีปุ่มสลับ TH/EN
 - **U · UX Foundation (ก่อนแตะดีไซน์ · spec/06-ux-foundation.md):** กฎ UX 7 ข้อ (Hick/Fitts/Jakob/Miller/Tesler/Doherty/Aesthetic-Usability) + มาตรฐาน Flow 6 อย่าง (ทางเข้า/ขั้นถัดไป/ความคืบหน้า/แก้พลาด/ยืนยันสำเร็จ/ไม่มีทางตัน) + ทดสอบ 5 วินาที + Layout Anti-patterns · ตอบ "คนใช้ยังไง" ก่อนตอบ "สวยยังไง"
-- **F · คน/แบรนด์ (ก่อน token เสมอ):** กรอกลูกโซ่ แบรนด์(archetype 12)→เป้าหมาย→Persona(+floor)→**แรงจูงใจ**→อารมณ์ 6 แกน(รวม Luxe)→ฟังก์ชัน · ตาม `spec/02-emotion-matrix.md`
-- **G · ธุรกิจ/conversion:** ถ้าเป็น SaaS/งานขาย เตรียมชิ้นส่วน G1-G8 (hero positioning · หน้าราคา · funnel · trust · onboarding · ลำดับเล่าเรื่อง · อีเมล · จุดวัดผล) ตาม `spec/04-business-conversion.md` · ข้อความดึงจากผล Use Business Plan ห้ามแต่งเอง
-- **A-C · token + ของจริง:** สร้าง/อัปเดต token 3 ชั้น + component ตามเช็กลิสต์ 77 หัวข้อ (H8+A17+B13+C9+D9+E7+F6+G8)
+- **F · คน/แบรนด์ (ก่อน token เสมอ):** กรอกลูกโซ่ แบรนด์(archetype 12)→เป้าหมาย→Persona(+floor)→**แรงจูงใจ**→อารมณ์ 6 แกน(รวม Luxe)→ฟังก์ชัน · ตาม `spec/02-emotion-matrix.md` · ปิดท้ายชั้น F ด้วย F7 Mood & Tone (คำ mood 5-8 คำ + ตาราง do/don't ต่อ touchpoint)
+- **G · ธุรกิจ/conversion:** G1/G4/G6/G8 = Core ทุกโปรเจกต์ · G2/G3/G5/G7 = Pack SaaS เมื่อเป็นงานขาย/สมัครสมาชิก ตาม `spec/04-business-conversion.md` · ข้อความดึงจากผล Use Business Plan ห้ามแต่งเอง
+- **A-C · token + ของจริง:** สร้าง/อัปเดต token 3 ชั้น + component ตามเช็กลิสต์ 77 หัวข้อ (รุ่นปัจจุบัน v3.1 = 109 หัวข้อ) (H8+A17+B13+C9+D9+E7+F6+G8)
 - **E · ชั้นหรูตาม preset:** ถาม 1 คำถาม "งานนี้ระดับไหน: เรียบราชการ / องค์กรทั่วไป / พรีเมียม" → ตั้ง preset off/standard/premium (`spec/03-expressive-layer.md`) · Luxe ≥4 = เปิด glow/gradient/display/glass
 - **D · กำกับดูแล:** ผูก ds-check เข้า CI (เตือนก่อน→เข้ม) + บันทึก `.project/DesignSystem.md`
 
@@ -70,7 +70,7 @@ standard_ref: design-system-standard-v2/
 - **สมองวางแผน:** Opus 4.8 (ค่าเริ่มต้นของ relay) — อ่านชุดมาตรฐาน + กรอกลูกโซ่ H/F/G + เขียน brief · ไม่ใช้ Fable/Faber/Fiber 5 ในเส้นทางปัจจุบัน
 - **คนเขียนโค้ด:** Codex หรือ Grok ผ่าน `relay-call --tool <coder> --task-id <งาน> --prompt-file <brief>` · brief ต้องแนบกติกาเหล็ก: ทุกข้อความ 2 ภาษา (data-th/data-en) · สีข้อความเฉพาะชุดที่ผ่าน AA · น้ำหนักฟอนต์ 300/400/500/600/700 · ทุกหัวข้อต้องมองเห็นบนหน้าโชว์
 - **คนตรวจ:** AI อีกตัวที่ไม่ใช่คนเขียน (เขียน Codex → ตรวจ Grok และกลับกัน)
-- **ด่านตัดสิน (บังคับผ่านก่อนปิดงาน · ใครทำก็ด่านเดียวกัน):** `ds-check.py` คะแนนใช้ token ≥95% + 0 จุดร้ายแรง · `contrast-check.mjs` exit 0 ทุกคู่ · `node build-tokens.mjs` exit 0 · เกรดดีไซน์ 10 มิติ ไม่มี D/F รวม ≥B · เช็กลิสต์ 77 ข้อ 🔴 ครบ 100%
+- **ด่านตัดสิน (บังคับผ่านก่อนปิดงาน · ใครทำก็ด่านเดียวกัน):** `ds-check.py` คะแนนใช้ token ≥95% + 0 จุดร้ายแรง · `contrast-check.mjs` exit 0 ทุกคู่ · `node build-tokens.mjs` exit 0 · เกรดดีไซน์ 10 มิติ ไม่มี D/F รวม ≥B · เช็กลิสต์ 77 ข้อ (รุ่นปัจจุบัน v3.1 = 109 หัวข้อ) 🔴 ครบ 100%
 - ผลลัพธ์: output คุณภาพเดียวกันไม่ว่าใครเขียน เพราะงานที่ไม่ผ่านด่าน = ไม่ปิด วนแก้จนผ่าน
 
 ### ก้าว 0 · อ่านโปรเจกต์ให้เข้าใจก่อน (บังคับ · ห้ามข้าม)
@@ -83,7 +83,7 @@ standard_ref: design-system-standard-v2/
 ### วง PDCA (วัดว่า AI ทำได้ดีแค่ไหน · ออกเป็นตัวเลขทุกรอบ)
 | ขั้น | ทำอะไร | ตัวเลขที่วัด |
 |---|---|---|
-| P วางแผน | อ่านโปรเจกต์ + กรอกตารางอารมณ์ + เทียบเช็กลิสต์ 77 หัวข้อ | เช็กลิสต์ผ่าน % |
+| P วางแผน | อ่านโปรเจกต์ + กรอกตารางอารมณ์ + เทียบเช็กลิสต์ 77 หัวข้อ (รุ่นปัจจุบัน v3.1 = 109 หัวข้อ) | เช็กลิสต์ผ่าน % |
 | D ลงมือ | สร้าง/อัปเดต token เข้าหน้าจริง (คง alias เดิม) | จำนวนหน้าที่ต่อ token |
 | C ตรวจ | รัน `tools/ds-check.py` + ตรวจ contrast + เทียบภาพก่อน/หลัง | **คะแนนใช้ token %** · จุด hardcode เหลือ · contrast ผ่านกี่คู่ |
 | A ปรับ | แก้จุดที่ยังฝังตายตัว แล้ววนซ้ำ C | วนจน token ≥ 95% + 0 จุดร้ายแรง |
@@ -138,7 +138,7 @@ system ที่ตรงกับ "มาตรฐานกลางของ�
 
 [ขั้น 0 — อ่านความจำ + มาตรฐานก่อนวางแผน · บังคับ]
 - อ่าน `.project/OverviewProgress.md` + `.project/plan.md` + `.project/decisions.md` (Memory Schema v1.2 · ไฟล์เก่า handoff/.hermes = fallback อ่านได้ ย้ายตาม §1b) · ห้ามรื้อ decision เดิมโดยไม่บอก
-- อ่านมาตรฐานกลาง design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12) (ที่ราก repo ถ้ามี ไม่งั้นใช้ฉบับใน 60-Design/design-systems/)
+- อ่านมาตรฐานกลาง design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 109 หัวข้อ (Core 89 + Packs 20)) (ที่ราก repo ถ้ามี ไม่งั้นใช้ฉบับใน 60-Design/design-systems/)
 - หาความจำไม่เจอ = บอกว่าไม่พบ ไม่เดาว่าเคยทำอะไร
 
 [กฎเหล็ก — อ่านก่อนทำทุกครั้ง]
@@ -162,17 +162,19 @@ system ที่ตรงกับ "มาตรฐานกลางของ�
 
 # PHASE 1 — ค้นหา (Discovery)
 สแกนทั้งโปรเจกต์ว่ามี design system เดิมไหม ค้นด้วย pattern:
-  มาตรฐาน: design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12), DESIGN_SYSTEM*.md, CLAUDE.md, AGENTS.md, .cursor/rules/*
+  มาตรฐาน: design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 109 หัวข้อ (Core 89 + Packs 20)), DESIGN_SYSTEM*.md, CLAUDE.md, AGENTS.md, .cursor/rules/*
   Token/Theme: **/*token*.{css,json,js,ts}, **/ds-tokens.*, **/ci.*, **/dna.*, **/theme*.{css,ts,js,json},
                **/tokens/**, **/globals.css, tailwind.config.*, postcss.config.*, :root{ --... }
   หน้า DS: **/design-system*, **/style-guide*, .storybook/**, **/*.stories.*
   Component: **/components/**, **/ui/**, **/lib/components/**
   Multi-tenant: **/*tenant*, **/themes/**, **/brand*, TenantSwitcher*, ThemeProvider*
 ระบุ tech stack (framework, วิธีเขียน CSS, มี Tailwind/Storybook ไหม) + จัดของที่เจอเข้าหมวดมาตรฐาน
+ยังไม่มี `.project/DesignSystem.md` → รัน `ds-gate.py --init` แล้วเริ่มกรอกชั้น H ระหว่างค้นหา
 
 # PHASE 2 — ประเมินช่องว่าง (Gap Audit)
 รายงานเทียบของที่เจอกับมาตรฐาน แต่ละหมวดให้สถานะ: ✅ ตรงมาตรฐาน · ⚠️ มีแต่ไม่ครบ · ❌ ยังไม่มี
 บอกด้วยว่าของเดิมส่วนไหน "ดี ควรเก็บ" และส่วนไหน "ควรปรับ"
+กรอกชั้น U + F ลง DesignSystem.md ให้จบในเฟสนี้ — เกตที่ PHASE 3 จะได้ผ่านทันที ไม่ใช่มากรอกหน้าด่าน
 
 # PHASE 3 — ด่านสี (Color Gate · ขั้นใหม่ · หัวใจของเจ้าของงาน)
 - ด่านก่อนเข้า: `python3 design-system-standard-v2/tools/ds-gate.py --layer all` ต้อง exit 0 (ชั้น H/U/F ครบจริง) · ไม่ผ่าน = กลับไปกรอกก่อน ห้ามเดินต่อ
@@ -186,7 +188,7 @@ system ที่ตรงกับ "มาตรฐานกลางของ�
 - ถ้า Phase 1 ไม่เจอ design system เลย → GREENFIELD: scaffold ใหม่ทั้งชุด (token 3 ชั้น → component → showcase)
 - ถ้าเจอของเดิม → MIGRATION: ปรับของเดิมเข้ามาตรฐาน เก็บส่วนดี เปลี่ยนเฉพาะที่ไม่ตรง คงความเข้ากันได้เดิม
 - ก่อนลงมือจริง: ยืนยันโหมด in-place/showcase (กฎเหล็กข้อ 6) แล้วเสนอแผน (ลำดับงาน + ไฟล์ที่จะแตะ + ความเสี่ยง) "หยุดรอยืนยัน"
-ยึดมาตรฐานเหล่านี้ (รายละเอียดเต็มใน design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12)):
+ยึดมาตรฐานเหล่านี้ (รายละเอียดเต็มใน design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 109 หัวข้อ (Core 89 + Packs 20))):
   - Token 3 ชั้น: primitive → semantic/alias → component · แยก 2 เลเยอร์ ci (แบรนด์/ลูกค้า) + dna (ระบบ/semantic)
        ห้ามใช้ primitive ตรง ๆ ใน component
   - รูปแบบไฟล์ token: W3C DTCG (2025.10) ใช้ $value/$type/$description แล้ว map เป็น CSS custom properties
@@ -197,7 +199,7 @@ system ที่ตรงกับ "มาตรฐานกลางของ�
   - **ชุดชิ้นส่วน + ความหนาแน่น = ตามโหมดที่เลือก (ใช้รากฐานสี/โทเคนชุดเดียวกัน แต่สร้างคนละชุด component):**
       - โหมดหน้าเว็บ (front) → hero, CTA, การ์ดเนื้อหา, บทความ, หน้าราคา, footer · ความหนาแน่นโปร่ง · effects/expressive ใช้เต็มที่
       - โหมดหลังบ้าน (app) → ตารางข้อมูล (เรียง/กรอง/เลือกหลายแถว/sticky header/virtualization), ฟอร์ม+validation, แดชบอร์ด,
-        ตัวกรอง, เมนูข้าง, สถานะ 5 แบบ (ว่าง/โหลด/ผิดพลาด/บางส่วน/สมบูรณ์), UI ที่รู้สิทธิ์ผู้ใช้ · ความหนาแน่นสูง (compact) · effects คุมให้แน่น
+        ตัวกรอง, เมนูข้าง, สถานะ 5 แบบ (ว่าง/โหลด/ผิดพลาด/บางส่วน/สมบูรณ์), UI ที่รู้สิทธิ์ผู้ใช้ · ความหนาแน่นสูง (compact) · effects คุมให้แน่น · โหลด Pack Admin-Pro (AP1-AP8: วันที่-เวลา/ช่องเลือกค้นหา/อัปโหลด/แท็บ-stepper/skeleton/แม่แบบหน้า 4 แบบ/หน้า error+session/กันแก้ชน) + หัวข้อแอดมินใหม่ B18 ตัวกรอง-สั่งงานหลายรายการ-มุมมองบันทึก · B19 Command palette · B20 แผงเลื่อนข้าง · C17 ศูนย์แจ้งเตือน+audit log
   - Versioning: semver + changelog · ของเลิกใช้ = mark deprecated ไม่ลบทันที
 
 # PHASE 5 — สรุปผล
@@ -222,7 +224,7 @@ checklist หมวดที่ยังขาด · แต่ละ claim ผ�
 
 - **รอบแรกของแต่ละโปรเจกต์**: ให้ AI รันถึงแค่ Phase 2 (รายงานช่องว่าง) ก่อน เจ้าของอ่าน/อนุมัติแผน ค่อยปล่อย Phase 4 — กัน AI รื้อมั่ว
 - **เว็บลูกค้าจริง (production เช่น MOL/DRA)**: เน้น MIGRATION + เข้ากันได้กับของเดิม อย่าให้ GREENFIELD ทับของเดิม
-- **อยากให้ทุกโปรเจกต์เหมือนกัน**: วาง design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12) + คำสั่งนี้ ลงทุก repo หรือทำเป็น shared template repo
+- **อยากให้ทุกโปรเจกต์เหมือนกัน**: วาง design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 109 หัวข้อ (Core 89 + Packs 20)) + คำสั่งนี้ ลงทุก repo หรือทำเป็น shared template repo
 
 ## v2.4 (2026-07-07) · บทเรียนจากสนามจริง (OneManFleet 3 วัน) — บังคับ
 
@@ -237,10 +239,10 @@ checklist หมวดที่ยังขาด · แต่ละ claim ผ�
 
 ## Changelog
 
-- v3.0 (2026-07-15): sync กับเช็กลิสต์ v3.1 (97 หัวข้อ) — เพิ่มชั้น U · กฎ SERIOUS S1 + ด่าน D12 · ด่านเครื่อง ds-gate.py (H/U/F ต้องผ่านก่อน PHASE 3) · ด่านวินัยงาน D14-D17 จากบทเรียน Root Admin · แก้ version drift (ทะเบียนบอก v2.5 แต่ไฟล์จริง v2.4 ไม่มีของใหม่เลย = รากที่ทำให้โปรเจกต์จริงข้าม flow)
+- v3.0 (2026-07-15): sync กับเช็กลิสต์ v3.1 (109 หัวข้อ (Core 89 + Packs 20)) — เพิ่มชั้น U · กฎ SERIOUS S1 + ด่าน D12 · ด่านเครื่อง ds-gate.py (H/U/F ต้องผ่านก่อน PHASE 3) · ด่านวินัยงาน D14-D17 จากบทเรียน Root Admin · แก้ version drift (ทะเบียนบอก v2.5 แต่ไฟล์จริง v2.4 ไม่มีของใหม่เลย = รากที่ทำให้โปรเจกต์จริงข้าม flow)
 - docs (2026-07-04): เพิ่มตารางป้ายบอกทางกลุ่มงานดีไซน์
 - v1.1 (2026-06-26): เพิ่ม "ขั้นเลือกโหมด" เป็นข้อแรกสุด — เจ้าของเลือกได้ว่าจะทำ Design System สำหรับ "หน้าเว็บ (Front)" หรือ "ระบบหลังบ้าน (Application)" · โหมดที่เลือกกำหนดชุดชิ้นส่วน/รูปแบบ/ความหนาแน่น/ตัวอย่างดีไซน์ที่หยิบมาอ้าง (PHASE 0 + PHASE 4 แตกตามโหมด) · ใช้รากฐานสี/โทเคน/มาตรฐาน/กฎกันพังร่วมกัน · ย้ำว่าเป็นคำสั่งกลางใช้ทุกโปรเจกต์ 30+ ตัว ไม่ผูกโปรเจกต์เดียว
-- v1.0 (2026-06-26): สร้างครั้งแรก · เย็บ 3 ส่วนเข้าด้วยกัน — Phase 0 (อ่านแผนธุรกิจ → เสนอแนวจากคลังดีไซน์ระดับโลก, ต่อยอดจากสกิล design-selector), Phase 1–2 + 4–5 (prompt มาตรฐาน 5 เฟสของเจ้าของงาน), Phase 3 ด่านสีใหม่ (ถาม 4 สีแบรนด์ → ต่อยอดชุดสีครบ + เช็ก WCAG) · ฝังกฎ migration INC-9085 · ยึดมาตรฐานกลาง design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 97 หัวข้อ Core 85 + Packs 12)
+- v1.0 (2026-06-26): สร้างครั้งแรก · เย็บ 3 ส่วนเข้าด้วยกัน — Phase 0 (อ่านแผนธุรกิจ → เสนอแนวจากคลังดีไซน์ระดับโลก, ต่อยอดจากสกิล design-selector), Phase 1–2 + 4–5 (prompt มาตรฐาน 5 เฟสของเจ้าของงาน), Phase 3 ด่านสีใหม่ (ถาม 4 สีแบรนด์ → ต่อยอดชุดสีครบ + เช็ก WCAG) · ฝังกฎ migration INC-9085 · ยึดมาตรฐานกลาง design-system-standard.md (รุ่นปัจจุบัน: `design-system-standard-v2/` · เช็กลิสต์ v3.1 = 109 หัวข้อ (Core 89 + Packs 20))
 
 ## Graph Links
 
