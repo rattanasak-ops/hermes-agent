@@ -44,6 +44,25 @@ DEFAULT_ADAPTERS = {
     # สมองหลัก (brain) · คิด/วิเคราะห์/วางแผน/ตรวจ/ตัดสิน · Opus 4.8 ตัวเดียว (Fable ถอดออกแล้ว)
     "opus":   {"cmd": ["relay-portal","claude","--model","claude-opus-4-8","--prompt","{prompt}"], "run_in_cwd": True, "brain": True},
 }
+
+# ---- ด่านเครื่องที่ได้รับอนุญาต (host guard) · เพิ่ม 2026-07-16 ----
+# เครื่องมือในกลุ่มนี้ "ล็อกต่อเครื่อง": ใช้ได้เฉพาะเครื่องที่เจ้าของวางไฟล์อนุญาตไว้เอง
+# ที่มา: เจ้าของสั่งใส่ fable กลับมาใช้เฉพาะโน้ตบุ๊กเจ้าของ · พนักงาน/VPS ต้องเรียกไม่ได้
+# วิธีทำงาน: ไฟล์อนุญาต ~/.hermes/.<tool>-allowed ไม่อยู่ใน git และตัวติดตั้ง (relay-setup.sh)
+# ไม่คัดไปด้วย → เครื่องอื่นที่ติดตั้งเครื่องมือชุดนี้จะไม่มีไฟล์ จึงถูกบล็อกที่ชั้นโค้ดนี้เสมอ
+# แม้ adapters.yaml ที่มี fable จะหลุดข้ามเครื่องไปก็ตาม
+RESTRICTED_TOOLS = {"fable"}
+
+def restricted_tool_block_reason(tool: str, home: Path = None) -> str:
+    """คืนข้อความเหตุผลบล็อกเมื่อ tool ถูกล็อกต่อเครื่องและเครื่องนี้ไม่มีไฟล์อนุญาต · คืน None = ผ่าน"""
+    if tool not in RESTRICTED_TOOLS:
+        return None
+    base = home if home is not None else Path.home()
+    marker = base / ".hermes" / f".{tool}-allowed"
+    if marker.is_file():
+        return None
+    return (f"{tool} เป็นเครื่องมือเฉพาะเครื่องที่ได้รับอนุญาต · ไม่พบไฟล์อนุญาต {marker} · "
+            f"เครื่องนี้เรียกใช้ไม่ได้ (เจ้าของวางไฟล์นี้เองเฉพาะเครื่องที่อนุญาต)")
 DEFAULT_ACCOUNTS = {
     "fallback": {"code_writing": ["grok","codex","gemini","ollama"],
                  # สายสมอง: สมองหลัก = opus 4.8 (ถ้ามีสมองสำรองในอนาคต เติมต่อท้ายได้)
@@ -739,6 +758,13 @@ def main():
     def emit(payload: dict, code: int):
         print(json.dumps(with_plan_check(payload), ensure_ascii=False))
         sys.exit(code)
+
+    # ด่านเครื่องที่ได้รับอนุญาต — เช็คก่อนโหลด/นับอะไรทั้งสิ้น เครื่องไม่มีไฟล์อนุญาต = จบทันที
+    blocked_reason = restricted_tool_block_reason(a.tool)
+    if blocked_reason:
+        emit({"status": "not_allowed", "tool": a.tool,
+              "reason_human": blocked_reason, "ledger_written": False}, 10)
+
     load_relay_env(cwd)
     prompt = Path(a.prompt_file).read_text(encoding="utf-8") if Path(a.prompt_file).exists() else a.prompt_file
     adapters = {**DEFAULT_ADAPTERS, **(load_yaml(cfg_dir(cwd)/"adapters.yaml").get("tools") or {})}
