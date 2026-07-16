@@ -167,6 +167,40 @@ def test_relay_call_underscore_variant_detected(monkeypatch, tmp_path):
     assert code == 2
 
 
+def test_negation_not_counted_as_approval(monkeypatch, tmp_path, capsys):
+    """GPT-5: 'ไม่อนุมัติ M3.5' ต้องไม่ถูกนับว่าอนุมัติ."""
+    reg = _registry(tmp_path, [tmp_path])
+    tr = _transcript(tmp_path, [(True, "OK M0"), (True, "ผ่าน M2"), (True, "ไม่อนุมัติ M3.5")])
+    code = _run(monkeypatch, "codex exec build", tmp_path, tr, reg)
+    assert code == 2
+    assert "M3.5" in capsys.readouterr().err
+
+
+def test_question_not_counted_as_approval(monkeypatch, tmp_path):
+    """GPT-5: 'M3.5 ผ่านไหม' เป็นคำถาม ไม่ใช่การยืนยัน."""
+    reg = _registry(tmp_path, [tmp_path])
+    tr = _transcript(tmp_path, [(True, "OK M0"), (True, "ผ่าน M2"), (True, "M3.5 ผ่านไหม")])
+    code = _run(monkeypatch, "codex exec build", tmp_path, tr, reg)
+    assert code == 2
+
+
+def test_relay_review_role_not_blocked(monkeypatch, tmp_path):
+    """GPT-5: relay-call --role review = อ่านอย่างเดียว ไม่ควรบล็อก."""
+    reg = _registry(tmp_path, [tmp_path])
+    tr = _transcript(tmp_path, [(True, "no approvals")])
+    code = _run(monkeypatch, "relay-call --role review --task-id X", tmp_path, tr, reg)
+    assert code == 0
+
+
+def test_fallback_marker_when_registry_absent(monkeypatch, tmp_path):
+    """GPT-5: ทะเบียนไม่ตั้ง แต่ cwd มี .work/profile.yaml = พื้นที่ MW → ยังคุม."""
+    (tmp_path / ".work").mkdir()
+    (tmp_path / ".work" / "profile.yaml").write_text("site: x\n", encoding="utf-8")
+    tr = _transcript(tmp_path, [(True, "no approvals")])
+    code = _run(monkeypatch, "codex exec build", tmp_path, tr, registry=None)
+    assert code == 2
+
+
 def test_owner_approved_stations_reads_only_human():
     """หน่วยย่อย: กรอง human จริง."""
     import tempfile

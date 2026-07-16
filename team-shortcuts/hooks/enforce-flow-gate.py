@@ -44,6 +44,11 @@ _STATION_APPROVE_RE = re.compile(
     re.IGNORECASE,
 )
 _MAX_APPROVAL_LEN = 200  # การยืนยันราย station สั้น · ข้อความยาวกว่านี้ = paste ไม่นับ
+# ปฏิเสธ/คำถาม = ไม่ใช่การยืนยัน (GPT-5 review 2026-07-15: "ไม่อนุมัติ M2", "M3.5 ผ่านไหม")
+_NEGATION_RE = re.compile(r"(?i)(?:ไม่|อย่า|ยัง|ห้าม|เปล่า|\bnot\b|n't)")
+_QUESTION_RE = re.compile(r"(?i)[?？]|ไหม|มั้ย|รึ|หรือเปล่า|หรือยัง")
+# relay-call --role review = งานอ่านอย่างเดียว ไม่ใช่การสั่งสร้าง (ไม่บล็อก)
+_REVIEW_ROLE_RE = re.compile(r"--role[=\s]+review\b", re.IGNORECASE)
 
 
 def _absolute(path: Path, cwd: Path) -> Path:
@@ -156,7 +161,8 @@ def _cwd_in_mw_registry(cwd: Path) -> bool:
     for root in _mw_registry_roots():
         if resolved == root or resolved.startswith(root + os.sep):
             return True
-    return False
+    # fallback (GPT-5 review): ทะเบียนหาย/ไม่ตั้ง แต่ cwd มี .work/profile.yaml = พื้นที่ MW
+    return find_project_root(cwd) is not None
 
 
 def _normalize_station(token: str) -> Optional[str]:
@@ -201,6 +207,9 @@ def owner_approved_stations(transcript_path: str) -> set:
             # การยืนยันราย station เป็นข้อความสั้น เจตนาชัด · paste ยาว = ไม่นับ
             if len(content) > _MAX_APPROVAL_LEN:
                 continue
+            # ปฏิเสธหรือคำถาม = ไม่ใช่การยืนยัน (กัน "ไม่อนุมัติ M2", "M3.5 ผ่านไหม")
+            if _NEGATION_RE.search(content) or _QUESTION_RE.search(content):
+                continue
             for match in _STATION_APPROVE_RE.finditer(content):
                 token = match.group(1) or match.group(2)
                 station = _normalize_station(token) if token else None
@@ -217,8 +226,14 @@ def _guard_delegation(
         return None
     if not AI_DELEGATE_RE.search(command):
         return None
+    # relay-call --role review = อ่านอย่างเดียว ไม่ใช่การสั่งสร้างหน้า
+    if _REVIEW_ROLE_RE.search(command):
+        return None
     if not _cwd_in_mw_registry(cwd):
         return None
+    # ข้อจำกัดที่รู้ (v2 · GPT-5 review 2026-07-15): (1) approval สะสมทั้งแชท ยังไม่ผูกเมนู/รอบ
+    # (2) หลบได้ด้วย codex --cwd <MW> จากนอกพื้นที่ หรือ python/git apply เขียนตรง (guard-write คุมส่วนเขียนไฟล์)
+    # ชั้นนี้ = ปิดช่องหลักที่เกิดจริง (โยนงานให้ codex/relay) · v2 จะผูก session+menu+ปิดช่องอ้อม
     if not transcript_path:
         return (
             "โปรเจกต์ Migrate Web: สั่ง AI สร้างหน้าไม่ได้ — อ่านบันทึกแชทไม่ได้ "
