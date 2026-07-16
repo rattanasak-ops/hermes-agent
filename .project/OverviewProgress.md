@@ -2,9 +2,18 @@
 > อ่านตามลำดับ: plan-wtl.md (plan_id: WTL — active · Worktree Lifecycle) → plan.md (plan_id: QAQC/MW) → plan-grd.md (แผน GRD จบแล้ว + คิว GRD-P5..P9) → decisions.md → hermes-standard/REQUIREMENTS.md (บัญชีความต้องการ 66 ข้อ)
 
 # Overview & Progress — Hermes Agent
-อัปเดตล่าสุด: 2026-07-15 (MW-P4 จบจริง + MW-P6 Flow Enforcement · เจ้าของทดสอบรับงาน 5/5 · ประกาศทีมแล้ว) · branch งานถัดไป: แตกใหม่จาก `main` · ป้าย: [fact] เว้นแต่ระบุ
+อัปเดตล่าสุด: 2026-07-16 (ชุด `Use Migrate 0-13` v1.0 active ทุกเครื่อง + กติกาโควตาเมนู + VPS ซิงก์แล้ว) · branch งานถัดไป: แตกใหม่จาก `main` ผ่าน `hermes-new-chat open` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
+- **2026-07-16 (แชท Fable · PR #49+#50 merged): ชุด `Use Migrate 0-13` — แตก flow 13 สถานีเป็นทางลัดรายเฟส เปิดใช้จริงครบทุกเครื่อง** [fact]
+  - **ทำไม**: วิเคราะห์ root cause 2 รอบว่าทำไม AI ไม่ทำตาม `Use Migrate Web` — R1-R6 จากไฟล์ prompt จริง (เห็นคำสั่งทุกขั้นพร้อมกัน/กฎชนกันเอง/จุดหยุดเป็นร้อยแก้ว/โหลดเกิน) + R7-R11 จากตารางผลงานจริง (FW-P0 ถูกข้ามทั้งด่าน · % ไหลลง M1 90%→M5 5% hardcode · เอารีวิว AI แทนการรันด่าน)
+  - **ของใหม่ในคลัง (GitLab `ef5b27d`)**: สัญญากลาง `use-migrate-phase-contract` v1.1 (โครง 5 ส่วน: ด่านเข้าตรวจไฟล์จริง/ประกาศสถานี/เนื้อเฉพาะเฟส/ถาม-ตอบบังคับ/ตารางจบเฟส 3 ชั้น + กฎเหล็ก R+G5 + `BLOCKED_TOOLING` เฟสด่านเครื่อง 9/10/11/13 + ไฟล์อนุมัติ `approvals.md` + **โควตาเมนู: ค่าเริ่มต้น 1 คน 1 เมนู · เกินได้เมื่อ owner อนุมัติ `quota:` ใน menu-queue · เฟสโค้ด 8-9 ทีละเมนูต่อพื้นที่เสมอ**) + ไฟล์เฟส 14 ตัว v1.0 + `use-migrate-web` v1.4 (ตัวนำทาง) + ทะเบียนอัปตรงกัน
+  - **คุณภาพ**: ผู้ตรวจต่างค่าย Grok อ่านครบ 16 ไฟล์ พบ BLOCKING 6 → แก้ครบ 6/6 (Codex ค้าง MCP 2 รอบ สลับค่ายตามกติกา) · ทดสอบเจาะพฤติกรรม: AI สดเจอ `Use Migrate 5` ข้ามลำดับ → `MIGRATE_BLOCKED` ปฏิเสธถูกต้อง 2/2 · เครื่องตรวจโครง 5 ส่วน × 14 ไฟล์ = 70/70
+  - **กระจายครบ**: Mac เจ้าของ (mw tools 7/7 + รอดหลังลบต้นทาง 7/7 + hook doctor 4/4) · **VPS ซิงก์แล้ว 17/17 ไฟล์** (rsync เฉพาะ `ai-context/`+`skills/prompt-shortcuts/` — พบว่ากระจกคลัง VPS เป็น**พื้นที่ทีมใช้ร่วม** มีไฟล์พนักงาน ห้ามยกทั้งโฟลเดอร์) · ทีม notebook: PR #50 merged → รัน installer 1 บรรทัดได้ของครบ
+  - **กู้ภัย VPS**: กระจกคลัง VPS เป็นสมุด git คนละเล่ม (ตั้งต้นแยก 4 commit) มีงานค้างไม่เคยขึ้นระบบ — "rename `Use Save Git`→`Use Request Merge`" (เซสชัน AI 28 มิ.ย. เจ้าของไม่รู้จัก) → กู้ทั้งเล่ม+สแนปช็อตไฟล์ค้างขึ้น GitLab กิ่ง `vps-rescue-2026-07-16` (ถึง `6500484`) · **คำแนะนำที่เจ้าของรับ: ไม่รวมเข้า main** (ของรุ่นเก่า ระบบวิ่งเลยแล้ว)
+  - **RSF เตรียมพร้อม**: ชุดพร้อมเคาะ `Use Migrate 0` ถอดจาก TOR จริง (MIGRATE · FORM เปิด/BILINGUAL ปิด · งวด 30%/70% ใน 30/90 วัน · ค่าปรับ 0.1%/วัน · WCAG 2.1 AA · gap มาตรฐานเคาะแล้ว DEC-155) — เจ้าของเหลือเคาะ 2 ข้อ: แทร็ก DATA/MINISITE + รายชื่อทีม + สั่ง `quota: nat=3` (จะทำ 3 เมนูขนาน 3 แชท)
+  - **มาตรฐานเก็บไฟล์อัปโหลด (คำปรึกษา — เจ้าของรับแล้ว)**: โค้ดกลาง config-only ห้ามแก้รายไซต์ · ก้อนไฟล์ = `uploads/{siteId}/{หมวด}/` นอก git · mini-site = siteId ตัวเอง · โค้ดกลางแก้ที่ Root Admin (เจ้าของเปิดแชทแยก — ใบสั่งงานอยู่ใน session log) · RSF/DRA/CT ตามเก็บไฟล์เก่าตอนทำ
+  - เหตุแทรกที่แก้แล้ว: เก็บ 2 ไฟล์ dirty ค้างจากรอบปิด 15 ก.ค. (hook doctor ด่าน 4 + write permit ssh) → PR #49 merged · กิ่งเก่า `close/mem-vps-verified` ซ้ำ main แล้ว ลบได้
 - **2026-07-15 (แชท Fable · branch `task/nat/DSU-P1-I1-ds-standard-hardening`): แผน DSU — ยกมาตรฐาน Design System หลังพบใช้จริงได้ ~15-20% · P0-P2 จบ · P3 ปิดงานกำลังเดิน** [fact]
   - ราก 3 ข้อที่พิสูจน์แล้ว: (1) **version drift** — ทะเบียนบอก v2.5 แต่ไฟล์ prompt จริง 2 สำเนา = v2.4 (grep "ชั้น U/S1/92" = 0) ทุกโปรเจกต์เลยรัน flow เก่าข้ามชั้นแบรนด์ (2) ชั้น H/U/F เป็นตัวหนังสือ ไม่มีเครื่องบังคับ (3) ฝั่งแอดมินครอบคลุม ~15-25% เทียบ global
   - แก้ครบ: prompt → **v3.0** (2 สำเนา + คลัง commit `a8b8ff6`) · เช็กลิสต์ → **v3.1 = 109 หัวข้อ** (F7 Mood&Tone + D14-D17 ด่านวินัยงาน + B18-B20/C17 + ขยาย B2/B4/A18 + **Pack Admin-Pro 8 ข้อ** เทียบ Carbon/Polaris/Ant/Cloudscape/Atlassian ทุกข้อมีที่มา+วิธีตรวจ) · เครื่องตรวจใหม่ **`ds-gate.py`** (H/U/F ต้องผ่านก่อนด่านสี · fail-closed · pytest 5/5) · ทะเบียน registry อัปแล้ว (คลัง commit `faa8545`)
@@ -57,7 +66,8 @@
 - สาย JARVIS v2: รอเจ้าของทดสอบเสียง P0 แล้วเปิดแชตใหม่ส่ง Use AI Relay [fact]
 
 ## งานถัดไป
-1. **เริ่มใช้จริงกับทีม**: ทีมติดตั้งตามประกาศ → เมนูแรกจริงบน RSF ต้องเริ่มที่ **FW-P0** (สร้าง `.work/profile.yaml` — เจ้าของล็อกค่า) เพราะยังไม่มี = flow-gate ยังไม่คุมโปรเจกต์นั้น
+1. **เริ่มใช้จริง RSF**: เจ้าของเปิดแชทที่ NewWebEngine2026 → `Use Migrate 0` (ชุดพร้อมเคาะอยู่ session log 2026-07-16) → เคาะ 2 ข้อ + `quota: nat=3` → 3 แชทจองคนละเมนู · เฟสโค้ด 8-9 ทีละเมนูเสมอ
+1b. ประกาศทีม: รัน `curl .../install-from-github.sh | bash` ซ้ำเพื่อรับ `Use Migrate 0-13` (PR #50 merged แล้ว) + กุญแจ relay รายคน
 2. **merge งานเซสชันอื่นที่เก็บกันหายไว้**: `feature/spec-central` (curse tracker + กฎ shortcut + spec ทดลอง) + `control_webengine_flow` (badword WIP + snapshot content) — รวม PR ให้เจ้าของกด
 3. MW-P4 โซนแดงส่วนหลังบ้าน admin (ดูผ่านจอ admin จริง = M5 ของเมนูแรก) ทำตอนเดินเมนูจริง
 4. (คิวเดิม) GRD-P5..P8 + QAQC-P5 รอเจ้าของสั่ง
@@ -69,8 +79,11 @@
 - ห้ามแตะ `.claude/launch.json` (งานเจ้าของค้าง) · [ปลดล็อก 2026-07-11: `design-system-standard-v2/` เจ้าของสั่งแก้จน DS พร้อมใช้จริง merged main แล้ว · `scripts/jarvis-voice/` ย้ายไป SaaS repo แล้ว = เศษ]
 - ห้าม merge→main / deploy เอง — เจ้าของกด · งานหลายเฟส = 1 PR เดียว
 - สมองแผน GRD = Fable ตามคำสั่งเจ้าของ 2026-07-07 (ข้อยกเว้นจากกติกา relay v2.7 ที่ปกติใช้ Opus) · Codex/Claude เขียน-ตรวจสลับค่ายผ่าน relay-call · **verified = มีแถว gate-run เท่านั้น**
+- **กระจกคลัง Obsidian บน VPS = พื้นที่ทีมใช้ร่วม (มีไฟล์พนักงานจริง เช่น session log ของ peter)** — ห้าม mv/rsync ทั้งโฟลเดอร์เด็ดขาด · ซิงก์ได้เฉพาะโฟลเดอร์กลาง `ai-context/` + `skills/prompt-shortcuts/` จากเครื่องเจ้าของ · เจองานแปลกบนนั้น = กู้ขึ้นกิ่ง rescue ใน GitLab ก่อนเสมอ (2026-07-16)
 
 ## งานค้าง/ส่งต่อ
+- **ใหม่ 2026-07-16**: (ก) เจ้าของ: เริ่ม RSF `Use Migrate 0` + แชท Root Admin เรื่องรวมทางอัปโหลด (ใบสั่งงานใน session log) · (ข) ตัดสินใจค้าง: บรรจุข้อตรวจ "ที่เก็บอัปโหลด {siteId}/{หมวด} ทางเดียว" เข้า `Use Migrate 0` (เสนอแล้ว รอเคาะ) · (ค) กิ่ง `vps-rescue-2026-07-16` ใน GitLab คลัง = เก็บงาน rename `Use Request Merge` + สแนปช็อต VPS (แนะนำไม่รวม main · ลบได้เมื่อเจ้าของยืนยันไม่ใช้) · (ง) **ช่องว่างเครื่องมือ WTL**: `hermes-new-chat` ไม่มีคำสั่ง close/cleanup + ธง `--allow-over-limit` ที่ข้อความ error แนะนำไม่มีจริงใน CLI → worktree merge แล้วปิด/เก็บกวาดตามสัญญาไม่ได้ (วันนี้มี 4 โฟลเดอร์ค้าง: DSU, mw-station-gate, NCR, MWTS — 2 ตัวหลัง merge แล้วรอ cleanup dry-run) · (จ) ลบกิ่ง `close/mem-vps-verified` (ซ้ำ main)
+- **แก้ความจำล้าสมัย 2026-07-16**: ~~"AI push คลัง Obsidian ไม่ได้ ด่านบล็อก"~~ — **push ได้จริงแล้ว** (พิสูจน์ 2 ครั้งวันนี้: `ef5b27d` + กิ่ง rescue ขึ้น GitLab สำเร็จ) · แถว "push คลัง" ในงานค้างเดิมข้างล่างถือว่าปิดแล้ว
 - **ใหม่ 2026-07-15: branch งานเซสชันอื่นยังไม่ merged** — `feature/spec-central` (commit `923dfa374` curse tracker + `77d47159f` กฎ shortcut + spec-central 2 commit) และ `control_webengine_flow` (`20b0c1a4c` badword WIP + snapshot content v22) · เก็บกันหายแล้ว test เขียว แต่ต้องรวม PR ให้เจ้าของกด · เจ้าของถัดไป: เซสชันที่ทำงานนั้นต่อ
 - ~~claimed: mw-setup.sh บน VPS ยังไม่รันยืนยัน~~ **verified 2026-07-15 เย็น: curl จาก main บน linux-nat → RESULT: PASS + เครื่องมือ 7/7 (PR #45+#46 · tier 3)** [fact]
 - claimed (ยังไม่ตรวจ): เครื่องพนักงานจริงแต่ละคน (พิสูจน์แล้วเครื่องเจ้าของ Mac + VPS linux-nat · ยังไม่ครบทุกโน้ตบุ๊กทีม) · แต่ละคนต้องใส่กุญแจ AI Relay ใน `~/.hermes/.env` เอง
