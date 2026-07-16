@@ -230,3 +230,8 @@ Reason: ตรงกติกา relay v2.16 (ผู้ตรวจเดิม+
 
 ## DEC-DSU-001 · มาตรฐาน DS กลาง v3.1 + ด่านเครื่อง ds-gate (2026-07-15 · เจ้าของอนุมัติ+merge #48)
 - DS ทุกโปรเจกต์ต้องผ่าน `Use Create Design System` v3.0 เท่านั้น · ชั้น H/U/F ต้องผ่าน `ds-gate.py --layer all` (exit 0) ก่อนด่านสี · เช็กลิสต์ v3.1 = 109 หัวข้อ (Pack Admin-Pro ใหม่ 8) · ห้ามแก้เลขรุ่นโดยไม่ sync 3 จุด (ทะเบียน/คลัง/payload) — รากเดิมคือ version drift
+
+## DEC-FBL-001 · Fable 5 กลับเข้า Use AI Relay เฉพาะโน้ตบุ๊กเจ้าของ (2026-07-16 · เจ้าของสั่ง+กด merge #54/#55)
+- **กลับคำสั่งเดิม 2026-07-06 (ที่ถอด Fable ทั้งระบบ) บางส่วน:** fable ใช้ได้อีกครั้ง **เฉพาะเครื่องที่เจ้าของวางไฟล์อนุญาต `~/.hermes/.fable-allowed`** — พนักงาน/VPS เรียกไม่ได้ · กัน 2 ชั้น: config เครื่อง (ไม่เข้า git) + host guard ในโค้ด (`RESTRICTED_TOOLS` ใน relay-call.py · PR #54)
+- **ข้อเท็จจริงที่ AI ห้ามจำสลับอีก:** เครื่องเจ้าของเรียก Claude ทุกตัวผ่าน **Claude Subscription** (`claude` CLI ตรง แบบ adapter sonnet) — **ไม่ใช่** AI Portal token (นั่นของเครื่องพนักงาน) · รอบนี้ AI ตั้ง fable เข้า portal ผิดจนวนหากุญแจที่ไม่เคยต้องมี เจ้าของต้องมาแก้เอง
+- **บทเรียนเทคนิค:** โปรแกรมลูกชื่อ `claude` ที่ถูกเรียกจากใน Claude Code จะเจอ env `CLAUDECODE` ของแม่แล้วปฏิเสธ (nested session) — relay-call ตัดให้แล้วใน run_once (PR #55) จุดเดียวกับที่ตัด `CLAUDE_CODE_OAUTH_TOKEN` · prefer_portal_adapters แปลงเฉพาะ opus/codex/grok (fable/sonnet ไม่โดนแปลง)

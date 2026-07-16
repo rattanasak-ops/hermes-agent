@@ -2,9 +2,16 @@
 > อ่านตามลำดับ: plan-wtl.md (plan_id: WTL — active · Worktree Lifecycle) → plan.md (plan_id: QAQC/MW) → plan-grd.md (แผน GRD จบแล้ว + คิว GRD-P5..P9) → decisions.md → hermes-standard/REQUIREMENTS.md (บัญชีความต้องการ 66 ข้อ)
 
 # Overview & Progress — Hermes Agent
-อัปเดตล่าสุด: 2026-07-15 (MW-P4 จบจริง + MW-P6 Flow Enforcement · เจ้าของทดสอบรับงาน 5/5 · ประกาศทีมแล้ว) · branch งานถัดไป: แตกใหม่จาก `main` · ป้าย: [fact] เว้นแต่ระบุ
+อัปเดตล่าสุด: 2026-07-16 (Fable 5 กลับเข้า Use AI Relay เฉพาะโน้ตบุ๊กเจ้าของ · PR #54+#55 merged · ยิงจริงตอบแล้ว) · branch งานถัดไป: แตกใหม่จาก `main` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
+- **2026-07-16 (แชท Opus · worktree `task/nat/relay-fable-guard`): Fable 5 กลับเข้า Use AI Relay — เฉพาะโน้ตบุ๊กเจ้าของ · กัน 2 ชั้น merged แล้ว (#54+#55) + ยิงจริงตอบแล้ว** [fact]
+  - ชั้น 1 (เครื่องเจ้าของ · ไม่เข้า git): adapter `fable` ใน `.hermes/ai-relay/adapters.yaml` เรียก **claude CLI ตรงผ่าน Claude Subscription** (`--model claude-fable-5` แบบเดียวกับ sonnet) + ป้ายบัญชีใน accounts.yaml + ไฟล์อนุญาต `~/.hermes/.fable-allowed`
+  - ชั้น 2 (โค้ดกลาง): PR #54 `a94f36ba8` host guard — `RESTRICTED_TOOLS={"fable"}` เครื่องไม่มีไฟล์อนุญาต = `not_allowed` exit 10 (พนักงาน/VPS เรียกไม่ได้แม้ config หลุดข้ามเครื่อง) · PR #55 `58c59ba91` run_once ตัด env `CLAUDECODE` ให้ลูกชื่อ claude (แก้ fable/sonnet crash เมื่อถูกเรียกจากใน Claude Code) · เทสต์ relay รวม **98/98 เขียว**
+  - พิสูจน์จริง: `relay-call --tool fable` → status ok · ป้ายรุ่นจากระบบยืนยัน `claude-fable-5` (ไม่เชื่อปากโมเดล — มันรายงานชื่อตัวเองผิด) · ledger จริง
+  - **แก้ความจำผิดถาวร: เครื่องเจ้าของไม่ใช้ AI_PORTAL token — Claude ทุกตัวเรียกผ่าน Subscription CLI ตรง** (Portal token = เครื่องพนักงานเท่านั้น) · AI เคยวนหากุญแจ Portal ที่ไม่เคยต้องมี
+  - reviewer รอบนี้ = ollama (สายสำรอง · gemini crash จริง · grok/codex โดน prefer_portal ดันเข้า portal — เครื่องนี้ต้องตั้ง `AI_RELAY_ALLOW_LOCAL_CLI=1` ถ้าจะใช้ CLI ตรง) → hardening: Codex ตรวจซ้ำ diff
+  - ทำจาก worktree แยกทั้งรอบ เพราะโฟลเดอร์หลักถูกอีกแชทถือ (branch `fix/mw-flow-station-gate`) — ความจำรอบนี้ก็เข้าทาง PR จาก worktree เดียวกัน
 - **2026-07-15 (แชท Fable · branch `task/nat/DSU-P1-I1-ds-standard-hardening`): แผน DSU — ยกมาตรฐาน Design System · **จบครบ + merged PR #48 + กระจาย VPS แล้ว (ปิดรอบ 2026-07-16)** [fact]
   - ราก 3 ข้อที่พิสูจน์แล้ว: (1) **version drift** — ทะเบียนบอก v2.5 แต่ไฟล์ prompt จริง 2 สำเนา = v2.4 (grep "ชั้น U/S1/92" = 0) ทุกโปรเจกต์เลยรัน flow เก่าข้ามชั้นแบรนด์ (2) ชั้น H/U/F เป็นตัวหนังสือ ไม่มีเครื่องบังคับ (3) ฝั่งแอดมินครอบคลุม ~15-25% เทียบ global
   - แก้ครบ: prompt → **v3.0** (2 สำเนา + คลัง commit `a8b8ff6`) · เช็กลิสต์ → **v3.1 = 109 หัวข้อ** (F7 Mood&Tone + D14-D17 ด่านวินัยงาน + B18-B20/C17 + ขยาย B2/B4/A18 + **Pack Admin-Pro 8 ข้อ** เทียบ Carbon/Polaris/Ant/Cloudscape/Atlassian ทุกข้อมีที่มา+วิธีตรวจ) · เครื่องตรวจใหม่ **`ds-gate.py`** (H/U/F ต้องผ่านก่อนด่านสี · fail-closed · pytest 5/5) · ทะเบียน registry อัปแล้ว (คลัง commit `faa8545`)
@@ -71,6 +78,7 @@
 - สมองแผน GRD = Fable ตามคำสั่งเจ้าของ 2026-07-07 (ข้อยกเว้นจากกติกา relay v2.7 ที่ปกติใช้ Opus) · Codex/Claude เขียน-ตรวจสลับค่ายผ่าน relay-call · **verified = มีแถว gate-run เท่านั้น**
 
 ## งานค้าง/ส่งต่อ
+- **ใหม่ 2026-07-16 (งาน fable):** (ก) ตัว `relay-call` กลางใน PATH เป็น symlink ชี้โฟลเดอร์หลักซึ่งค้าง branch `fix/mw-flow-station-gate` — ด่าน fable + ตัวตัด CLAUDECODE จะทำงานกับตัวกลาง**เมื่อโฟลเดอร์หลักกลับ main แล้วดึงโค้ดใหม่** (ไม่ต้องทำอะไรเพิ่ม แค่รอแชทงาน mw คืนโฟลเดอร์) (ข) hardening: ให้ Codex ตรวจซ้ำ diff #54+#55 (reviewer รอบแรก = ollama สายสำรอง) (ค) worktree `relay-fable-guard` ใช้จบแล้ว สะอาด — รอบเก็บกวาด WTL จัดการ
 - **ใหม่ 2026-07-15: branch งานเซสชันอื่นยังไม่ merged** — `feature/spec-central` (commit `923dfa374` curse tracker + `77d47159f` กฎ shortcut + spec-central 2 commit) และ `control_webengine_flow` (`20b0c1a4c` badword WIP + snapshot content v22) · เก็บกันหายแล้ว test เขียว แต่ต้องรวม PR ให้เจ้าของกด · เจ้าของถัดไป: เซสชันที่ทำงานนั้นต่อ
 - ~~claimed: mw-setup.sh บน VPS ยังไม่รันยืนยัน~~ **verified 2026-07-15 เย็น: curl จาก main บน linux-nat → RESULT: PASS + เครื่องมือ 7/7 (PR #45+#46 · tier 3)** [fact]
 - claimed (ยังไม่ตรวจ): เครื่องพนักงานจริงแต่ละคน (พิสูจน์แล้วเครื่องเจ้าของ Mac + VPS linux-nat · ยังไม่ครบทุกโน้ตบุ๊กทีม) · แต่ละคนต้องใส่กุญแจ AI Relay ใน `~/.hermes/.env` เอง
