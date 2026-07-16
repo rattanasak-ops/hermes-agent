@@ -49,6 +49,18 @@ def main() -> int:
         evidence = call(CLAUDE_HOOKS / "enforce-prompt-evidence.py", {"transcript_path": str(evidence_file), "last_assistant_message": "เสร็จครบ 100% แล้วครับ"})
         results.append({"gate": "prompt_evidence", "ok": evidence.returncode == 2, "exit": evidence.returncode})
 
+    prewrite = subprocess.run(
+        [str(HOME / ".local" / "bin" / "hermes-prewrite-gate")],
+        input="{not-json",
+        text=True,
+        capture_output=True,
+    ) if (HOME / ".local" / "bin" / "hermes-prewrite-gate").is_file() else None
+    results.append({
+        "gate": "new_chat_relay_prewrite",
+        "ok": bool(prewrite and prewrite.returncode == 2),
+        "exit": prewrite.returncode if prewrite else None,
+    })
+
     ok = all(row["ok"] for row in results)
     print(json.dumps({"ok": ok, "gates": results}, ensure_ascii=False))
     return 0 if ok else 2
