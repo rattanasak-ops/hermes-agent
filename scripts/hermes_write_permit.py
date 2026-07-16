@@ -71,6 +71,12 @@ def validate_wtl_registry(
     configured = os.environ.get("HERMES_WORKTREE_REGISTRY")
     if not configured:
         return None
+    if configured.startswith("ssh://"):
+        return {
+            "registry": configured,
+            "task_id": task_id,
+            "checks": {"deferred_to_live_prewrite_gate": True},
+        }
     path = Path(configured).expanduser().resolve()
     if not path.is_file():
         raise ValueError(f"WTL registry ไม่มีอยู่: {path}")
