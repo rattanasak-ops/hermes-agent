@@ -89,3 +89,54 @@ def test_e2e_fable_passes_guard_with_marker(tmp_path):
     proc = _run_relay(home, cwd, "fable")
     payload = json.loads(proc.stdout.strip().splitlines()[-1])
     assert payload["status"] != "not_allowed", payload
+
+
+# ---- ตัดตัวกันรันซ้อนของ Claude Code ให้โปรแกรมลูก claude (fable/sonnet ผ่าน Subscription) ----
+# ที่มา: ยิงจริง 2026-07-16 — สมองที่สั่งงานคือ Claude Code เอง ลูก claude เจอ CLAUDECODE
+# ของแม่แล้วปฏิเสธว่าเป็น nested session ทำให้ fable/sonnet crash ทุกครั้งที่เรียกผ่าน relay
+
+def _capture_env_for(monkey_cmd):
+    """เรียก run_once แล้วดักค่า env ที่ถูกส่งเข้า subprocess.Popen (แบบเดียวกับ test_relay_fixes)"""
+    import io
+    captured = {}
+
+    class _FakeProc:
+        pid = 999999
+
+        def __init__(self):
+            self.returncode = 0
+            self.stdout = io.StringIO("OK\n")
+            self.stderr = io.StringIO("")
+
+        def poll(self):
+            return self.returncode
+
+        def wait(self, timeout=None):
+            return self.returncode
+
+        def kill(self):
+            self.returncode = -9
+
+    def fake_popen(cmd, **kwargs):
+        captured["env"] = kwargs.get("env")
+        return _FakeProc()
+
+    orig = relay_call.subprocess.Popen
+    relay_call.subprocess.Popen = fake_popen
+    try:
+        relay_call.run_once({"cmd": monkey_cmd}, "hi", Path("/tmp"), "")
+    finally:
+        relay_call.subprocess.Popen = orig
+    return captured["env"]
+
+
+def test_run_once_strips_claudecode_for_claude_child():
+    os.environ["CLAUDECODE"] = "1"
+    try:
+        claude_env = _capture_env_for(["claude", "--model", "claude-fable-5", "-p", "hi"])
+        grok_env = _capture_env_for(["grok", "-p", "hi"])
+    finally:
+        os.environ.pop("CLAUDECODE", None)
+    # ลูก claude ต้องไม่เห็นตัวกันรันซ้อน · tool อื่นต้องไม่ถูกแตะ
+    assert "CLAUDECODE" not in claude_env
+    assert grok_env.get("CLAUDECODE") == "1"

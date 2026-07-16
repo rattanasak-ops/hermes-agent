@@ -575,6 +575,10 @@ def run_once(spec, prompt, cwd, model, timeout=900, silence_timeout=None):
     if cmd and Path(cmd[0]).name == "claude":
         # ตัด token org ที่ใช้ไม่ได้ เพื่อให้ claude ใช้ login ของเครื่องแทน (จับ path เต็มด้วย)
         env.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
+        # ตัดตัวกันรันซ้อนของ Claude Code (เพิ่ม 2026-07-16): เวลาสมองที่สั่งงานคือ Claude Code
+        # เอง แล้ว relay เรียกโปรแกรมลูก claude (เช่น fable/sonnet ผ่าน Subscription)
+        # ลูกจะเจอ CLAUDECODE ของแม่แล้วปฏิเสธว่าเป็น nested session ทั้งที่เป็นโหมด -p สั้น ๆ
+        env.pop("CLAUDECODE", None)
     try:
         # ไบนารีล้วน (ไม่ text=True) · อ่านเป็น chunk ด้วย read1 ให้ last_output ขยับทุกครั้งที่มี byte จริง
         # แม้ coder พ่นบรรทัดยาวไม่มีขึ้นบรรทัดใหม่ (เช่น Grok output json ก้อนเดียว) ก็ไม่ถูกนับว่า "เงียบ"
