@@ -5,7 +5,7 @@
 อัปเดตล่าสุด: 2026-07-16 (ชุด `Use Migrate 0-13` v1.0 active ทุกเครื่อง + กติกาโควตาเมนู + VPS ซิงก์แล้ว + **station gate PR #51 merged**) · branch งานถัดไป: แตกใหม่จาก `main` ผ่าน `hermes-new-chat open` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
-- **2026-07-16 (แชทเช้า · PR #51 merged = main HEAD `f14cf6c09`): flow station gate — ด่านยืนยัน owner จากแชทจริง กัน AI ข้าม flow แบบปลอมไม่ได้** [fact · บันทึกย้อนหลัง — รายละเอียดเต็ม `session-log-2026-07-16-station-gate.md`]
+- **2026-07-16 (แชทเช้า · PR #51 merged `f14cf6c09`): flow station gate — ด่านยืนยัน owner จากแชทจริง กัน AI ข้าม flow แบบปลอมไม่ได้** [fact · บันทึกย้อนหลัง — รายละเอียดเต็ม `session-log-2026-07-16-station-gate.md`]
   - ปัญหา 4 วันวน: AI ข้าม M0/M2/M3.5 แล้วสั่งสร้างงานเอง · ด่านเดิมพึ่งไฟล์ `.flow-state` ที่ AI เขียนเองได้ = ปลอม owner_ok ได้
   - แก้ (เจ้าของเลือกทาง ก): `enforce-flow-gate.py` อ่านคำอนุมัติจาก Claude Code transcript (append-only) · นับเฉพาะข้อความคน (`origin.kind=human`) · สถานี+คำอนุมัติติดกัน ≤200 ตัวอักษร · คุมเฉพาะพื้นที่ MW · fail-closed
   - คุณภาพ: Claude เขียนเอง (relay/codex crash ทั้งระบบ — งานซ่อมแยก) · GPT-5 ตรวจต่างค่ายชี้ 4 จุด (ปฏิเสธ/คำถาม · `--role review` · registry fallback) แก้ครบ · เทสต์ station gate 21 เคส · ทั้งชุด 335 passed
@@ -20,11 +20,11 @@
   - **RSF เตรียมพร้อม**: ชุดพร้อมเคาะ `Use Migrate 0` ถอดจาก TOR จริง (MIGRATE · FORM เปิด/BILINGUAL ปิด · งวด 30%/70% ใน 30/90 วัน · ค่าปรับ 0.1%/วัน · WCAG 2.1 AA · gap มาตรฐานเคาะแล้ว DEC-155) — เจ้าของเหลือเคาะ 2 ข้อ: แทร็ก DATA/MINISITE + รายชื่อทีม + สั่ง `quota: nat=3` (จะทำ 3 เมนูขนาน 3 แชท)
   - **มาตรฐานเก็บไฟล์อัปโหลด (คำปรึกษา — เจ้าของรับแล้ว)**: โค้ดกลาง config-only ห้ามแก้รายไซต์ · ก้อนไฟล์ = `uploads/{siteId}/{หมวด}/` นอก git · mini-site = siteId ตัวเอง · โค้ดกลางแก้ที่ Root Admin (เจ้าของเปิดแชทแยก — ใบสั่งงานอยู่ใน session log) · RSF/DRA/CT ตามเก็บไฟล์เก่าตอนทำ
   - เหตุแทรกที่แก้แล้ว: เก็บ 2 ไฟล์ dirty ค้างจากรอบปิด 15 ก.ค. (hook doctor ด่าน 4 + write permit ssh) → PR #49 merged · กิ่งเก่า `close/mem-vps-verified` ซ้ำ main แล้ว ลบได้
-- **2026-07-15 (แชท Fable · branch `task/nat/DSU-P1-I1-ds-standard-hardening`): แผน DSU — ยกมาตรฐาน Design System หลังพบใช้จริงได้ ~15-20% · P0-P2 จบ · P3 ปิดงานกำลังเดิน** [fact]
+- **2026-07-15 (แชท Fable · branch `task/nat/DSU-P1-I1-ds-standard-hardening`): แผน DSU — ยกมาตรฐาน Design System · **จบครบ + merged PR #48 + กระจาย VPS แล้ว (ปิดรอบ 2026-07-16)** [fact]
   - ราก 3 ข้อที่พิสูจน์แล้ว: (1) **version drift** — ทะเบียนบอก v2.5 แต่ไฟล์ prompt จริง 2 สำเนา = v2.4 (grep "ชั้น U/S1/92" = 0) ทุกโปรเจกต์เลยรัน flow เก่าข้ามชั้นแบรนด์ (2) ชั้น H/U/F เป็นตัวหนังสือ ไม่มีเครื่องบังคับ (3) ฝั่งแอดมินครอบคลุม ~15-25% เทียบ global
   - แก้ครบ: prompt → **v3.0** (2 สำเนา + คลัง commit `a8b8ff6`) · เช็กลิสต์ → **v3.1 = 109 หัวข้อ** (F7 Mood&Tone + D14-D17 ด่านวินัยงาน + B18-B20/C17 + ขยาย B2/B4/A18 + **Pack Admin-Pro 8 ข้อ** เทียบ Carbon/Polaris/Ant/Cloudscape/Atlassian ทุกข้อมีที่มา+วิธีตรวจ) · เครื่องตรวจใหม่ **`ds-gate.py`** (H/U/F ต้องผ่านก่อนด่านสี · fail-closed · pytest 5/5) · ทะเบียน registry อัปแล้ว (คลัง commit `faa8545`)
   - ผู้เขียน = Codex CLI ตรง (relay portal token ไม่มีบนเครื่องนี้ — ปักธงงานซ่อมแยกแล้ว) · ผู้ตรวจ = Grok/ต่างค่าย (P3) · commit ทีละชิ้น 5 ก้อน
-  - เหลือ P3: รีวิวต่างค่าย + push + เปิด **1 PR** (เจ้าของกด merge)
+  - ปิดรอบ: PR #48 merged `61e31af5b` · VPS mirror v3.0 ✓ + repo VPS ดึงแล้ว (เจ้าของยืนยัน) · เหลือ: push คลัง→GitLab (เจ้าของ) + พนักงานรัน installer · pilot ds-gate 1 โปรเจกต์
 - **2026-07-15 (แชท Opus→Fable · merged main แล้ว 2 PR): `Use Migrate Web` พร้อมทีมใช้จริง — MW-P4 จบ + MW-P6 Flow Enforcement + เจ้าของทดสอบรับงานผ่าน 5/5 + ประกาศทีมส่งแล้ว** [fact]
   - **MW-P4 จบจริง**: `mw-backend-check` รันจริงกับ RSF site 78 บน VPS (อ่าน 3/3 PASS + negative 2/2 FAIL ถูกต้อง) + **วงจรฟอร์มจริง PASS** (`POST /api/v1/contact` 201 → DB → เทียบค่าตรง · **prefix API จริง = `/api/v1` ไม่ใช่ `/api`**) · ข้อมูลทดสอบ TEST-MW ลบเกลี้ยง (ตรวจซ้ำ = 0) · config ตัวอย่างอยู่ `/home/linux-nat/mw-p4/` บน VPS
   - **เหตุการณ์สำคัญ: AI (Opus) ข้าม flow เองกลางแชท** — เดา workflow 6 ขั้นแทนการเปิดไฟล์ flow13 → เจ้าของสั่ง "แก้ต้นเหตุ" → เกิด **MW-P6**
