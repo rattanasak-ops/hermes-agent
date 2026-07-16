@@ -227,3 +227,6 @@ Reason: ตรงกติกา relay v2.16 (ผู้ตรวจเดิม+
   2. **ห้าม symlink ชี้ที่ชั่วคราว** — copy เข้าที่ถาวรก่อน link เสมอ
   3. **ห้ามฝังเลขรุ่นตายตัวในตัวตรวจ/เทสต์** — เช็คกติกา/พฤติกรรมแทน (บั๊กนี้เกิด 3 ที่วันเดียว: payload tests, check-shortcuts, จะเกิดอีกถ้าไม่เลิก pin)
 - **ผล:** curl จาก main บน linux-nat → RESULT: PASS + 7/7 · verified tier 3
+
+## DEC-DSU-001 · มาตรฐาน DS กลาง v3.1 + ด่านเครื่อง ds-gate (2026-07-15 · เจ้าของอนุมัติ+merge #48)
+- DS ทุกโปรเจกต์ต้องผ่าน `Use Create Design System` v3.0 เท่านั้น · ชั้น H/U/F ต้องผ่าน `ds-gate.py --layer all` (exit 0) ก่อนด่านสี · เช็กลิสต์ v3.1 = 109 หัวข้อ (Pack Admin-Pro ใหม่ 8) · ห้ามแก้เลขรุ่นโดยไม่ sync 3 จุด (ทะเบียน/คลัง/payload) — รากเดิมคือ version drift
