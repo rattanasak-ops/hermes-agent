@@ -20,6 +20,31 @@ REDIRECT_RE = re.compile(
     r"(?<!\d)>{1,2}\s*(?P<path>\"[^\"]+\"|'[^']+'|[^\s|;&]+)"
 )
 
+# ── Flow Station Gate: บังคับ owner ยืนยันในแชทจริง ก่อน AI โยนงานสร้างหน้า ──
+# ปฐมเหตุ 2026-07-15: AI ข้าม M0/M2/M3.5 (คุยกับ owner) แล้วสั่ง codex/relay สร้างทั้งหน้า
+# ด่านเดิมพึ่งไฟล์ .flow-state ที่ AI เขียนเอง → AI พิมพ์ owner_ok ปลอมได้
+# เปลี่ยนมาจับ "owner ยืนยันจริง" จากบันทึกแชท (transcript) ที่ AI เขียนทับไม่ได้
+AI_DELEGATE_RE = re.compile(
+    r"(?:^|[\s;&|(])(?:"
+    r"codex\s+e(?:xec)?\b"              # codex exec / codex e
+    r"|relay[-_]call"                   # relay-call.py
+    r"|grok\b[^\n]*?(?:\bexec\b|--?p(?:rompt)?\b)"    # grok เขียนโค้ด
+    r"|gemini\b[^\n]*?(?:--?p(?:rompt)?\b)"           # gemini เขียนโค้ด
+    r")",
+    re.IGNORECASE,
+)
+REQUIRED_STATIONS = ("M0", "M2", "M3.5")
+# owner ยืนยันราย station = ข้อความสั้น + คำอนุมัติ "ติดกับ" ชื่อ station
+# (กัน false positive: owner paste เนื้อหายาวที่บังเอิญมี station + คำ "ผ่าน/ok" กระจายอยู่)
+_APPROVE_WORD = r"(?:\bok\b|โอเค|ผ่าน|อนุมัติ|ยืนยัน|เอาเลย|\bใช่\b|approve)"
+_STATION_TOKEN = r"(M0|M2|M3[._ ]?5)"
+_STATION_APPROVE_RE = re.compile(
+    rf"(?i){_APPROVE_WORD}\s*[:：\-]?\s*{_STATION_TOKEN}\b"
+    rf"|{_STATION_TOKEN}\s*[:：\-]?\s*{_APPROVE_WORD}",
+    re.IGNORECASE,
+)
+_MAX_APPROVAL_LEN = 200  # การยืนยันราย station สั้น · ข้อความยาวกว่านี้ = paste ไม่นับ
+
 
 def _absolute(path: Path, cwd: Path) -> Path:
     expanded = path.expanduser()
@@ -101,6 +126,121 @@ def find_flow_gate(project_root: Path) -> Optional[Path]:
     return next((path for path in candidates if path.is_file()), None)
 
 
+def _mw_registry_files() -> List[Path]:
+    """ไฟล์ทะเบียนพื้นที่โปรเจกต์ Migrate Web (portable · ตามลำดับความสำคัญ)."""
+    files: List[Path] = []
+    env = os.environ.get("MW_RELAY_REQUIRED_LIST")
+    if env:
+        files.append(Path(env).expanduser())
+    files.append(Path.home() / ".hermes/mw/relay-required-projects.txt")
+    files.append(Path.home() / ".claude/relay-required-projects.txt")
+    return files
+
+
+def _mw_registry_roots() -> List[str]:
+    roots: List[str] = []
+    for path in _mw_registry_files():
+        try:
+            content = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        for line in content.splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                roots.append(os.path.realpath(os.path.expanduser(line)))
+    return roots
+
+
+def _cwd_in_mw_registry(cwd: Path) -> bool:
+    resolved = os.path.realpath(str(cwd))
+    for root in _mw_registry_roots():
+        if resolved == root or resolved.startswith(root + os.sep):
+            return True
+    return False
+
+
+def _normalize_station(token: str) -> Optional[str]:
+    compact = re.sub(r"[._ ]", "", token).upper()
+    if compact in {"M35"}:
+        return "M3.5"
+    if compact == "M2":
+        return "M2"
+    if compact == "M0":
+        return "M0"
+    return None
+
+
+def _is_owner_human(record: Dict[str, object]) -> bool:
+    """True เฉพาะข้อความที่ owner พิมพ์เองจริง (ไม่ใช่ hook/system แทรก)."""
+    if record.get("type") != "user":
+        return False
+    message = record.get("message")
+    if not isinstance(message, dict) or message.get("role") != "user":
+        return False
+    if not isinstance(message.get("content"), str):
+        return False
+    origin = record.get("origin")
+    return isinstance(origin, dict) and origin.get("kind") == "human"
+
+
+def owner_approved_stations(transcript_path: str) -> set:
+    """อ่านบันทึกแชท คืน set ของ station ที่ owner พิมพ์ยืนยันจริง (AI ปลอมไม่ได้)."""
+    approved: set = set()
+    with open(transcript_path, encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(record, dict) or not _is_owner_human(record):
+                continue
+            content = record["message"]["content"]
+            # การยืนยันราย station เป็นข้อความสั้น เจตนาชัด · paste ยาว = ไม่นับ
+            if len(content) > _MAX_APPROVAL_LEN:
+                continue
+            for match in _STATION_APPROVE_RE.finditer(content):
+                token = match.group(1) or match.group(2)
+                station = _normalize_station(token) if token else None
+                if station:
+                    approved.add(station)
+    return approved
+
+
+def _guard_delegation(
+    command: str, cwd: Path, transcript_path: Optional[str]
+) -> Optional[str]:
+    """บล็อกการสั่ง AI สร้างหน้า ถ้า owner ยังไม่ยืนยันครบทุก station ในแชทจริง."""
+    if os.environ.get("RELAY_CODE_OVERRIDE") == "1":
+        return None
+    if not AI_DELEGATE_RE.search(command):
+        return None
+    if not _cwd_in_mw_registry(cwd):
+        return None
+    if not transcript_path:
+        return (
+            "โปรเจกต์ Migrate Web: สั่ง AI สร้างหน้าไม่ได้ — อ่านบันทึกแชทไม่ได้ "
+            "(payload ไม่มี transcript_path) จึงยืนยันการอนุมัติของเจ้าของไม่ได้"
+        )
+    try:
+        approved = owner_approved_stations(transcript_path)
+    except OSError:
+        return (
+            "โปรเจกต์ Migrate Web: อ่านบันทึกแชทไม่ได้ จึงยังยืนยันไม่ได้ว่าเจ้าของอนุมัติ "
+            "— บล็อกไว้ก่อนเพื่อความปลอดภัย"
+        )
+    missing = [station for station in REQUIRED_STATIONS if station not in approved]
+    if not missing:
+        return None
+    return (
+        "โปรเจกต์ Migrate Web: ยังสั่ง AI สร้างหน้าไม่ได้ — "
+        f"ต้องให้เจ้าของพิมพ์ยืนยันในแชทก่อน ขาดสถานี: {', '.join(missing)} "
+        "(ให้เจ้าของพิมพ์ยืนยันราย station เช่น 'OK M0')"
+    )
+
+
 def _advice(stderr: str) -> str:
     match = re.search(r"(?:^|\n)-?\s*(M(?:\d+(?:\.\d+)?)|S):", stderr)
     if match:
@@ -153,6 +293,16 @@ def run(payload: Dict[str, object]) -> int:
     raw_cwd = payload.get("cwd")
     cwd = _absolute(Path(str(raw_cwd)) if raw_cwd else Path.cwd(), Path.cwd())
     cwd_root = find_project_root(cwd)
+
+    # Flow Station Gate: จับตอน AI โยนงานสร้างหน้าให้ AI ตัวอื่น (นอกเหนือ guard-write)
+    if tool_name == "Bash":
+        command_value = tool_input.get("command")
+        if isinstance(command_value, str) and command_value.strip():
+            raw_transcript = payload.get("transcript_path")
+            transcript_path = raw_transcript if isinstance(raw_transcript, str) else None
+            delegation_block = _guard_delegation(command_value, cwd, transcript_path)
+            if delegation_block:
+                return _block(delegation_block)
 
     targets: Iterable[Path]
     if tool_name in WRITE_TOOLS:
