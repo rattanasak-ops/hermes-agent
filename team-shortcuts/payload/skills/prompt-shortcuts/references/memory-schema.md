@@ -122,7 +122,7 @@ redact token/password/connection string/private key เสมอ · remote URL �
 
 ## 8. Version Compatibility
 
-Schema v1.2 ↔ Close ≥ v2.2 ↔ New ≥ v1.8 ↔ Act-As ≥ v3.1 ↔ Comply ≥ v3.1 ↔ Continue ≥ v4.1 ↔ Review Chat ≥ v2.3
+Schema v1.2 ↔ Close ≥ v2.4 ↔ New ≥ v2.7 ↔ Act-As ≥ v3.1 ↔ Comply ≥ v3.2 ↔ Continue ≥ v4.5 ↔ Review Chat ≥ v2.4
 ทุก prompt เช็ก schema version ตอนเริ่ม · ไม่ตรง = **เตือน + ห้ามเขียนไฟล์ความจำใด ๆ จนกว่าจะอ่าน schema ล่าสุดแล้ว** (แค่เตือนเฉย ๆ ไม่พอ — AI จะข้าม · ผลตรวจข้ามค่าย 2026-07-05)
 
 ---
@@ -156,16 +156,22 @@ Comply ใช้ 6 สถานะ · เวลา Close/New สรุปคว�
 
 > ใช้สถานะละเอียด 6 คำได้ใน Comply เพื่อสื่อสาร แต่ตอนคิด % และตอนปิด ยึด verified อย่างเดียว = 100%
 
-## 12. Autonomy Policy (ใหม่ · ใช้ร่วมกับ Continue §3 ชั้น)
+## 12. Two-Zone Autonomy Policy (ใช้ร่วมกับ Comply + Continue)
 
 ค่าตั้งต้นของทีมนี้ (non-dev owner + SaaS มีผู้ใช้จริง + CI/CD auto-deploy on merge):
 
-| การกระทำ | ชั้น | auto ได้ไหม |
+| Zone | การกระทำ | วิธีอนุมัติ |
 |---|---|---|
-| อ่าน/แก้โค้ดใน scope/รันเทส/เขียน doc | 1 | auto |
-| push ขึ้น branch ตัวเอง / deploy **staging** / ลง dependency (มีหลักฐาน) | 2–3A | auto ถ้าด่านผ่าน |
-| **merge → main / deploy production / migration prod** | **ต้องขอคน** | **ค่าตั้งต้น = ปิด auto** (เพราะ merge→main = ขึ้น prod อัตโนมัติ ที่มีผู้ใช้จริง) |
-| ใช้เงิน/ส่งเมล/เปิด secret/ลบถาวร | 3B | ขอคนเสมอ |
+| `ZONE_A` | อ่าน/วิเคราะห์/แก้ใน allowed_paths/รันเทส/เขียน test-doc/แก้ผลตรวจใน scope | ทำต่อเองทั้ง Phase ไม่ถามราย issue |
+| `ZONE_B` | dependency/config กว้าง/ข้าม ownership/push/tag/staging/API sandbox | รวมรายการและขอครั้งเดียวต่อ approval_phase · ยังต้องผ่านด่านจริง |
+| `ZONE_B` ขั้นวิกฤต | merge→main/deploy production/migration production/เงิน/ส่งข้อความภายนอก/secret/ลบถาวร | ขอคนเสมอ แยก Phase ชัดเจน |
+
+Phase Write Permit บังคับมี: `task_id / approval_phase / branch / base_sha / allowed_paths / owner_approval / claim_status`
+
+- สิทธิ์หนึ่งชุดครอบทุก issue ใน Phase เดิม · ห้ามถามอนุมัติซ้ำราย issue
+- path/branch/SHA/ผลภายนอกเปลี่ยน = สิทธิ์หมดอายุและต้องจัด Phase ใหม่
+- พื้นที่ dirty หรือ claim ของคนอื่นไม่กลายเป็น Zone A เพียงเพราะเจ้าของเปิดโหมดทำต่อ
+- งาน ZONE_A ไม่อนุญาต push/merge/deploy production/เงิน/secret/ลบถาวร
 
 > flag `ALLOW_AUTO_PROD` (ค่าตั้งต้น = OFF) · เปิดเมื่อเจ้าของสั่งชัดเท่านั้น · เปิดแล้วยังต้องผ่าน fail-closed gate + ledger
 
@@ -177,6 +183,7 @@ Comply ใช้ 6 สถานะ · เวลา Close/New สรุปคว�
 
 ## Changelog
 
+- v1.2 autonomy addendum (2026-07-14): เปลี่ยนการขอสิทธิ์ราย issue เป็น Two-Zone + Phase Write Permit · Zone A ทำต่อเองทั้ง Phase · Zone B ขอครั้งเดียวต่อ Phase · production/เงิน/secret/ลบถาวรยังขอคนเสมอ
 - v1.2 (2026-07-05): **ย้ายความจำที่ใช้ทำงานต่อไป `.project/` ที่เดียว** ตามคำสั่งเจ้าของ (ปฐมเหตุ: AI อ่านไม่ครบ 2 โฟลเดอร์แล้วทำงานมั่วซ้ำหลาย project · เคสหนักสุด: สร้าง UI ใหม่ทับ wireframe ที่ล็อกแล้วใน EA Farm) · `.project/plan.md` (เดิม `.hermes/plan.md`) · `.project/OverviewProgress.md` ยุบ handoff+active + โครงบังคับ 4 หัวข้อบนสุด + ป้ายเวอร์ชันบรรทัดแรก (§1c) · `.project/decisions.md` (เดิม `.hermes/decisions.md`) · กติกาย้ายของเก่า "อ่านได้สองที่ เขียนที่ใหม่เท่านั้น + stub ห้ามลบ" (§1b) · schema ไม่ตรง = ห้ามเขียนความจำ (§8) · ผ่านตรวจข้ามค่าย Grok+Codex 2026-07-05
 - v1.1 (2026-06-26): ขยายจากคุม New/Close เป็นคุมทั้ง 6 ตัว · เพิ่มไฟล์ `.hermes/plan.md` (Act-As เขียน) · §9 Lifecycle · §10 Shared ID · §11 Status Mapping · §12 Autonomy Policy (ค่าตั้งต้นปิด auto prod) · §13 Ledger · ขยาย version lock เป็น 6 ตัว
 - v1 (2026-06-26): สัญญากลางฉบับแรก คุม New/Close

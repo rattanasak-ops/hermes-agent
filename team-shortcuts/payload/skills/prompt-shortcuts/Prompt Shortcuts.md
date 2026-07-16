@@ -158,6 +158,8 @@ updated: 2026-07-11
 
 ชุดนี้ทำตาม [[10-Knowledge/Knowledge Operating Rules|Knowledge Operating Rules]]
 
+งานที่ใช้ `Use Comply` + `Use Continue` ต้องแบ่ง 2 Zone: Zone A ทำต่อเองทั้ง Phase โดยไม่ถามราย issue; Zone B รวมขออนุมัติครั้งเดียวต่อ Phase. `Review Chat` เป็นโหมดพรีวิวของ `Use Close Chat`; `Save Grid` เป็นชื่อเรียกเสริมของ `Use Save Git`.
+
 ## ใช้งานกับ Codex
 
 เรียก shortcut หลัก:
@@ -210,11 +212,11 @@ Use SonarQube
 ใช้ $prompt-shortcuts Use Flow Guardian เพื่อบังคับ worktree/branch gate, no-write audit, approval, verify, tracking, และ handoff
 ใช้ $prompt-shortcuts Use New Chat เพื่อเริ่มแชทใหม่แบบตรวจ project/worktree/branch/dirty/VPS ก่อนตอบ
 ใช้ $prompt-shortcuts Use Close Chat เพื่อปิดแชทและเขียน memory ส่งต่อรอบหน้า
-ใช้ $prompt-shortcuts Use Save Git ก่อน push / merge / deploy เพื่อตรวจ Git, worktree, dirty files, GitLab main, VPS SHA, health endpoint และคืน SAFE/STOP decision
+ใช้ $prompt-shortcuts Use Save Git หรือ Save Grid ก่อน commit / push / merge / deploy เพื่อตรวจ Git, worktree, dirty files, GitLab main, VPS SHA, health endpoint และคืน SAFE/STOP decision
 ใช้ $prompt-shortcuts Use Merge to Production เฉพาะงาน merge/deploy production ที่เจ้าของอนุมัติแล้ว
 ใช้ $prompt-shortcuts Use Continue กับงานนี้
 ใช้ $prompt-shortcuts Use Move Folder กับงานจัดเรียงโฟลเดอร์/cleanup บน VPS โดยอ่าน registry จริงใน `/home/linux-nat/.codex/use-move-folder/project-registry` ก่อนทำงาน
-ใช้ $prompt-shortcuts Review Chat กับแชทนี้
+ใช้ $prompt-shortcuts Review Chat เพื่อเปิดโหมดพรีวิวของ Use Close Chat โดยยังไม่เขียนไฟล์
 ใช้ $prompt-shortcuts Use AI Pair กับงานนี้เมื่อเครื่องไม่มี AI Relay
 ใช้ $prompt-shortcuts Use Business Plan กับโจทย์ธุรกิจ / การตลาด / pitch / เว็บไซต์นี้
 ใช้ $prompt-shortcuts Use SaaS Opus Master Prompt เพื่อส่ง prompt SaaS แบบเต็ม
@@ -244,8 +246,9 @@ Use SonarQube
 | `Use WOW Resource` | `use-wow-resource`, `WOW Resource`, `wow-resource`, `ใช้ WOW Resource`, `ใช้ WOW`, `WOW Layout`, `WOW Menu`, `WOW Script`, `WOW Design`, `WOW Web Engine` | [[skills/prompt-shortcuts/references/use-wow-resource|use-wow-resource]] |
 | `Use Flow Guardian` | `use-flow-guardian`, `Flow Guardian`, `Safe Flow`, `New Chat Gate`, `ใช้ Flow Guardian`, `ใช้ Safe Flow`, `เปิด Flow Guardian`, `ตรวจ worktree`, `กัน AI แก้งานทับกัน` | [[skills/prompt-shortcuts/references/use-flow-guardian|use-flow-guardian]] |
 | `Use New Chat` | `use-new-chat`, `Start New Chat`, `New Chat Startup`, `Initialize Hermes Agent chat`, `เริ่ม New Chat`, `เปิด New Chat`, `เริ่มแชทใหม่`, `เปิดแชทใหม่` | [[skills/prompt-shortcuts/references/use-new-chat|use-new-chat]] |
+| `Use Migrate Web` | `use-migrate-web`, `Migrate Web`, `migrate-web`, `ใช้ Migrate Web`, `ย้ายเว็บตาม Flow`, `ทำเว็บ 13 ขั้น`, `Flow ย้ายเว็บ` | [[skills/prompt-shortcuts/references/use-migrate-web|use-migrate-web]] |
 | `Use Close Chat` | `use-close-chat`, `Close Chat`, `close-chat`, `ใช้ Close Chat`, `ปิดแชท`, `ปิดงานแชท`, `จบแชท` | [[skills/prompt-shortcuts/references/use-close-chat|use-close-chat]] |
-| `Use Save Git` | `use-save-git`, `Save Git`, `save-git`, `ใช้ Save Git`, `เซฟ Git`, `ก่อน push`, `ก่อน merge`, `ก่อน deploy`, `Git Safe Flow`, `GitLab Deploy Safe Flow`, `Use GitLab Deploy Safe Flow`, `Use Ship Gate` | [[skills/prompt-shortcuts/references/use-save-git|use-save-git]] |
+| `Use Save Git` | `use-save-git`, `Save Git`, `save-git`, `Save Grid`, `save-grid`, `Use Save Grid`, `ใช้ Save Git`, `เซฟ Git`, `ก่อน push`, `ก่อน merge`, `ก่อน deploy`, `Git Safe Flow`, `GitLab Deploy Safe Flow`, `Use GitLab Deploy Safe Flow`, `Use Ship Gate` | [[skills/prompt-shortcuts/references/use-save-git|use-save-git]] |
 | `Use Merge to Production` | `use-merge-to-production`, `Merge to Production`, `merge-to-production`, `ใช้ Merge to Production`, `ขึ้น production`, `deploy production`, `Ship to Production` | [[skills/prompt-shortcuts/references/use-merge-to-production|use-merge-to-production]] |
 | `Use Continue` | `use-continue`, `Continue`, `continue`, `ทำต่อ`, `ทำต่อเอง`, `ทำงานต่อ`, `ทำต่ออัตโนมัติ`, `ไม่ต้องรอผม`, legacy: `Go to Sleep`, `go-to-sleep`, `Sleep Mode`, `sleep-mode`, `เข้าโหมดนอน`, `โหมดนอน` | [[skills/prompt-shortcuts/references/use-continue|use-continue]] |
 | `Use Move Folder` | `use-move-folder`, `Move Folder`, `move-folder`, `movefolder`, `ใช้ Move Folder`, `ย้ายโฟลเดอร์`, `จัดเรียง Folder`, `จัดเรียงโฟลเดอร์` | [[skills/prompt-shortcuts/references/use-move-folder|use-move-folder]] |
