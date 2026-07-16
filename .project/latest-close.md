@@ -1,5 +1,7 @@
 # Latest Close — nat
 
+- 2026-07-16 (แชท Fable · ต่อจาก station gate) · `session-log-2026-07-16-gate-repair.md` · **ซ่อมยาม prewrite gate over-lock (v1→v2.2) + เสียบปลั๊กกลับ** — ล็อกเฉพาะเขตที่ระบบคุม ไม่ล็อกตัวเอง + กัน AI ถอด/ปลอมด่านเอง · GPT-5 ตรวจ 2 รอบ · pytest 89 + live hook 15 เขียว · ติดตั้ง+เสียบ hook แล้ว (doctor 4/4) · Token CLOSED_WITH_PENDING (commit `4599eaca0` push ไม่ได้—29 ไฟล์ dirty เซสชัน NCR อื่น + relay สายพานเต็มยังใช้ไม่ได้บนเครื่องนี้)
+
 - 2026-07-16 (บันทึกย้อนหลังโดยแชทถัดไปตามคำสั่งเจ้าของ) · `session-log-2026-07-16-station-gate.md` · flow station gate **PR #51 merged (`f14cf6c09`)** — owner ยืนยันจากแชทจริง (transcript · ปลอมไม่ได้) กัน AI ข้าม flow · Token CLOSED_WITH_PENDING (prewrite-gate ถูกถอดชั่วคราวรอเจ้าของเคาะ + relay/codex crash งานซ่อมแยก + ข้อจำกัด v2 ยังไม่ผูกรายเมนู)
 - 2026-07-16 · `session-log-2026-07-16-dsu-close.md` · DSU มาตรฐาน DS v3.1 (109) + ds-gate จบ merged #48 + กระจาย VPS · Token CLOSED_WITH_PENDING (GitLab push + installer พนักงาน + pilot)
 - 2026-07-16 · `session-log-2026-07-16-use-migrate-phase-set.md` · ชุด Use Migrate 0-13 v1.0 active + โควตาเมนู + กระจาย Mac/VPS/ทีมครบ + กู้ภัยกระจก VPS · Token CLOSED_WITH_PENDING (เจ้าของเริ่ม RSF + แชท Root Admin + merge PR ความจำ + ช่องว่างเครื่องมือ WTL close/cleanup)
