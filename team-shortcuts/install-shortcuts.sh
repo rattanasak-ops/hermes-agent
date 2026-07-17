@@ -31,6 +31,7 @@ HOOK_DOCTOR_SRC="$SCRIPT_DIR/../scripts/hermes_hook_doctor.py"
 HOOK_DOCTOR_BIN="$HOME/.local/bin/hermes-hook-doctor"
 INSTALLED_VERSION="$DEST_ROOT/.shortcut-version"
 TEAM_HOOK_INSTALLER="$SCRIPT_DIR/install-team-hooks.py"
+NEW_CHAT_INSTALLER="$SCRIPT_DIR/install-new-chat-tools.sh"
 
 # --- ที่อยู่เดิมที่ไฟล์ตัวเชื่อมทุกตัวในโปรเจกต์ชี้ถึง (ใช้ทำทางลัดชดเชยให้ Cursor) ---
 OWNER_PATH="/Users/rattanasak/ObsidianVault/HermesAgent"
@@ -199,17 +200,22 @@ if ! cmp -s "$HOOK_DOCTOR_SRC" "$HOOK_DOCTOR_BIN"; then
 fi
 chmod 0755 "$HOOK_DOCTOR_BIN"
 say "      สำเร็จ: ติดตั้งตัวตรวจสุขภาพ Hook ที่ $HOOK_DOCTOR_BIN"
+if [ ! -f "$NEW_CHAT_INSTALLER" ]; then
+  say "ผิดพลาด: ไม่พบตัวติดตั้ง New Chat ที่ $NEW_CHAT_INSTALLER"
+  exit 1
+fi
+bash "$NEW_CHAT_INSTALLER"
 if [ ! -f "$TEAM_HOOK_INSTALLER" ]; then
   say "ผิดพลาด: ไม่พบตัวติดตั้ง Hook ทีมที่ $TEAM_HOOK_INSTALLER"
   exit 1
 fi
 python3 "$TEAM_HOOK_INSTALLER"
 if ! "$HOOK_DOCTOR_BIN" >/dev/null; then
-  say "ผิดพลาด: ติดตั้ง Hook แล้วแต่ตรวจ 3 ด่านไม่ผ่าน"
+  say "ผิดพลาด: ติดตั้ง Hook แล้วแต่ตรวจ 4 ด่านไม่ผ่าน"
   "$HOOK_DOCTOR_BIN" || true
   exit 1
 fi
-say "      สำเร็จ: Hook ภาษาคน/ผู้ตรวจอิสระ/หลักฐานครบ ผ่าน 3/3"
+say "      สำเร็จ: Hook ภาษาคน/ผู้ตรวจอิสระ/หลักฐาน/New Chat ผ่าน 4/4"
 
 # --- 2) ต่อ Claude Code (ทุกโปรเจกต์ผ่าน global memory) ---
 say "[2/4] ต่อ Claude Code ผ่าน ~/.claude/CLAUDE.md"
