@@ -81,6 +81,17 @@ exists_check "hook_doctor_exists" "$HOOK_DOCTOR"
 exists_check "write_permit_exists" "$WRITE_PERMIT"
 exists_check "installed_version_exists" "$INSTALLED_VERSION"
 
+migrate_phase_count=0
+for phase in $(seq 0 13); do
+  migrate_phase_file="$REFS/use-migrate-$phase.md"
+  exists_check "use_migrate_${phase}_exists" "$migrate_phase_file"
+  if [ -f "$migrate_phase_file" ]; then
+    migrate_phase_count=$((migrate_phase_count + 1))
+  fi
+done
+print_check "use_migrate_phase_coverage" "$migrate_phase_count" "14"
+exists_check "migrate_contract_exists" "$REFS/use-migrate-phase-contract.md"
+
 if [ -f "$CLAUDE" ] && grep -q 'HERMES_SHORTCUTS_START' "$CLAUDE"; then
   printf 'PASS %-28s %s\n' "claude_bridge_exists" "$CLAUDE"
 else
