@@ -17,6 +17,7 @@ HOOK_NAMES = (
     "enforce-prompt-evidence.py",
     "team-stop-gates.py",
     "enforce-flow-gate.py",
+    "enforce-new-chat-relay.py",
 )
 
 
@@ -137,6 +138,43 @@ def install_pretooluse_entry(settings_path: Path, runner: Path) -> None:
     tmp.replace(settings_path)
 
 
+def install_new_chat_entry(settings_path: Path, runner: Path) -> None:
+    """Install the New Chat relay gate while preserving existing hooks."""
+    data = load_json(settings_path)
+    hooks = data.setdefault("hooks", {})
+    if not isinstance(hooks, dict):
+        raise SystemExit(f"ช่อง hooks ผิดรูปแบบใน {settings_path}")
+    pre_tool_use = hooks.setdefault("PreToolUse", [])
+    if not isinstance(pre_tool_use, list):
+        raise SystemExit(f"ช่อง hooks.PreToolUse ผิดรูปแบบใน {settings_path}")
+
+    matcher = "Edit|Write|MultiEdit|NotebookEdit|ApplyPatch|Bash"
+    command = str(runner)
+    found = False
+    for entry in pre_tool_use:
+        if not isinstance(entry, dict):
+            continue
+        for hook in entry.get("hooks", []):
+            if isinstance(hook, dict) and "enforce-new-chat-relay.py" in str(
+                hook.get("command", "")
+            ):
+                entry["matcher"] = matcher
+                hook.update({"type": "command", "command": command, "timeout": 20})
+                found = True
+    if not found:
+        pre_tool_use.append(
+            {
+                "matcher": matcher,
+                "hooks": [{"type": "command", "command": command, "timeout": 20}],
+            }
+        )
+
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = settings_path.with_suffix(settings_path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(settings_path)
+
+
 def main() -> int:
     claude_hooks = HOME / ".claude" / "hooks"
     codex_hooks = HOME / ".codex" / "hooks"
@@ -146,7 +184,13 @@ def main() -> int:
     install_pretooluse_entry(
         HOME / ".claude" / "settings.json", claude_hooks / "enforce-flow-gate.py"
     )
+    install_new_chat_entry(
+        HOME / ".claude" / "settings.json", claude_hooks / "enforce-new-chat-relay.py"
+    )
     install_stop_entry(HOME / ".codex" / "hooks.json", codex_hooks / "team-stop-gates.py")
+    install_new_chat_entry(
+        HOME / ".codex" / "hooks.json", codex_hooks / "enforce-new-chat-relay.py"
+    )
     print("ติดตั้ง Hook ทีมให้ Claude Code และ Codex แล้ว")
     return 0
 
