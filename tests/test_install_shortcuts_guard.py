@@ -15,14 +15,27 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "team-shortcuts" / "install-shortcuts.sh"
 
 
-def build_fake_installer(tmp_path: Path, registry: str = "registry v1\n", ref: str = "ref v1\n"):
+def build_fake_installer(
+    tmp_path: Path,
+    registry: str = "registry v1\n",
+    ref: str = "ref v1\n",
+    mw_setup_exit: int = 0,
+):
     team_dir = tmp_path / "team-shortcuts"
+    scripts_dir = tmp_path / "scripts"
+    mw_dir = scripts_dir / "mw"
     payload = team_dir / "payload"
     registry_path = payload / "ai-context" / "prompt-shortcut-registry.md"
     ref_path = payload / "skills" / "prompt-shortcuts" / "references" / "a.md"
 
     team_dir.mkdir()
+    mw_dir.mkdir(parents=True)
     shutil.copy2(SCRIPT, team_dir / "install-shortcuts.sh")
+    (team_dir / "VERSION").write_text("test-version\n")
+    (team_dir / "install-team-hooks.py").write_text("#!/usr/bin/env python3\n")
+    (scripts_dir / "hermes_write_permit.py").write_text("#!/usr/bin/env bash\nexit 0\n")
+    (scripts_dir / "hermes_hook_doctor.py").write_text("#!/usr/bin/env bash\nexit 0\n")
+    (mw_dir / "mw-setup.sh").write_text(f"#!/usr/bin/env bash\nexit {mw_setup_exit}\n")
     registry_path.parent.mkdir(parents=True)
     ref_path.parent.mkdir(parents=True)
     registry_path.write_text(registry)
@@ -112,3 +125,22 @@ def test_rerun_unchanged_payload_does_not_create_second_backup(tmp_path: Path):
 
     assert result.returncode == 0, result.stderr + result.stdout
     assert len(backup_dirs(tmp_path)) == 1
+
+
+def test_missing_mw_setup_fails_installation(tmp_path: Path):
+    team_dir = build_fake_installer(tmp_path)
+    (tmp_path / "scripts/mw/mw-setup.sh").unlink()
+
+    result = run_installer(team_dir, tmp_path)
+
+    assert result.returncode != 0
+    assert "ไม่พบตัวติดตั้งเครื่องมือ Use Migrate Web" in result.stdout
+
+
+def test_failed_mw_setup_fails_installation(tmp_path: Path):
+    team_dir = build_fake_installer(tmp_path, mw_setup_exit=23)
+
+    result = run_installer(team_dir, tmp_path)
+
+    assert result.returncode != 0
+    assert "ติดตั้งเครื่องมือ Use Migrate Web (MW) ไม่สำเร็จ" in result.stdout

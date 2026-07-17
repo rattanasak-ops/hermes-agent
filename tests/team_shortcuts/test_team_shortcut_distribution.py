@@ -1,4 +1,9 @@
+import os
 from pathlib import Path
+import shutil
+import subprocess
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,12 +46,83 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     installer = (TEAM / "install-shortcuts.sh").read_text(encoding="utf-8")
     checker = (TEAM / "check-shortcuts.sh").read_text(encoding="utf-8")
 
-    assert version == "2026.07.13-5"
+    assert version == "2026.07.17-1"
     assert "INSTALLED_VERSION" in installer
     assert "ไม่พบตัวตรวจสุขภาพ Hook" in installer
     assert "registry_vs_skill" in checker
     assert '"29"' not in checker
     assert '"33"' not in checker
+
+
+def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
+    home = tmp_path / "home"
+    root = home / "ObsidianVault/HermesAgent"
+    shutil.copytree(TEAM / "payload", root)
+    (root / ".shortcut-version").write_text("2026.07.17-1\n", encoding="utf-8")
+
+    # แยกการทดสอบไฟล์ Migrate ออกจากจำนวนรายการ Shortcut อื่นใน payload
+    (root / "ai-context/prompt-shortcut-registry.md").write_text("| `fixture` |\n", encoding="utf-8")
+    (root / "skills/prompt-shortcuts/Prompt Shortcuts.md").write_text(
+        "| `fixture` |\n", encoding="utf-8"
+    )
+    (root / "skills/prompt-shortcuts/SKILL.md").write_text(
+        "## Shortcut Map\n| `fixture` |\n## End\n", encoding="utf-8"
+    )
+
+    codex_skill = home / ".codex/skills/prompt-shortcuts"
+    codex_skill.parent.mkdir(parents=True)
+    codex_skill.symlink_to(root / "skills/prompt-shortcuts")
+
+    claude = home / ".claude/CLAUDE.md"
+    claude.parent.mkdir(parents=True)
+    claude.write_text("HERMES_SHORTCUTS_START\n", encoding="utf-8")
+
+    local_bin = home / ".local/bin"
+    local_bin.mkdir(parents=True)
+    hook_doctor = local_bin / "hermes-hook-doctor"
+    hook_doctor.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+    hook_doctor.chmod(0o755)
+    (local_bin / "hermes-write-permit").touch()
+
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.17-1"
+    return root, env
+
+
+def _run_shortcut_check(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["bash", str(TEAM / "check-shortcuts.sh")],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_checker_accepts_all_14_migrate_phases_and_shared_contract(tmp_path):
+    _, env = _installed_shortcut_home(tmp_path)
+
+    result = _run_shortcut_check(env)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "use_migrate_phase_coverage   14" in result.stdout
+    assert "RESULT: PASS" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "missing_name",
+    [*(f"use-migrate-{phase}.md" for phase in range(14)), "use-migrate-phase-contract.md"],
+)
+def test_checker_fails_when_any_migrate_phase_or_contract_is_missing(tmp_path, missing_name):
+    root, env = _installed_shortcut_home(tmp_path)
+    (root / "skills/prompt-shortcuts/references" / missing_name).unlink()
+
+    result = _run_shortcut_check(env)
+
+    assert result.returncode != 0
+    assert "RESULT: FAIL" in result.stdout
+    assert missing_name in result.stdout
 
 
 def test_github_installer_sets_up_shortcuts_relay_and_shell_path():

@@ -266,15 +266,17 @@ else
   fi
 fi
 
-say ""
-say "เสร็จสิ้น. ปิดแล้วเปิดโปรแกรม AI ใหม่ 1 รอบ แล้วลองพิมพ์ Shortcut เช่น  Use Comply"
-
-# ติดตั้งเครื่องมือ Use Migrate Web (MW) ถ้ามีใน repo — best-effort (ไม่ทำ shortcut install พัง)
+# ติดตั้งเครื่องมือ Use Migrate Web (MW) เป็นด่านบังคับของการติดตั้ง
 MW_SETUP="$SCRIPT_DIR/../scripts/mw/mw-setup.sh"
-if [ -f "$MW_SETUP" ]; then
-  say ""
-  say "ติดตั้งเครื่องมือ Use Migrate Web (MW)..."
-  bash "$MW_SETUP" || say "  (ข้ามเครื่องมือ MW ชั่วคราว — ติดตั้งภายหลังด้วย: bash scripts/mw/mw-setup.sh)"
+if [ ! -f "$MW_SETUP" ]; then
+  say "ผิดพลาด: ไม่พบตัวติดตั้งเครื่องมือ Use Migrate Web ที่ $MW_SETUP"
+  exit 1
+fi
+say ""
+say "ติดตั้งเครื่องมือ Use Migrate Web (MW)..."
+if ! bash "$MW_SETUP"; then
+  say "ผิดพลาด: ติดตั้งเครื่องมือ Use Migrate Web (MW) ไม่สำเร็จ"
+  exit 1
 fi
 
 if [ -f "$SCRIPT_DIR/check-shortcuts.sh" ]; then
@@ -282,3 +284,6 @@ if [ -f "$SCRIPT_DIR/check-shortcuts.sh" ]; then
   HERMES_SHORTCUT_EXPECTED_VERSION="$(tr -d '[:space:]' < "$VERSION_FILE")" \
     bash "$SCRIPT_DIR/check-shortcuts.sh"
 fi
+
+say ""
+say "เสร็จสิ้น. ปิดแล้วเปิดโปรแกรม AI ใหม่ 1 รอบ แล้วลองพิมพ์ Shortcut เช่น  Use Comply"

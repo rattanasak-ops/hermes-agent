@@ -10,21 +10,33 @@
 พอ AI หาเนื้อ Shortcut ไม่เจอ จึงใช้ไม่ได้ ตัวติดตั้งนี้วางชุด Shortcut ลงเครื่องพนักงาน
 แล้วต่อสายให้ทั้ง 3 โปรแกรมมองเห็น
 
-## วิธีติดตั้ง (พนักงานทำครั้งเดียวต่อ Notebook หรือบัญชี VPS)
+## วิธีติดตั้งบน Mac
 
-พนักงานไม่ต้องมี repo Hermes Agent ในเครื่อง ให้รันคำสั่งเดียวนี้:
+พนักงานไม่ต้องมี repo Hermes Agent ในเครื่อง คำสั่งต่อไปนี้ติดตั้งให้ Codex App:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/rattanasak-ops/hermes-agent/main/team-shortcuts/install-from-github.sh | bash
 ```
 
-ถ้าใช้ Cursor ด้วย ให้รัน:
+ถ้าต้องการให้ Cursor เห็น Shortcut ด้วย ให้เพิ่ม `--cursor`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/rattanasak-ops/hermes-agent/main/team-shortcuts/install-from-github.sh | bash -s -- --cursor
 ```
 
-คำสั่งเดิมนี้ติดตั้งทั้ง Shortcut + AI Relay + เพิ่ม `~/.local/bin` ให้ zsh/bash แล้ว
+คำสั่ง Mac ติดตั้งทั้ง Shortcut, AI Relay และเพิ่ม `~/.local/bin` ให้ zsh/bash แล้ว
+
+## วิธีติดตั้งบน Windows
+
+เปิด PowerShell แบบปกติ ไม่ต้องเปิดด้วยสิทธิ์ผู้ดูแล แล้วรันคำสั่งนี้ คำสั่งเดียวติดตั้ง Shortcut ให้ทั้ง Cursor และ Codex App:
+
+```powershell
+irm https://raw.githubusercontent.com/rattanasak-ops/hermes-agent/main/team-shortcuts/install-from-github.ps1 | iex
+```
+
+ตัวติดตั้ง Windows ชุดนี้ยืนยันเฉพาะการวาง Shortcut และจุดเชื่อมสำหรับ Cursor กับ Codex App เท่านั้น เครื่องมือ MW ยังเป็น shell script และยังไม่มีหลักฐานว่าทำงานบน Windows PowerShell โดยตรง หากงานต้องใช้ MW บน Windows ให้เปิดผ่าน WSL หรือ Git Bash และตรวจผลในสภาพแวดล้อมนั้นแยกต่างหาก
+
+ทั้ง Mac และ Windows ให้ปิดแล้วเปิด Cursor หรือ Codex App ใหม่ 1 รอบหลังติดตั้ง แล้วลองพิมพ์ `Use New Chat`
 
 หลังติดตั้ง พนักงานต้องรับไฟล์สิทธิ์ AI Portal ส่วนตัวจากแอดมินหนึ่งครั้งต่อเครื่อง
 (ห้ามส่ง Token ในห้องแชทรวม) แล้วตั้งสิทธิ์ไฟล์:
@@ -59,7 +71,7 @@ RESULT: PASS
 |---|---|:---:|
 | 1 | คัดชุด Shortcut ไป `~/ObsidianVault/HermesAgent/` | ไม่ |
 | 2 | ต่อ Claude Code ผ่าน `~/.claude/CLAUDE.md` | ไม่ |
-| 3 | ต่อ Codex ผ่าน `~/.codex/skills/prompt-shortcuts` | ไม่ |
+| 3 | ต่อ Codex App ผ่าน `~/.codex/skills/prompt-shortcuts` | ไม่ |
 | 4 | ต่อ Cursor ผ่านทางลัดชดเชยที่อยู่เดิม (เฉพาะ `--cursor`) | อาจขอ 1 ครั้ง |
 | 5 | ติดตั้ง AI Relay และคำสั่งตรวจ (`relay-doctor`, `relay-status`, `gate-run`) | ไม่ |
 | 6 | เพิ่ม `~/.local/bin` ให้ zsh/bash | ไม่ |
