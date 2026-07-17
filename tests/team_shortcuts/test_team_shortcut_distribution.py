@@ -1,7 +1,9 @@
 import os
+import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -46,19 +48,137 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     installer = (TEAM / "install-shortcuts.sh").read_text(encoding="utf-8")
     checker = (TEAM / "check-shortcuts.sh").read_text(encoding="utf-8")
 
-    assert version == "2026.07.17-1"
+    assert version == "2026.07.17-2"
     assert "INSTALLED_VERSION" in installer
     assert "ไม่พบตัวตรวจสุขภาพ Hook" in installer
+    assert installer.index('bash "$NEW_CHAT_INSTALLER"') < installer.index(
+        'python3 "$TEAM_HOOK_INSTALLER"'
+    ) < installer.index('if ! "$HOOK_DOCTOR_BIN"')
+    assert "ผ่าน 4/4" in installer
     assert "registry_vs_skill" in checker
     assert '"29"' not in checker
     assert '"33"' not in checker
+
+
+def test_fresh_home_installs_new_chat_tools_and_fail_closed_gate(tmp_path):
+    home = tmp_path / "fresh-home"
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+
+    result = subprocess.run(
+        ["bash", str(TEAM / "install-new-chat-tools.sh")],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    local_bin = home / ".local/bin"
+    for name in ("hermes-prewrite-gate", "hermes-new-chat", "hermes-worktree"):
+        tool = local_bin / name
+        assert tool.is_file(), name
+        assert os.access(tool, os.X_OK), name
+
+    for name in ("hermes-new-chat", "hermes-worktree"):
+        help_result = subprocess.run(
+            [str(local_bin / name), "--help"],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert help_result.returncode == 0, help_result.stdout + help_result.stderr
+
+    gate = subprocess.run(
+        [str(local_bin / "hermes-prewrite-gate")],
+        input="{not-json",
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert gate.returncode == 2
+
+    hooks = subprocess.run(
+        [sys.executable, str(TEAM / "install-team-hooks.py")],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert hooks.returncode == 0, hooks.stdout + hooks.stderr
+    doctor = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/hermes_hook_doctor.py")],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    health = json.loads(doctor.stdout)
+    assert len(health["gates"]) == 4
+    assert next(row for row in health["gates"] if row["gate"] == "new_chat_relay_prewrite") == {
+        "gate": "new_chat_relay_prewrite",
+        "ok": True,
+        "exit": 2,
+    }
+
+
+def test_team_hook_installer_adds_new_chat_relay_without_removing_existing_hook(tmp_path):
+    home = tmp_path / "home"
+    settings = home / ".claude/settings.json"
+    settings.parent.mkdir(parents=True)
+    settings.write_text(
+        json.dumps(
+            {
+                "hooks": {
+                    "PreToolUse": [
+                        {
+                            "matcher": "Read",
+                            "hooks": [{"type": "command", "command": "keep-me"}],
+                        }
+                    ]
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+
+    result = subprocess.run(
+        [sys.executable, str(TEAM / "install-team-hooks.py")],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    for root in (home / ".claude/hooks", home / ".codex/hooks"):
+        assert (root / "enforce-new-chat-relay.py").is_file()
+    data = json.loads(settings.read_text(encoding="utf-8"))
+    entries = data["hooks"]["PreToolUse"]
+    assert any(
+        entry.get("matcher") == "Edit|Write|MultiEdit|NotebookEdit|ApplyPatch|Bash"
+        and any("enforce-new-chat-relay.py" in hook.get("command", "") for hook in entry["hooks"])
+        for entry in entries
+    )
+    assert any(hook.get("command") == "keep-me" for entry in entries for hook in entry["hooks"])
+    codex_data = json.loads((home / ".codex/hooks.json").read_text(encoding="utf-8"))
+    assert any(
+        entry.get("matcher") == "Edit|Write|MultiEdit|NotebookEdit|ApplyPatch|Bash"
+        and any("enforce-new-chat-relay.py" in hook.get("command", "") for hook in entry["hooks"])
+        for entry in codex_data["hooks"]["PreToolUse"]
+    )
 
 
 def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     home = tmp_path / "home"
     root = home / "ObsidianVault/HermesAgent"
     shutil.copytree(TEAM / "payload", root)
-    (root / ".shortcut-version").write_text("2026.07.17-1\n", encoding="utf-8")
+    (root / ".shortcut-version").write_text("2026.07.17-2\n", encoding="utf-8")
 
     # แยกการทดสอบไฟล์ Migrate ออกจากจำนวนรายการ Shortcut อื่นใน payload
     (root / "ai-context/prompt-shortcut-registry.md").write_text("| `fixture` |\n", encoding="utf-8")
@@ -86,7 +206,7 @@ def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
 
     env = os.environ.copy()
     env["HOME"] = str(home)
-    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.17-1"
+    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.17-2"
     return root, env
 
 
