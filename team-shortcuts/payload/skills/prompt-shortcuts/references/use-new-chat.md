@@ -18,14 +18,14 @@ tags:
   - startup-gate
   - flow-guardian
 status: active
-version: "2.8"
-updated: 2026-07-15
+version: "2.9"
+updated: 2026-07-17
 schema: memory-schema-v1.2
 pairs_with: use-close-chat >= 2.2
 includes: use-ai-relay >= 2.9
 ---
 
-# Use New Chat (v2.8 · 2026-07-15)
+# Use New Chat (v2.9 · 2026-07-17)
 
 คู่กับ Use Close Chat ≥ v2.2 · อ้าง Memory Schema v1.2 · เช็ก schema version ตอนเริ่ม · ไม่ตรง = เตือน + ห้ามเขียนไฟล์ความจำจนกว่าจะอ่าน schema ล่าสุด
 
@@ -111,6 +111,7 @@ project config > repo runbook > AGENTS.md/.hermes context > ถามเจ้�
 
 0a. ความจำรอบล่าสุด (แก้ AI ลืมงานข้ามแชท · Schema v1.2: อ่าน `.project/` ที่เดียวต้องไปต่อได้):
 - เปิด `.project/OverviewProgress.md` (เช็กป้าย `> memory-schema:` บรรทัดแรก + อ่าน 4 หัวข้อบนสุด: สถานะล่าสุด/งานถัดไป/ข้อห้าม/งานค้าง-ส่งต่อ) → อ่านตามสารบัญบังคับ: `.project/plan.md` + `.project/decisions.md` → session log ล่าสุด (ตาม `latest-close.md` ของ staff ตัวเอง — Schema §6)
+- [SPEC · capability-based · Schema §1d] มีสเปคที่จับคู่แผน active (`.project/spec/<plan_id>.md` — จับคู่ด้วยชื่อไฟล์เท่านั้น มีแค่โฟลเดอร์ไม่นับ) → อ่านสเปค: เช็ก `status` + `owner_approved` + นับตารางแม่ N/M · ถ้างานถัดไปเป็นงานโค้ดใต้แผนนั้นแต่สเปคยัง `draft` = ตีธงใน Startup Report + ห้ามเริ่มงานโค้ดใต้แผนนั้นจนเจ้าของอนุมัติสเปค · ไม่มีไฟล์ที่จับคู่ = ข้าม ระบบเดิม
 - ถ้าพบความจำเก่า, memory-audit, QA/QC หรือโหมดงานทีม ให้อ่านเฉพาะหัวข้อที่ตรงเงื่อนไขใน `use-new-chat-conditional-gates.md` · ห้ามโหลดไฟล์นั้นเมื่อไม่เข้าเงื่อนไข
 - memory guard: ยืนยันว่า memory ที่อ่านเป็นของ project + worktree นี้จริงก่อนใช้ · ไม่ใช่ = ไม่ใช้ รายงาน
 - หา latest-close/handoff ไม่เจอ = บอกว่าไม่พบความจำรอบก่อน ไม่เดาว่าทำอะไรไป
@@ -183,6 +184,8 @@ Project: path / repo / execution target / local controller / context loaded
 Workspace: current folder / git root / registered folder / folder match
 Project Overview (3 บรรทัด): โปรเจกต์คืออะไร / โครงหลัก / ข้อตกลงสำคัญ
 Memory: process ขั้นไหน / งานล่าสุดถึงไหน(SHA) / ต้องทำต่อ 1 ข้อ / token รอบก่อน(+ธงถ้าไม่ตรงจริง)
+Spec: <spec ของแผน active: spec_id / status / ตารางแม่ N-M + ธงถ้ายัง draft แต่มีงานโค้ด — หรือ N/A ถ้าไม่มีสเปคจับคู่แผน>
+
 Git: worktree / branch / dirty / HEAD / remote match (หรือ candidate)
 Routing: staff id / target worktree / route status (หรือ N/A)
 AI Relay: brain / coder / reviewer readiness / account state / version compatibility / queue state
@@ -205,6 +208,7 @@ Readiness: READY / BLOCKED / NEED_OWNER_INPUT + เหตุผล + งาน�
 
 ## Changelog
 
+- v2.9 (2026-07-17 · SPEC-CENTRAL): ขั้น 0a อ่านสเปคกลางที่จับคู่แผน active (`.project/spec/<plan_id>.md` · Schema §1d) — เช็ก status/owner_approved/ตารางแม่ N/M · สเปคยัง draft + งานถัดไปเป็นงานโค้ด = ตีธงห้ามเริ่ม · เพิ่มบรรทัด `Spec:` ใน Startup Report · โปรเจกต์ไม่มีสเปคจับคู่ = พฤติกรรมเดิม 100%
 - v2.8 (2026-07-15): เปลี่ยนจากคำแนะนำเป็นคำสั่งทำงานจริง `hermes-new-chat open/status` · งานใหม่สร้าง task worktree+branch+lease+permit+Relay state ในครั้งเดียว · ห้ามเขียน canonical repo · Hook ก่อนเขียนบล็อกเมื่อไม่ผ่าน Relay
 - v2.7 (2026-07-14): เพิ่ม Fresh Close Receipt ลดการตรวจ CI/VPS ซ้ำแต่ยังบังคับ Git ขั้นพื้นฐานสด · ถามโหมด AI 1/2 เฉพาะเมื่อจะใช้หลาย AI · เปลี่ยน Write Permit เป็นสิทธิ์ระดับ Phase ไม่ถามราย issue
 - v2.6 (2026-07-13): ส่งกฎหยุดหลังตรวจไม่ผ่าน 2 รอบให้ AI Relay · บังคับแยกปัญหาและเปลี่ยนวิธีตรวจแทนการเรียกผู้ตรวจเดิมรอบที่ 3
