@@ -87,9 +87,29 @@ def issue_block(lines: list[str], task_id: str) -> list[str]:
     return lines[start:end]
 
 
-def brief_lines(text: str, task_id: str) -> Iterable[str]:
+def read_spec(plan_path: Path, plan_id: str, spec_override: str | None) -> str | None:
+    """อ่านสเปคกลางของแผน (.project/spec/<plan_id>.md) ถ้ามี · ไม่มี=None (ของเก่าไม่พัง)"""
+    if spec_override:
+        spec_path = Path(spec_override)
+    else:
+        spec_path = plan_path.parent / "spec" / f"{plan_id}.md"
+    if not spec_path.exists():
+        return None
+    try:
+        return spec_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
+def brief_lines(text: str, task_id: str, spec_text: str | None = None) -> Iterable[str]:
     lines = text.splitlines()
-    blocks = [
+    blocks: list[list[str]] = []
+    if spec_text:
+        blocks.append(
+            ["===== สเปคของงาน (.project/spec) — อ่าน+ทำตามก่อนเขียนโค้ด ====="]
+            + spec_text.splitlines()
+        )
+    blocks += [
         find_header(lines),
         section_containing(lines, "กติกาเหล็ก"),
         issue_block(lines, task_id),
@@ -108,6 +128,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Anchor relay task ids to a plan file.")
     parser.add_argument("--task-id", required=True)
     parser.add_argument("--plan", default=".project/plan.md")
+    parser.add_argument("--spec", default=None, help="override path ของไฟล์สเปค (ปกติ derive จาก plan_id)")
     parser.add_argument("--emit-brief", action="store_true")
     return parser
 
@@ -139,7 +160,8 @@ def main(argv: list[str] | None = None) -> int:
     payload["status"] = "ok"
     emit(payload)
     if args.emit_brief:
-        for line in brief_lines(text, args.task_id):
+        spec_text = read_spec(plan_path, plan_id, args.spec)
+        for line in brief_lines(text, args.task_id, spec_text):
             print(line)
     return 0
 

@@ -192,3 +192,39 @@ def test_crlf_plan_ok(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     assert first_json_line(result.stdout)["status"] == "ok"
+
+
+# --- SPEC-ANCHOR: สเปคกลางผนวกเข้า brief (capability-based · ของเก่าไม่พัง) ---
+
+
+def test_emit_brief_includes_spec_when_present(tmp_path: Path) -> None:
+    """A2: มี .project/spec/<plan_id>.md → brief ต้องมีเนื้อสเปค + ยังมีของเดิม"""
+    path = tmp_path / "plan.md"
+    path.write_text(SAMPLE_PLAN, encoding="utf-8")
+    spec_dir = tmp_path / "spec"
+    spec_dir.mkdir()
+    (spec_dir / "GRD.md").write_text(
+        "---\nspec_id: GRD\nstatus: approved\n---\n\n# สเปค\n\n- ทำอะไร: SPECMARKER ทดสอบ\n",
+        encoding="utf-8",
+    )
+
+    result = run_anchor("GRD-P1-I1", path, emit_brief=True)
+    brief = "\n".join(result.stdout.splitlines()[1:])
+
+    assert result.returncode == 0
+    assert "SPECMARKER" in brief          # เนื้อสเปคเข้า brief จริง
+    assert "สเปคของงาน" in brief          # หัวก้อนสเปค
+    assert "กติกาเหล็ก" in brief          # ของเดิมยังอยู่
+
+
+def test_emit_brief_without_spec_unchanged(tmp_path: Path) -> None:
+    """A3: ไม่มีไฟล์สเปค → brief เดิม ไม่พัง ไม่มีก้อนสเปคโผล่มา"""
+    path = tmp_path / "plan.md"
+    path.write_text(SAMPLE_PLAN, encoding="utf-8")
+
+    result = run_anchor("GRD-P1-I1", path, emit_brief=True)
+    brief = "\n".join(result.stdout.splitlines()[1:])
+
+    assert result.returncode == 0
+    assert "สเปคของงาน" not in brief      # ไม่มีก้อนสเปค
+    assert "กติกาเหล็ก" in brief          # ของเดิมไม่พัง
