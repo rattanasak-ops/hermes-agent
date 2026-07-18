@@ -11,6 +11,8 @@
 สมอง (brain) = Opus 4.8 ตัวเดียว (--tool opus) · Fable ถอดออกแล้ว (เจ้าของสั่ง 2026-07-06)
 เพดานรอบต่อ issue นับข้าม coder · cooldown ตัวที่พังซ้ำ · อ่าน YAML ได้แม้ไม่มี PyYAML (ตัวอ่านสำรองในตัว)
 """
+from __future__ import annotations
+
 import argparse, glob, json, os, re, shutil, signal, socket, subprocess, sys, threading, time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -715,7 +717,7 @@ def check_plan_anchor(cwd: Path, task_id: str, no_plan: bool) -> tuple[str, str 
 def record_fail(cwd: Path, tool: str, cd: dict, now: float):
     # อ่าน-แก้-เขียน ใต้ล็อกเดียว กันสองโปรเซสทับสถานะกัน
     lockf = cfg_dir(cwd)/".cooldown.lock"; lockf.parent.mkdir(parents=True, exist_ok=True)
-    with open(lockf, "w") as lk:
+    with open(lockf, "w", encoding="utf-8") as lk:
         if fcntl: fcntl.flock(lk, fcntl.LOCK_EX)
         state = load_cooldown(cwd)
         e = state.setdefault(tool, {"fails": [], "until": 0})
