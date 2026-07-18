@@ -1,5 +1,6 @@
 # Latest Close — nat
 
+- 2026-07-17 (แชท Fable · ปิดรอบซ่อมยาม + ส่งต่อทีม) · ดู `session-log-2026-07-16-gate-repair.md` · **prewrite gate v2.2 merged main (PR #60) + สร้างกิ่ง `dev`=`d0cf379ca` ให้ทีมทำงานต่อ** · Token CLOSED_WITH_PENDING (เก็บกวาด: ลบกิ่ง merged + ตั้ง branch protection dev + GitHub MCP token หมดอายุ · harden: `git -C` หลบด่าน git)
 - 2026-07-16 (แชท Fable · ต่อจาก station gate) · `session-log-2026-07-16-gate-repair.md` · **ซ่อมยาม prewrite gate over-lock (v1→v2.2) + เสียบปลั๊กกลับ** — ล็อกเฉพาะเขตที่ระบบคุม ไม่ล็อกตัวเอง + กัน AI ถอด/ปลอมด่านเอง · GPT-5 ตรวจ 2 รอบ · pytest 89 + live hook 15 เขียว · ติดตั้ง+เสียบ hook แล้ว (doctor 4/4) · Token CLOSED_WITH_PENDING (commit `4599eaca0` push ไม่ได้—29 ไฟล์ dirty เซสชัน NCR อื่น + relay สายพานเต็มยังใช้ไม่ได้บนเครื่องนี้)
 
 - 2026-07-16 (บันทึกย้อนหลังโดยแชทถัดไปตามคำสั่งเจ้าของ) · `session-log-2026-07-16-station-gate.md` · flow station gate **PR #51 merged (`f14cf6c09`)** — owner ยืนยันจากแชทจริง (transcript · ปลอมไม่ได้) กัน AI ข้าม flow · Token CLOSED_WITH_PENDING (prewrite-gate ถูกถอดชั่วคราวรอเจ้าของเคาะ + relay/codex crash งานซ่อมแยก + ข้อจำกัด v2 ยังไม่ผูกรายเมนู)

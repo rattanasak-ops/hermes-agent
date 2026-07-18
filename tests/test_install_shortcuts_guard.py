@@ -27,6 +27,9 @@ def build_fake_installer(
     payload = team_dir / "payload"
     registry_path = payload / "ai-context" / "prompt-shortcut-registry.md"
     ref_path = payload / "skills" / "prompt-shortcuts" / "references" / "a.md"
+    agent_skill = payload / "skills" / "agent-center" / "SKILL.md"
+    agent_metadata = payload / "skills" / "agent-center" / "agents" / "openai.yaml"
+    agent_plugin = tmp_path / "plugins" / "agent_center" / "plugin.yaml"
 
     team_dir.mkdir()
     mw_dir.mkdir(parents=True)
@@ -36,25 +39,58 @@ def build_fake_installer(
     (team_dir / "VERSION").write_text("test-version\n")
     (team_dir / "install-team-hooks.py").write_text("#!/usr/bin/env python3\n")
     (scripts_dir / "hermes_write_permit.py").write_text("#!/usr/bin/env bash\nexit 0\n")
-    (scripts_dir / "hermes_hook_doctor.py").write_text("#!/usr/bin/env bash\nexit 0\n")
+    (scripts_dir / "hermes_hook_doctor.py").write_text(
+        "#!/usr/bin/env python3\nraise SystemExit(0)\n"
+    )
     gate = scripts_dir / "new-chat/hermes_prewrite_gate.py"
     gate.parent.mkdir(parents=True)
     gate.write_text("#!/usr/bin/env python3\nraise SystemExit(2)\n")
+    (scripts_dir / "new-chat/hermes_owner_intent.py").write_text(
+        "#!/usr/bin/env python3\n"
+    )
     lifecycle = tmp_path / "hermes_cli/worktree_lifecycle.py"
     lifecycle.parent.mkdir(parents=True)
     lifecycle.write_text("def register_worktree_subparser(subparsers):\n    pass\n")
     (mw_dir / "mw-setup.sh").write_text(f"#!/usr/bin/env bash\nexit {mw_setup_exit}\n")
     registry_path.parent.mkdir(parents=True)
     ref_path.parent.mkdir(parents=True)
+    agent_skill.parent.mkdir(parents=True)
+    agent_metadata.parent.mkdir(parents=True)
+    agent_plugin.parent.mkdir(parents=True)
     registry_path.write_text(registry)
     ref_path.write_text(ref)
+    agent_skill.write_text("---\nname: agent-center\n---\n")
+    agent_metadata.write_text("interface:\n  display_name: Agent Center\n")
+    agent_plugin.write_text("name: agent-center\nversion: 0.1.0\n")
+
+    fake_bin = tmp_path / "home" / ".local" / "bin"
+    fake_bin.mkdir(parents=True)
+    fake_hermes = fake_bin / "hermes"
+    fake_hermes.write_text(
+        "#!/usr/bin/env bash\n"
+        "if [ \"${1:-}\" = dump ]; then\n"
+        "  printf 'hermes_home:      ~/.hermes-active\\n'\n"
+        "elif [ \"${1:-}\" = plugins ] && [ \"${2:-}\" = enable ] "
+        "&& [ \"${3:-}\" = agent-center ]; then\n"
+        "  test -f \"$HOME/.hermes-active/plugins/agent-center/plugin.yaml\" || exit 3\n"
+        "  mkdir -p \"$HOME/.hermes-active\"\n"
+        "  printf 'plugins:\\n  enabled:\\n    - agent-center\\n' "
+        "> \"$HOME/.hermes-active/config.yaml\"\n"
+        "  printf 'enabled\\n' > \"$HOME/.hermes-active/agent-center-enabled\"\n"
+        "else\n"
+        "  exit 4\n"
+        "fi\n"
+    )
+    fake_hermes.chmod(0o755)
     return team_dir
 
 
 def run_installer(team_dir: Path, tmp_path: Path, *args: str):
     env = os.environ.copy()
+    env.pop("HERMES_HOME", None)
     env["HOME"] = str(tmp_path / "home")
     env["HERMES_SHORTCUTS_DEST"] = str(tmp_path / "vault")
+    env["PATH"] = f"{tmp_path / 'home/.local/bin'}{os.pathsep}{env.get('PATH', '')}"
     return subprocess.run(
         ["bash", str(team_dir / "install-shortcuts.sh"), *args],
         cwd=team_dir,
@@ -81,6 +117,10 @@ def test_fresh_install_copies_payload_to_destination(tmp_path: Path):
     assert result.returncode == 0, result.stderr + result.stdout
     assert vault_file(tmp_path, "ai-context/prompt-shortcut-registry.md").read_text() == "registry v1\n"
     assert vault_file(tmp_path, "skills/prompt-shortcuts/references/a.md").read_text() == "ref v1\n"
+    assert vault_file(tmp_path, "skills/agent-center/SKILL.md").is_file()
+    assert (tmp_path / "home/.codex/skills/agent-center/SKILL.md").is_file()
+    assert (tmp_path / "home/.hermes-active/plugins/agent-center/plugin.yaml").is_file()
+    assert (tmp_path / "home/.hermes-active/agent-center-enabled").read_text() == "enabled\n"
     local_bin = tmp_path / "home/.local/bin"
     for name in ("hermes-prewrite-gate", "hermes-new-chat", "hermes-worktree"):
         assert (local_bin / name).is_file()
@@ -93,6 +133,19 @@ def test_fresh_install_copies_payload_to_destination(tmp_path: Path):
         check=False,
     )
     assert gate.returncode == 2
+
+
+def test_existing_codex_agent_directory_is_synced_without_failing(tmp_path: Path):
+    team_dir = build_fake_installer(tmp_path)
+    codex_agent = tmp_path / "home/.codex/skills/agent-center"
+    codex_agent.mkdir(parents=True)
+    (codex_agent / "stale.txt").write_text("remove me\n")
+
+    result = run_installer(team_dir, tmp_path)
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert (codex_agent / "SKILL.md").is_file()
+    assert not (codex_agent / "stale.txt").exists()
 
 
 def test_newer_different_destination_blocks_without_force(tmp_path: Path):

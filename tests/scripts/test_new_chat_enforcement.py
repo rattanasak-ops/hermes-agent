@@ -86,6 +86,8 @@ def test_old_session_and_relay_role_are_not_required(workspace, monkeypatch):
         "npm run typecheck",
         "pytest -q",
         "python3 -m pytest tests -q",
+        "python3 design-system-standard-v2/tools/ds-gate.py --layer all",
+        "bash design-system-standard-v2/ds-adopt.sh check .",
         "ruff check .",
         "tsc --noEmit",
     ],

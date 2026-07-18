@@ -58,10 +58,10 @@ curl -fsSL https://raw.githubusercontent.com/rattanasak-ops/hermes-agent/main/te
 ผลที่ถูกต้อง:
 
 ```text
-PASS registry_count               28
-PASS skill_map_count              28
-PASS index_count                  28
-PASS prompt_md_count              32
+PASS registry_vs_skill            33
+PASS registry_vs_index            33
+PASS prompt_file_coverage         57 (คำสั่งลัด 33)
+PASS agent_center_enabled         <ตำแหน่ง config.yaml ของ Hermes Agent>
 RESULT: PASS
 ```
 
@@ -75,8 +75,14 @@ RESULT: PASS
 | 4 | ต่อ Cursor ผ่านทางลัดชดเชยที่อยู่เดิม (เฉพาะ `--cursor`) | อาจขอ 1 ครั้ง |
 | 5 | ติดตั้ง AI Relay และคำสั่งตรวจ (`relay-doctor`, `relay-status`, `gate-run`) | ไม่ |
 | 6 | เพิ่ม `~/.local/bin` ให้ zsh/bash | ไม่ |
+| 7 | ติดตั้ง Agent Center ให้ Obsidian/Codex และเปิดส่วนเสริมใน Hermes Agent | ไม่ |
 
 ตัวติดตั้งรันซ้ำได้ ไม่พัง (เขียนทับของเดิม)
+
+`Use Agent` ต้องมีคำสั่ง `hermes` อยู่บนเครื่อง ตัวติดตั้งจะอ่านบ้านที่ Hermes Agent
+ใช้งานจริงจาก `hermes dump` แล้วคัด Agent Center ไปยังตำแหน่งนั้น จึงรองรับเครื่องที่
+ไม่ได้ใช้ `~/.hermes` เป็นตำแหน่งหลัก หากหา Hermes Agent ไม่พบ ตัวติดตั้งจะหยุดและ
+แจ้งสาเหตุแทนการรายงานว่าพร้อมใช้ผิด ๆ
 
 ## สำหรับพนักงานที่ทำงานบน VPS (บัญชี linux-nat)
 
