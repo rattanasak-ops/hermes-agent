@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """relay-portal — call AI Portal routes without requiring local vendor login."""
+from __future__ import annotations
+
 import argparse
 import base64
 import json
