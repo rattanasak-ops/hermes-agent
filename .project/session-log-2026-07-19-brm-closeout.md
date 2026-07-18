@@ -8,7 +8,7 @@
 
 | รายการ | ผล | หลักฐาน |
 |---|---|---|
-| รวมงานเข้า `main` | verified | PR #80 merged · SHA `d480e2a8c9a1fed739803379937e3566029ae19b` |
+| รวมงานเข้า `main` | verified | PR #80 และ #81 merged · สัญญาทดสอบแก้ไขบน `main` · SHA `ae230bbd5ee55c18eb6a12f9dd6ae883fe67dc81` |
 | ชุดทดสอบรวมหลัง PR #80/#81 | verified | `352 passed in 18.72s` |
 | สถานะ Git | verified | `git status --short --branch` สะอาด · `git diff --check` ผ่าน |
 | คำขอรวมงานเปิดค้าง | verified | `gh pr list --state open` = 0 รายการ |

@@ -13,7 +13,7 @@
   - หลักฐานจากรอบเดิม: relay-call ตอบ `status: ok` และชุดทดสอบที่เกี่ยวข้องผ่าน 98/98
   - ข้อจำกัด: เครื่องเจ้าของใช้ Claude Subscription ตรง ส่วนเครื่องพนักงาน/VPS ห้ามเรียก Fable
 - **2026-07-19 (BRM-P5): ปิดขอบเขตส่งงานเข้า `main` ครบ 3/3 = 100%** [fact]
-  - `origin/main` และ worktree `main` ตรงกันที่ SHA `8c4c20c20fd7fb2134bde15c5528780c442621ef` หลัง PR #80 และ #81 รวมสำเร็จ · ตรวจพบ PR ใหม่ 1 รายการระหว่างรอบ จึงแก้และตรวจต่อ
+  - `origin/main` และ worktree `main` ตรงกันที่ SHA `ae230bbd5ee55c18eb6a12f9dd6ae883fe67dc81` หลัง PR #80 และ #81 รวมสำเร็จ แล้วส่งสัญญาทดสอบแก้ไขขึ้น `main`
   - ชุดทดสอบบนฐานล่าสุดผ่าน **352/352** · `git diff --check` ผ่าน · `git status` สะอาด 0 ไฟล์
   - Worktree/branch ประวัติ 18 รายการยังคงไว้ตาม WTL เพราะมีงาน dirty หรือยังไม่มี owner/task ที่ยืนยัน; ไม่มีการลบข้อมูลของแชทอื่น
 - **2026-07-18 (BRM · ตรวจสาขา Fable/NCR): ล็อกกฎปัจจุบันว่า AI ทุกตัวผ่าน AI Portal; ไม่รวม commit ความจำ Fable local-only และไม่ย้าย local fallback จาก NCR** [fact · `DEC-AIR-001` · รายละเอียด `session-log-2026-07-18-ai-portal-routing.md`]

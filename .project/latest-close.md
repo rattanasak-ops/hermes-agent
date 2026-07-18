@@ -1,6 +1,6 @@
 # Latest Close — nat
 
-- 2026-07-19 (Codex · BRM closeout) · `session-log-2026-07-19-brm-closeout.md` · **BRM-P5 ส่งงานเข้า `main` ครบ 3/3 = 100%** · PR #80 และ #81 merged ที่ SHA `8c4c20c20fd7fb2134bde15c5528780c442621ef` · ทดสอบ 352/352 · `main` สะอาดตรง `origin/main` · Token `CLOSED_WITH_PENDING` (worktree ประวัติ 18 รายการคงไว้ตาม WTL เพราะ dirty/ไม่มี owner-task ยืนยัน)
+- 2026-07-19 (Codex · BRM closeout) · `session-log-2026-07-19-brm-closeout.md` · **BRM-P5 ส่งงานเข้า `main` ครบ 3/3 = 100%** · PR #80 และ #81 merged พร้อมสัญญาทดสอบแก้ไข ที่ SHA `ae230bbd5ee55c18eb6a12f9dd6ae883fe67dc81` · ทดสอบ 352/352 · `main` สะอาดตรง `origin/main` · Token `CLOSED_WITH_PENDING` (worktree ประวัติ 18 รายการคงไว้ตาม WTL เพราะ dirty/ไม่มี owner-task ยืนยัน)
 
 - 2026-07-17 (แชท Fable · ปิดรอบซ่อมยาม + ส่งต่อทีม) · ดู `session-log-2026-07-16-gate-repair.md` · **prewrite gate v2.2 merged main (PR #60) + สร้างกิ่ง `dev`=`d0cf379ca` ให้ทีมทำงานต่อ** · Token CLOSED_WITH_PENDING (เก็บกวาด: ลบกิ่ง merged + ตั้ง branch protection dev + GitHub MCP token หมดอายุ · harden: `git -C` หลบด่าน git)
 - 2026-07-16 (แชท Fable · ต่อจาก station gate) · `session-log-2026-07-16-gate-repair.md` · **ซ่อมยาม prewrite gate over-lock (v1→v2.2) + เสียบปลั๊กกลับ** — ล็อกเฉพาะเขตที่ระบบคุม ไม่ล็อกตัวเอง + กัน AI ถอด/ปลอมด่านเอง · GPT-5 ตรวจ 2 รอบ · pytest 89 + live hook 15 เขียว · ติดตั้ง+เสียบ hook แล้ว (doctor 4/4) · Token CLOSED_WITH_PENDING (commit `4599eaca0` push ไม่ได้—29 ไฟล์ dirty เซสชัน NCR อื่น + relay สายพานเต็มยังใช้ไม่ได้บนเครื่องนี้)
