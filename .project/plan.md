@@ -51,16 +51,16 @@
 
 ## BRM-P5 — ส่งเข้า main และจัดคิวเก็บสาขา · สถานะ: 3/3 งานส่งเข้า main = 100% · เก็บประวัติแบบไม่ลบตาม WTL
 
-- **BRM-P5-I1** เสร็จ · `git diff --check` ผ่าน · ตรวจชุดทดสอบบนฐานล่าสุดผ่าน **174/174** และ **218/218** · ไม่แตะ secret
-- **BRM-P5-I2** เสร็จ · PR #80 รวมเข้า `main` สำเร็จ · `main` และ `origin/main` ตรง SHA `d480e2a8c9a1fed739803379937e3566029ae19b` · ไม่มี PR เปิดค้าง 0 รายการ
+- **BRM-P5-I1** เสร็จ · `git diff --check` ผ่าน · ตรวจชุดทดสอบบนฐานล่าสุดผ่าน **352/352** · ไม่แตะ secret
+- **BRM-P5-I2** เสร็จ · PR #80 และ #81 รวมเข้า `main` สำเร็จ · `main` และ `origin/main` ตรง SHA `8c4c20c20fd7fb2134bde15c5528780c442621ef`
 - **BRM-P5-I3** เสร็จในขอบเขตความปลอดภัย · ตรวจ worktree 18 รายการแล้ว; เก็บรายการที่ dirty/ไม่รู้ owner ไว้ 18/18 และไม่ลบข้อมูลของแชทอื่น
 - zone: B · external_effect: push/merge/cleanup · verify: SHA ตรง origin + test 174/174 และ 218/218 + worktree audit 18/18
 
 ### BRM-P5 closeout evidence · 2026-07-19
 
-- `main`, worktree ปิดงาน และ `origin/main` ชี้ SHA เดียวกัน: `d480e2a8c9a1fed739803379937e3566029ae19b`
-- PR #80 รวมสำเร็จ และคำสั่ง `gh pr list --state open` คืนรายการว่าง 0 รายการ
-- ทดสอบบนฐานล่าสุด: `174 passed in 52.34s` และ `218 passed in 30.80s`
+- `main`, worktree ปิดงาน และ `origin/main` ชี้ SHA เดียวกัน: `8c4c20c20fd7fb2134bde15c5528780c442621ef`
+- PR #80 และ #81 รวมสำเร็จ; หลัง PR #81 มี test contract เดิม 1 จุดไม่ตรงกับด่านป้องกัน จึงแก้ชุดทดสอบให้ยืนยันว่าต้องใช้ `--force` ก่อนลบไฟล์ปลายทางค้าง
+- ทดสอบบนฐานล่าสุด: `352 passed in 18.72s`
 - ตรวจ `git status --short --branch` ได้ `main...origin/main` และไม่มีไฟล์ค้าง; `git diff --check` ไม่พบปัญหา
 
 ## ข้อห้ามเฉพาะ BRM

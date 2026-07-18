@@ -2,7 +2,7 @@
 > อ่านตามลำดับ: plan-wtl.md (plan_id: WTL — active · Worktree Lifecycle) → plan.md (plan_id: QAQC/MW) → plan-grd.md (แผน GRD จบแล้ว + คิว GRD-P5..P9) → decisions.md → hermes-standard/REQUIREMENTS.md (บัญชีความต้องการ 66 ข้อ)
 
 # Overview & Progress — Hermes Agent
-อัปเดตล่าสุด: 2026-07-19 (BRM ปิดขอบเขตส่งเข้า `main` แล้ว · PR #80 รวมสำเร็จ · closeout 174/174 และ 218/218) · branch งานปัจจุบัน: `main` · ป้าย: [fact] เว้นแต่ระบุ
+อัปเดตล่าสุด: 2026-07-19 (BRM ปิดขอบเขตส่งเข้า `main` แล้ว · PR #80 และ #81 รวมสำเร็จ · closeout 352/352) · branch งานปัจจุบัน: `main` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
 - **2026-07-17 (ยามเขียนไฟล์ + ส่งต่อทีม): prewrite gate v2.2 เข้า main และสร้างกิ่ง `dev` จาก main ล่าสุด** [fact · PR #60]
@@ -13,8 +13,8 @@
   - หลักฐานจากรอบเดิม: relay-call ตอบ `status: ok` และชุดทดสอบที่เกี่ยวข้องผ่าน 98/98
   - ข้อจำกัด: เครื่องเจ้าของใช้ Claude Subscription ตรง ส่วนเครื่องพนักงาน/VPS ห้ามเรียก Fable
 - **2026-07-19 (BRM-P5): ปิดขอบเขตส่งงานเข้า `main` ครบ 3/3 = 100%** [fact]
-  - `origin/main` และ worktree `main` ตรงกันที่ SHA `d480e2a8c9a1fed739803379937e3566029ae19b` หลัง PR #80 รวมสำเร็จ · ไม่มี PR เปิดค้าง 0 รายการ
-  - ตรวจชุดทดสอบบนฐานล่าสุดผ่าน **174/174** และ **218/218** · `git diff --check` ผ่าน · `git status` สะอาด 0 ไฟล์
+  - `origin/main` และ worktree `main` ตรงกันที่ SHA `8c4c20c20fd7fb2134bde15c5528780c442621ef` หลัง PR #80 และ #81 รวมสำเร็จ · ตรวจพบ PR ใหม่ 1 รายการระหว่างรอบ จึงแก้และตรวจต่อ
+  - ชุดทดสอบบนฐานล่าสุดผ่าน **352/352** · `git diff --check` ผ่าน · `git status` สะอาด 0 ไฟล์
   - Worktree/branch ประวัติ 18 รายการยังคงไว้ตาม WTL เพราะมีงาน dirty หรือยังไม่มี owner/task ที่ยืนยัน; ไม่มีการลบข้อมูลของแชทอื่น
 - **2026-07-18 (BRM · ตรวจสาขา Fable/NCR): ล็อกกฎปัจจุบันว่า AI ทุกตัวผ่าน AI Portal; ไม่รวม commit ความจำ Fable local-only และไม่ย้าย local fallback จาก NCR** [fact · `DEC-AIR-001` · รายละเอียด `session-log-2026-07-18-ai-portal-routing.md`]
   - งานใหม่จริงจาก NCR ที่รอเขียน: ต่ออายุ lease อย่างตรวจตัวตนครบ · status กัน permit หมดอายุ · Relay ต้องเห็นไฟล์เปลี่ยนและคำตัดสินรีวิว · cleanup ตอนยกเลิก

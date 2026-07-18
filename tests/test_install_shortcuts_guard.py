@@ -151,13 +151,19 @@ def test_fresh_install_copies_payload_to_destination(tmp_path: Path):
     assert gate.returncode == 2
 
 
-def test_existing_codex_agent_directory_is_synced_without_failing(tmp_path: Path):
+def test_existing_codex_agent_directory_requires_force_before_stale_delete(tmp_path: Path):
     team_dir = build_fake_installer(tmp_path)
     codex_agent = tmp_path / "home/.codex/skills/agent-center"
     codex_agent.mkdir(parents=True)
     (codex_agent / "stale.txt").write_text("remove me\n")
 
-    result = run_installer(team_dir, tmp_path)
+    blocked = run_installer(team_dir, tmp_path)
+
+    assert blocked.returncode == 2, blocked.stderr + blocked.stdout
+    assert (codex_agent / "stale.txt").exists()
+    assert "stale.txt (มีเฉพาะปลายทาง)" in blocked.stdout
+
+    result = run_installer(team_dir, tmp_path, "--force")
 
     assert result.returncode == 0, result.stderr + result.stdout
     assert (codex_agent / "SKILL.md").is_file()
