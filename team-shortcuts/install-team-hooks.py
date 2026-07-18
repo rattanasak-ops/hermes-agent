@@ -139,7 +139,7 @@ def install_pretooluse_entry(settings_path: Path, runner: Path) -> None:
 
 
 def install_new_chat_entry(settings_path: Path, runner: Path) -> None:
-    """Install the New Chat relay gate while preserving existing hooks."""
+    """Install the current-workspace gate while preserving the old filename."""
     data = load_json(settings_path)
     hooks = data.setdefault("hooks", {})
     if not isinstance(hooks, dict):
@@ -175,11 +175,116 @@ def install_new_chat_entry(settings_path: Path, runner: Path) -> None:
     tmp.replace(settings_path)
 
 
+def install_cursor_entry(settings_path: Path, runner: Path) -> None:
+    data = load_json(settings_path)
+    data.setdefault("version", 1)
+    hooks = data.setdefault("hooks", {})
+    if not isinstance(hooks, dict):
+        raise SystemExit(f"ช่อง hooks ผิดรูปแบบใน {settings_path}")
+    entries = hooks.setdefault("preToolUse", [])
+    if not isinstance(entries, list):
+        raise SystemExit(f"ช่อง hooks.preToolUse ผิดรูปแบบใน {settings_path}")
+    command = str(runner)
+    found = False
+    for entry in entries:
+        if isinstance(entry, dict) and "enforce-new-chat-relay.py" in str(entry.get("command", "")):
+            entry.update(
+                {
+                    "command": command,
+                    "matcher": "Shell|Bash|Write|Edit|ApplyPatch|apply_patch",
+                    "timeout": 20,
+                    "failClosed": True,
+                }
+            )
+            found = True
+    if not found:
+        entries.append(
+            {
+                "command": command,
+                "matcher": "Shell|Bash|Write|Edit|ApplyPatch|apply_patch",
+                "timeout": 20,
+                "failClosed": True,
+            }
+        )
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = settings_path.with_suffix(settings_path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(settings_path)
+
+
+def install_hermes_config_entry(config_path: Path, runner: Path) -> None:
+    """Append one Hermes pre_tool_call hook without rewriting existing YAML."""
+    command = str(runner)
+    text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+    if "enforce-new-chat-relay.py" in text:
+        return
+    block = (
+        "\nhooks:\n"
+        "  pre_tool_call:\n"
+        f"    - command: {command}\n"
+        "      timeout: 20\n"
+    )
+    if not text.strip():
+        updated = block.lstrip("\n")
+    elif "\nhooks:\n" not in "\n" + text:
+        updated = text.rstrip() + block
+    else:
+        lines = text.splitlines()
+        hooks_index = next(i for i, line in enumerate(lines) if line.strip() == "hooks:" and not line.startswith(" "))
+        section_end = len(lines)
+        for i in range(hooks_index + 1, len(lines)):
+            if lines[i] and not lines[i].startswith((" ", "#")):
+                section_end = i
+                break
+        pre_index = next(
+            (i for i in range(hooks_index + 1, section_end) if lines[i].strip() == "pre_tool_call:"),
+            None,
+        )
+        if pre_index is None:
+            insert = ["  pre_tool_call:", f"    - command: {command}", "      timeout: 20"]
+            lines[section_end:section_end] = insert
+        else:
+            insert_at = section_end
+            for i in range(pre_index + 1, section_end):
+                if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].strip():
+                    insert_at = i
+                    break
+            lines[insert_at:insert_at] = [f"    - command: {command}", "      timeout: 20"]
+        updated = "\n".join(lines) + "\n"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = config_path.with_suffix(config_path.suffix + ".tmp")
+    tmp.write_text(updated, encoding="utf-8")
+    tmp.replace(config_path)
+
+
+def install_hermes_allowlist(path: Path, runner: Path) -> None:
+    data = load_json(path)
+    approvals = data.setdefault("approvals", [])
+    if not isinstance(approvals, list):
+        raise SystemExit(f"ช่อง approvals ผิดรูปแบบใน {path}")
+    command = str(runner)
+    if not any(
+        isinstance(row, dict)
+        and row.get("event") == "pre_tool_call"
+        and row.get("command") == command
+        for row in approvals
+    ):
+        approvals.append({"event": "pre_tool_call", "command": command})
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
 def main() -> int:
     claude_hooks = HOME / ".claude" / "hooks"
     codex_hooks = HOME / ".codex" / "hooks"
+    cursor_hooks = HOME / ".cursor" / "hooks"
+    hermes_hooks = HOME / ".hermes" / "hooks"
     install_files(claude_hooks)
     install_files(codex_hooks)
+    install_files(cursor_hooks)
+    install_files(hermes_hooks)
     install_stop_entry(HOME / ".claude" / "settings.json", claude_hooks / "team-stop-gates.py")
     install_pretooluse_entry(
         HOME / ".claude" / "settings.json", claude_hooks / "enforce-flow-gate.py"
@@ -191,7 +296,17 @@ def main() -> int:
     install_new_chat_entry(
         HOME / ".codex" / "hooks.json", codex_hooks / "enforce-new-chat-relay.py"
     )
-    print("ติดตั้ง Hook ทีมให้ Claude Code และ Codex แล้ว")
+    install_cursor_entry(
+        HOME / ".cursor" / "hooks.json", cursor_hooks / "enforce-new-chat-relay.py"
+    )
+    install_hermes_config_entry(
+        HOME / ".hermes" / "config.yaml", hermes_hooks / "enforce-new-chat-relay.py"
+    )
+    install_hermes_allowlist(
+        HOME / ".hermes" / "shell-hooks-allowlist.json",
+        hermes_hooks / "enforce-new-chat-relay.py",
+    )
+    print("ติดตั้ง Hook พื้นที่ปัจจุบันให้ Claude Code, Codex, Cursor และ Hermes Agent แล้ว")
     return 0
 
 

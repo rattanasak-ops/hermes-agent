@@ -209,8 +209,8 @@ Use SonarQube
 ใช้ $prompt-shortcuts Use Impeccable กับงาน UI นี้
 ใช้ $prompt-shortcuts Use Blog Auto เพื่อสรุปองค์ความรู้จากงานนี้ไปเป็น draft บล็อก One Man Fleet และส่งต่อ Content Factory แบบรออนุมัติ
 ใช้ $prompt-shortcuts Use WOW Resource กับโจทย์ layout / design / script / Web Engine นี้
-ใช้ $prompt-shortcuts Use Flow Guardian เพื่อบังคับ worktree/branch gate, no-write audit, approval, verify, tracking, และ handoff
-ใช้ $prompt-shortcuts Use New Chat เพื่อเริ่มแชทใหม่แบบตรวจ project/worktree/branch/dirty/VPS ก่อนตอบ
+ใช้ $prompt-shortcuts Use Flow Guardian เพื่อตรวจ Git root/branch/SHA/dirty ของพื้นที่ที่เปิดอยู่ โดยไม่สร้างหรือสลับ Worktree/กิ่ง
+ใช้ $prompt-shortcuts Use New Chat เพื่อเริ่มแชทใหม่แบบ CURRENT_WORKSPACE_ONLY และไม่เปิดพื้นที่ใหม่อัตโนมัติ
 ใช้ $prompt-shortcuts Use Close Chat เพื่อปิดแชทและเขียน memory ส่งต่อรอบหน้า
 ใช้ $prompt-shortcuts Use Save Git หรือ Save Grid ก่อน commit / push / merge / deploy เพื่อตรวจ Git, worktree, dirty files, GitLab main, VPS SHA, health endpoint และคืน SAFE/STOP decision
 ใช้ $prompt-shortcuts Use Merge to Production เฉพาะงาน merge/deploy production ที่เจ้าของอนุมัติแล้ว

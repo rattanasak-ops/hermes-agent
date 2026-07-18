@@ -22,13 +22,13 @@ tags:
   - phase-tracking
   - completion
 status: active
-version: "4.5"
-updated: 2026-07-14
+version: "5.0"
+updated: 2026-07-18
 schema: memory-schema-v1.2
 replaces: go-to-sleep
 ---
 
-# Use Continue (v4.5 · 2026-07-14)
+# Use Continue (v5.0 · 2026-07-18)
 
 คู่กับ Memory Schema v1.2 · เช็ก schema version ตอนเริ่ม · ไม่ตรง = เตือน + ห้ามเขียนไฟล์ความจำจนกว่าจะอ่าน schema ล่าสุด
 
@@ -53,7 +53,7 @@ Use Continue
 - อ่าน `.project/plan.md` (เฟส+id) + `.project/OverviewProgress.md` (4 หัวข้อบนสุด: สถานะ/งานถัดไป/ข้อห้าม/งานค้าง) + `.project/decisions.md` + decision token (Schema §2)
 - เจอไฟล์ความจำเก่าใน `.hermes/` หรือ root ที่ยังมีเนื้อหาจริง → Migration ตาม Schema §1b ก่อนลุย (ย้าย + stub ห้ามลบ + แก้จุดอ้าง)
 - `NEED_OWNER_ACTION_BEFORE_CLOSE` รอบก่อน = หยุด เตือนเจ้าของ ห้ามลุยต่อ จนกว่าเคลียร์
-- เคารพ claim/worktree: route ไป worktree ตัวเอง · path ซ้อน claim คนอื่น = STOP · ไม่แตะ worktree คนอื่น
+- ใช้เฉพาะ Git root และกิ่งที่แอปเปิดอยู่ · path ซ้อนงานคนอื่น = STOP · ไม่สร้างหรือสลับ Worktree/กิ่ง
 - อ้าง phase_id/issue_id เดิมจาก plan/comply ตลอด ไม่ตั้งใหม่ · ถ้า plan.md ประกาศ plan_id (เช่น GRD) เลขงานต้องขึ้นต้นด้วย plan_id นั้น · เลขที่ไม่มีใน plan.md = ห้ามทำ
 
 [กฎ re-anchor — กันลืมแผนหลังคำถามแทรก · แผน GRD 2026-07-07]
@@ -74,11 +74,11 @@ Use Continue
 
 ชั้น 2/3A จัดเป็น ZONE_B ก่อนเสมอ · เมื่อ approval_phase ได้รับอนุมัติและด่านเครื่องมือคืน SAFE จึงทำต่อได้โดยไม่ถามซ้ำราย issue
 
-[Phase Write Permit จาก Use New Chat — หนึ่งสิทธิ์ต่อ Phase ไม่ใช่ต่อ issue]
-- ก่อนแก้ไฟล์ครั้งแรกของ Phase ต้องมี `task_id / approval_phase / branch / base_sha / allowed_paths / owner_approval / claim_status` ที่ยังตรงกับ Git จริง
+[Current Workspace Permit — หนึ่งสิทธิ์ต่อ Phase ไม่ใช่ต่อ issue]
+- ก่อนแก้ไฟล์ครั้งแรกของ Phase ต้องมี `approval_phase / git_root / branch / base_sha / allowed_paths / owner_approval / claim_status` ที่ยังตรงกับ Git จริง
 - สิทธิ์เดียวใช้ได้กับทุก issue ใน Phase และ allowed_paths เดิม · ห้ามถามอนุมัติซ้ำระหว่าง Phase
 - คำสั่งใหม่ เปลี่ยนเป้าหมาย เพิ่ม path เปลี่ยน branch/SHA หรือกลับมาหลังบริบทไม่แน่นอน ต้องตรวจ branch/status/claim ใหม่ แต่ถ้าทุกค่าตรงให้ทำต่อได้ทันที ไม่ต้องขอเจ้าของซ้ำ
-- ถ้าเป็น `NEW_WRITABLE_TASK` ต้องกลับไป WTL Gate ให้ Manager แสดง dry-run และขออนุมัติก่อน `--apply` · ห้ามถือว่า Use Continue อนุญาตใช้ task/branch เดิมกับทุกงาน
+- ถ้าพื้นที่หรือกิ่งไม่ตรงงาน ให้คืน `CURRENT_WORKSPACE_BLOCKED` และบอกการกระทำเดียวที่เจ้าของต้องทำ · ห้ามสร้างหรือสลับ Worktree/กิ่งเอง
 
 [เปลี่ยนสำคัญ] ต้องขอคนเสมอ (ค่าตั้งต้น · แม้ด่าน SAFE):
 - merge → main · deploy production · migration prod → เพราะ merge→main = CI/CD ดันขึ้น prod ที่มีผู้ใช้จริงอัตโนมัติ
@@ -95,8 +95,8 @@ Use Continue
 6. deploy ต้องมี health check + คำสั่ง rollback พร้อม + เงื่อนไขหยุดอัตโนมัติถ้า health เพี้ยน
 ด่าน SAFE → ทำต่อ · BLOCKED → หยุด รายงานชั้นที่ติด
 
-[Ledger — ผูกเข้าความจำ · ใหม่]
-ทุกการกระทำชั้น 3A เขียน append-only ที่ `.hermes/ledger/<branch>.md` (Schema §13): เวลา / issue_id / คำสั่ง / ด่านที่รัน / exit code / commit SHA / ผล · redact secret §7
+[Ledger — ผูกเข้าความจำ]
+ทุกการกระทำชั้น 3A เขียนต่อท้ายที่ `.project/ledger/<branch>.md` (Schema §13): เวลา / issue_id / คำสั่ง / ด่านที่รัน / exit code / commit SHA / ผล · ปิดบังข้อมูลลับ §7
 ตอน Close จะยก ledger เข้า session log · ไม่มี ledger ทั้งที่ทำชั้น 3A = งานนั้นนับเป็น claimed
 
 [นิยาม "ว้าว"] เหนือคาด / ประสบการณ์ใหม่ / สิ่งที่ไม่เคยเจอ — แต่ใช้เลือกวิธีที่ดีสุด ภายใน scope เท่านั้น · ห้ามใช้เป็นเหตุขยาย scope · งานนอกเป้า → backlog เสนอ ไม่ทำเอง
@@ -109,7 +109,7 @@ Use Continue
 3. ทำทีละเฟส จบและตรวจก่อนข้าม · fail → แก้จนผ่านหรือระบุ blocker
 4. บันทึกเหตุผล+trade-off ทุกครั้งที่ตัดสินใจแทนผู้ใช้ · เรื่องสำคัญที่ไม่รู้จริง = หยุดถาม · รายละเอียดเล็ก = เลือกเอง+บันทึก
 
-[STOP/เปลี่ยนวิธี] ผู้ตรวจคนเดิมและวิธีเดิมไม่ผ่านครบ 2 รอบในปัญหาเดียว → ห้ามเรียกรอบที่ 3 · แยกปัญหาแล้วใช้ test/lint/build/gate-run หรือผู้ตรวจคนละค่ายทันที · worktree dirty เฉพาะไฟล์ที่จะแตะ/มีงานคนอื่นเสี่ยงทับ · จะแตะชั้น 3B หรือ prod ที่ ALLOW_AUTO_PROD=OFF · ด่าน 3A ตอบ BLOCKED · error class เดิม 3 ครั้ง · เจอ secret ใน diff · ต้องเดาเรื่องสำคัญเพราะ context ไม่พอ → หยุด รายงาน ถาม 1 คำถาม
+[STOP/เปลี่ยนวิธี] ผู้ตรวจคนเดิมและวิธีเดิมไม่ผ่านครบ 2 รอบในปัญหาเดียว → ห้ามเรียกรอบที่ 3 · แยกปัญหาแล้วใช้ test/lint/build/gate-run หรือผู้ตรวจคนละค่ายทันที · พื้นที่ปัจจุบันมีไฟล์ค้างในไฟล์ที่จะแตะหรือมีงานคนอื่นเสี่ยงทับ · จะแตะชั้น 3B หรือ prod ที่ ALLOW_AUTO_PROD=OFF · ด่าน 3A ตอบ BLOCKED · error class เดิม 3 ครั้ง · เจอ secret ใน diff · ต้องเดาเรื่องสำคัญเพราะ context ไม่พอ → หยุด รายงาน ถาม 1 คำถาม
 
 ส่งงานจบ (closeout):
 | phase_id | เป้าหมาย | % หรือสถานะ | หลักฐาน |
@@ -117,24 +117,25 @@ Use Continue
 (ช่อง % ใส่ BLOCKED/NOT VERIFIED ได้ถ้าวัดเลขไม่ได้)
 จบแล้วส่งต่อ Use Close Chat เพื่อ verify รวบ + เขียน memory + ออก token
 
-ข้อห้าม: merge/deploy prod เองตอน ALLOW_AUTO_PROD=OFF · ตีความ SAFE เอง · ทำชั้น 3A โดยไม่เขียน ledger · เขียน secret ลง ledger · แตะ worktree คนอื่น · ลุยต่อทั้งที่ token รอบก่อน = NEED_OWNER_ACTION
+ข้อห้าม: merge/deploy prod เองตอน ALLOW_AUTO_PROD=OFF · ตีความ SAFE เอง · ทำชั้น 3A โดยไม่เขียน ledger · เขียน secret ลง ledger · สร้าง/สลับ/แตะ Worktree อื่น · ลุยต่อทั้งที่ token รอบก่อน = NEED_OWNER_ACTION
 ```
 
 ## Legacy Names
 
 ชื่อเก่า `Go to Sleep`, `Sleep Mode`, `เข้าโหมดนอน`, และ `โหมดนอน` เป็น alias เพื่อความเข้ากันได้ย้อนหลังเท่านั้น ชื่อหลักที่ต้องใช้และแสดงให้ผู้ใช้เห็นคือ `Use Continue`
 
-## Worktree Lifecycle v1
+## Current Workspace Only
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · กลับงานเดิมด้วย `task_id` + `hermes worktree status/enter`; ห้ามเดา cwd หรือเปิด branch ใหม่ · writer ไม่ตรง/lease หายให้หยุด `WTL_BLOCKED` หรือทำ handoff ก่อน
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ทำต่อใน Git root/branch/SHA ที่เปิดอยู่และตรวจจริง · ห้ามเรียก open/enter หรือสร้าง/สลับ Worktree/กิ่ง · พื้นที่ไม่ตรงให้หยุด `CURRENT_WORKSPACE_BLOCKED`
 
 ## Changelog
 
+- v5.0 (2026-07-18): ใช้ `CURRENT_WORKSPACE_ONLY` · ไม่สร้าง/สลับ Worktree หรือกิ่ง · เปลี่ยน Phase Write Permit ให้ผูก Git root/branch/SHA ปัจจุบัน
 - v4.5 (2026-07-14): เพิ่ม Two-Zone Execution + Phase Write Permit ตามคำสั่งเจ้าของ · Zone A ทำต่อเองจน verified 100% · Zone B รวมขออนุมัติครั้งเดียวต่อ Phase · เลิกถามราย issue ภายใน scope เดิม
 - v4.4 (2026-07-13): ผู้ตรวจและวิธีเดิมไม่ผ่าน 2 รอบต้องหยุด เปลี่ยนเป็นการตรวจด้วยเครื่องมือจริงหรือผู้ตรวจคนละค่าย ห้ามวนรอบที่ 3
 - v4.3 (2026-07-12): รับ Write Permit ต่อหนึ่งงานจาก Use New Chat ป้องกัน Use Continue นำ branch เดิมไปใช้กับคำสั่งใหม่จนไฟล์ทับกัน
 - v4.2 (2026-07-08): เพิ่มกฎ re-anchor (หลังตอบคำถามแทรก ต้องเปิด plan.md ทวนเฟส+ข้อห้ามก่อนลงมือ) + เลขงานต้องขึ้นต้นด้วย plan_id ของแผน · จากการสอบสวนแผน GRD 2026-07-07 (ต้นตอ: AI ลืมแผนหลังตอบคำถาม + เลขงานชนกันข้ามแผน)
-- v4.1 (2026-07-05): เกาะ Memory Schema v1.2 — ขั้น 0 อ่าน `.project/plan.md` + `.project/OverviewProgress.md` + `.project/decisions.md` (เดิมอ่าน `.hermes/`+handoff) · เจอไฟล์เก่า = Migration §1b ก่อนลุย · ledger ยังอยู่ `.hermes/ledger/` (ไฟล์เครื่องจักร) · schema ไม่ตรง = ห้ามเขียนความจำ (คำสั่งเจ้าของ 2026-07-05)
+- v4.1 (2026-07-05): เกาะ Memory Schema v1.2 — ขั้น 0 อ่าน `.project/plan.md` + `.project/OverviewProgress.md` + `.project/decisions.md` (เดิมอ่าน `.hermes/`+handoff) · เจอไฟล์เก่า = Migration §1b ก่อนลุย · schema ไม่ตรง = ห้ามเขียนความจำ (คำสั่งเจ้าของ 2026-07-05)
 - v4.0 (2026-06-26): เกาะ Memory Schema v1.1 · **เปลี่ยนนโยบาย: merge→main/deploy prod/migration prod ออกจาก auto → ต้องขอคน (ALLOW_AUTO_PROD=OFF ค่าตั้งต้น ตาม §12)** · เพิ่มขั้น 0 อ่าน plan/memory/token/claim ก่อนลงมือ · เคารพ claim/worktree (ไม่แตะของคนอื่น) · ledger ผูกเข้า memory (§13) · ค้น gate เอง (§5) · อ้าง phase_id/issue_id เดิม · ส่งต่อ Use Close Chat ตอนจบ · redact secret (§7)
 - v3.1 (2026-06-24): งานเสี่ยงสูงเป็น auto ผ่านด่าน (ชั้น 3A) · fail-closed + ผลจากเครื่องมือจริง + ผูกกับคำสั่งจริง · เพิ่มนิยาม "ว้าว" + นิยาม 100% + STOP rule + closeout
 - v3.0 (2026-06-07): เปลี่ยนชื่อจาก Go to Sleep เป็น Use Continue

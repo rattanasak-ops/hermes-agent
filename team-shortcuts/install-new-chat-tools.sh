@@ -19,14 +19,16 @@ require_file "$SOURCE/scripts/new-chat/hermes_new_chat.py"
 require_file "$SOURCE/scripts/new-chat/hermes_worktree.py"
 require_file "$REPO_ROOT/hermes_cli/worktree_lifecycle.py"
 require_file "$REPO_ROOT/scripts/new-chat/hermes_prewrite_gate.py"
+require_file "$REPO_ROOT/scripts/hermes_hook_doctor.py"
 
-mkdir -p "$DEST/scripts/new-chat" "$DEST/hermes_cli" "$BIN"
+mkdir -p "$DEST/scripts/new-chat" "$DEST/scripts" "$DEST/hermes_cli" "$BIN"
 cp "$SOURCE/hermes_constants.py" "$DEST/hermes_constants.py"
 cp "$SOURCE/scripts/new-chat/hermes_new_chat.py" "$DEST/scripts/new-chat/hermes_new_chat.py"
 cp "$SOURCE/scripts/new-chat/hermes_worktree.py" "$DEST/scripts/new-chat/hermes_worktree.py"
 cp "$REPO_ROOT/hermes_cli/worktree_lifecycle.py" "$DEST/hermes_cli/worktree_lifecycle.py"
 printf '%s\n' '"""Portable Hermes CLI modules."""' > "$DEST/hermes_cli/__init__.py"
 cp "$REPO_ROOT/scripts/new-chat/hermes_prewrite_gate.py" "$DEST/scripts/new-chat/hermes_prewrite_gate.py"
+cp "$REPO_ROOT/scripts/hermes_hook_doctor.py" "$DEST/scripts/hermes_hook_doctor.py"
 
 install_wrapper() {
   local name="$1"
@@ -42,5 +44,6 @@ install_wrapper() {
 install_wrapper "hermes-prewrite-gate" "scripts/new-chat/hermes_prewrite_gate.py"
 install_wrapper "hermes-new-chat" "scripts/new-chat/hermes_new_chat.py"
 install_wrapper "hermes-worktree" "scripts/new-chat/hermes_worktree.py"
+install_wrapper "hermes-hook-doctor" "scripts/hermes_hook_doctor.py"
 
 printf 'ติดตั้งเครื่องมือ New Chat แบบพกพาแล้วที่ %s\n' "$DEST"

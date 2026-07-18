@@ -93,7 +93,7 @@ Use Comply กับงานนี้
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · ทุก Issue ที่เขียนไฟล์ต้องผูก `task_id + worktree + machine + evidence`; ตารางเปอร์เซ็นต์แยกสถานะ lifecycle และห้ามนับ verified ถ้า WTL gate ไม่พร้อม
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ทุก Issue ที่เขียนไฟล์ต้องผูก `git_root + branch + base_sha + allowed_paths + evidence`; ห้ามนับผลผ่านถ้า `CURRENT_WORKSPACE_READY` ไม่ครบ และห้ามสร้าง/สลับ Worktree/กิ่ง
 
 ## Changelog
 

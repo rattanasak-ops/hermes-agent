@@ -146,7 +146,7 @@ Evidence: timestamp / host / cwd / commands ที่รันจริง
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · ปิดสิทธิ์ด้วย `hermes worktree close`; ถ้า merged จึงประเมิน `cleanup` 6/6 แบบ dry-run · ห้ามลบทันที และต้องรายงาน quarantine/cleanup state ใน Close Chat Report
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ปิดแชทด้วยการบันทึก Git root/branch/SHA/dirty และงานค้าง · ห้าม close/cleanup/delete Worktree หรือสลับกิ่ง เว้นแต่เจ้าของสั่งจัดการ Worktree โดยตรงแยกต่างหาก
 
 ## Changelog
 

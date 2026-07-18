@@ -137,7 +137,7 @@ Use AI Pair กับงานนี้
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · writer ทำงานใน `WTL_READY` task worktree เพียงตัวเดียว; AI คู่ตรวจอ่านอย่างเดียวที่ path/SHA เดียวกัน · ใช้ Manager เดียวกับ AI Relay และห้ามแต่ละ AI สร้าง worktree เอง
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ผู้เขียนทำงานใน Git root/branch/SHA ปัจจุบันที่ `CURRENT_WORKSPACE_READY`; AI คู่ตรวจอ่านอย่างเดียวที่ path/SHA เดียวกัน · AI ทุกตัวห้ามสร้าง/สลับ Worktree/กิ่ง
 
 ## Changelog
 
