@@ -8,13 +8,13 @@ REFS = ROOT / "team-shortcuts/payload/skills/prompt-shortcuts/references"
 def test_new_chat_rechecks_branch_for_every_writable_task():
     text = (REFS / "use-new-chat.md").read_text(encoding="utf-8")
 
-    assert 'version: "2.7"' in text
+    assert 'version: "2.8"' in text
     assert "ด่านก่อนเขียนทุกงาน" in text
     assert "NEW_WRITABLE_TASK" in text
     assert "Write Permit" in text
     assert "คำสั่งผู้ใช้ก้อนใหม่" in text
-    # v2.7 เปลี่ยนกลไก: งานเขียนใหม่ต้องผ่าน Worktree Manager dry-run + เจ้าของอนุมัติ (สัญญาเดิม: ห้ามเขียนก่อนได้ไฟเขียว)
-    assert "แสดง dry-run และรอเจ้าของอนุมัติ" in text
+    assert "hermes-new-chat open" in text
+    assert "NEW_CHAT_READY + WTL_READY + RELAY_REQUIRED" in text
 
 
 def test_relay_and_continue_require_task_scoped_write_permit():

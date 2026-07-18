@@ -11,6 +11,7 @@ set -euo pipefail
 ARCHIVE_URL="${HERMES_SHORTCUT_ARCHIVE_URL:-https://github.com/rattanasak-ops/hermes-agent/archive/refs/heads/main.tar.gz}"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hermes-shortcuts.XXXXXX")"
 RELAY_DIR="${RELAY_DIR:-$HOME/.hermes/ai-relay-tools}"
+NEW_CHAT_DIR="${HERMES_NEW_CHAT_DIR:-$HOME/.hermes/new-chat-tools}"
 
 cleanup() {
   rm -rf "$TMP_DIR"
@@ -25,6 +26,10 @@ if ! command -v curl >/dev/null 2>&1; then
 fi
 if ! command -v tar >/dev/null 2>&1; then
   say "ผิดพลาด: ไม่พบ tar — ต้องมี tar เพื่อแตกไฟล์ชุดติดตั้ง"
+  exit 1
+fi
+if ! command -v rsync >/dev/null 2>&1; then
+  say "ผิดพลาด: ไม่พบ rsync — ติดตั้ง rsync ก่อน แล้วรันชุดติดตั้งซ้ำ"
   exit 1
 fi
 
@@ -42,10 +47,24 @@ if [ -z "$TEAM_DIR" ] || [ ! -f "$TEAM_DIR/install-shortcuts.sh" ]; then
 fi
 ARCHIVE_ROOT="$(dirname "$TEAM_DIR")"
 RELAY_SRC="$ARCHIVE_ROOT/scripts/ai-relay"
+NEW_CHAT_SRC="$ARCHIVE_ROOT/scripts/new-chat"
 if [ ! -f "$RELAY_SRC/install-local.sh" ]; then
   say "ผิดพลาด: โหลดชุดติดตั้งแล้ว แต่ไม่พบ scripts/ai-relay/install-local.sh"
   exit 1
 fi
+if [ ! -f "$NEW_CHAT_SRC/install-local.sh" ]; then
+  say "ผิดพลาด: โหลดชุดติดตั้งแล้ว แต่ไม่พบ scripts/new-chat/install-local.sh"
+  exit 1
+fi
+
+say ""
+say "══ ติดตั้ง Worktree + New Chat Gate ══"
+mkdir -p "$NEW_CHAT_DIR/source/scripts/new-chat"
+rsync -a --delete "$ARCHIVE_ROOT/scripts/new-chat/" "$NEW_CHAT_DIR/source/scripts/new-chat/"
+mkdir -p "$NEW_CHAT_DIR/source/hermes_cli"
+cp "$ARCHIVE_ROOT/hermes_cli/worktree_lifecycle.py" "$NEW_CHAT_DIR/source/hermes_cli/"
+cp "$ARCHIVE_ROOT/scripts/new-chat/hermes_constants.py" "$NEW_CHAT_DIR/source/"
+HERMES_NEW_CHAT_DIR="$NEW_CHAT_DIR" bash "$NEW_CHAT_DIR/source/scripts/new-chat/install-local.sh"
 
 bash "$TEAM_DIR/install-shortcuts.sh" "$@"
 
@@ -93,6 +112,7 @@ say "Gemini เป็นตัวเสริมแบบ local เท่าน�
 say "หลังวางไฟล์สิทธิ์ให้ปิดแล้วเปิดโปรแกรม AI ใหม่ แล้วตรวจด้วย:"
 say "  relay-doctor"
 say "  relay-status --probe --cwd \"$HOME\""
+say "  hermes-new-chat --help"
 say ""
 say "ตรวจคำสั่งลัดซ้ำได้ทุกเมื่อด้วยคำสั่ง:"
 say "  curl -fsSL https://raw.githubusercontent.com/rattanasak-ops/hermes-agent/main/team-shortcuts/check-shortcuts.sh | bash"

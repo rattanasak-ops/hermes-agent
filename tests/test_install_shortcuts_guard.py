@@ -20,13 +20,23 @@ def build_fake_installer(tmp_path: Path, registry: str = "registry v1\n", ref: s
     payload = team_dir / "payload"
     registry_path = payload / "ai-context" / "prompt-shortcut-registry.md"
     ref_path = payload / "skills" / "prompt-shortcuts" / "references" / "a.md"
+    scripts_dir = tmp_path / "scripts"
+    new_chat_dir = scripts_dir / "new-chat"
 
     team_dir.mkdir()
     shutil.copy2(SCRIPT, team_dir / "install-shortcuts.sh")
+    shutil.copy2(ROOT / "team-shortcuts" / "VERSION", team_dir / "VERSION")
     registry_path.parent.mkdir(parents=True)
     ref_path.parent.mkdir(parents=True)
+    new_chat_dir.mkdir(parents=True)
     registry_path.write_text(registry)
     ref_path.write_text(ref)
+    (scripts_dir / "hermes_write_permit.py").write_text("# test fixture\n")
+    (scripts_dir / "hermes_hook_doctor.py").write_text(
+        "#!/usr/bin/env python3\nraise SystemExit(0)\n"
+    )
+    (new_chat_dir / "install-local.sh").write_text("#!/usr/bin/env bash\nexit 0\n")
+    (team_dir / "install-team-hooks.py").write_text("raise SystemExit(0)\n")
     return team_dir
 
 

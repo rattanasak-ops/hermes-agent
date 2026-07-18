@@ -24,7 +24,7 @@ curl -fsSL https://raw.githubusercontent.com/rattanasak-ops/hermes-agent/main/te
 curl -fsSL https://raw.githubusercontent.com/rattanasak-ops/hermes-agent/main/team-shortcuts/install-from-github.sh | bash -s -- --cursor
 ```
 
-คำสั่งเดิมนี้ติดตั้งทั้ง Shortcut + AI Relay + เพิ่ม `~/.local/bin` ให้ zsh/bash แล้ว
+คำสั่งเดิมนี้ติดตั้ง Shortcut + Worktree Manager + New Chat Gate + AI Relay + เพิ่ม `~/.local/bin` ให้ zsh/bash แล้ว
 
 หลังติดตั้ง พนักงานต้องรับไฟล์สิทธิ์ AI Portal ส่วนตัวจากแอดมินหนึ่งครั้งต่อเครื่อง
 (ห้ามส่ง Token ในห้องแชทรวม) แล้วตั้งสิทธิ์ไฟล์:
@@ -36,6 +36,8 @@ relay-doctor
 
 Claude/Opus, Codex และ Grok จะวิ่งผ่าน AI Portal จึงไม่ต้องล็อกอินแยกแต่ละโปรแกรม
 จากนั้นปิด-เปิดโปรแกรม AI ใหม่ 1 รอบ แล้วลองพิมพ์ `Use New Chat`
+
+เมื่อเริ่มงานใหม่ AI ต้องคืนสถานะ `NEW_CHAT_READY`, `WTL_READY`, `RELAY_REQUIRED` และทำงานในโฟลเดอร์ task ใต้ `~/Documents/Worktrees/...` บน Notebook หรือ `/home/linux-nat/.worktree/...` บน VPS หาก AI พยายามเขียนใน repo หลักหรือข้าม Relay ระบบจะบล็อกก่อนแตะไฟล์
 
 ## วิธีตรวจเครื่องพนักงาน
 
@@ -61,8 +63,9 @@ RESULT: PASS
 | 2 | ต่อ Claude Code ผ่าน `~/.claude/CLAUDE.md` | ไม่ |
 | 3 | ต่อ Codex ผ่าน `~/.codex/skills/prompt-shortcuts` | ไม่ |
 | 4 | ต่อ Cursor ผ่านทางลัดชดเชยที่อยู่เดิม (เฉพาะ `--cursor`) | อาจขอ 1 ครั้ง |
-| 5 | ติดตั้ง AI Relay และคำสั่งตรวจ (`relay-doctor`, `relay-status`, `gate-run`) | ไม่ |
-| 6 | เพิ่ม `~/.local/bin` ให้ zsh/bash | ไม่ |
+| 5 | ติดตั้ง Worktree/New Chat Gate (`hermes-worktree`, `hermes-new-chat`, `hermes-prewrite-gate`) | ไม่ |
+| 6 | ติดตั้ง AI Relay และคำสั่งตรวจ (`relay-doctor`, `relay-status`, `gate-run`) | ไม่ |
+| 7 | เพิ่ม `~/.local/bin` ให้ zsh/bash | ไม่ |
 
 ตัวติดตั้งรันซ้ำได้ ไม่พัง (เขียนทับของเดิม)
 

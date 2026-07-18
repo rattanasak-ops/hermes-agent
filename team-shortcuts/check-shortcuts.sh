@@ -17,6 +17,9 @@ CLAUDE="$HOME/.claude/CLAUDE.md"
 INSTALLED_VERSION="$ROOT/.shortcut-version"
 HOOK_DOCTOR="$HOME/.local/bin/hermes-hook-doctor"
 WRITE_PERMIT="$HOME/.local/bin/hermes-write-permit"
+NEW_CHAT="$HOME/.local/bin/hermes-new-chat"
+WORKTREE="$HOME/.local/bin/hermes-worktree"
+PREWRITE="$HOME/.local/bin/hermes-prewrite-gate"
 
 pass=true
 
@@ -79,6 +82,9 @@ exists_check "index_exists" "$INDEX"
 exists_check "codex_link_exists" "$CODEX"
 exists_check "hook_doctor_exists" "$HOOK_DOCTOR"
 exists_check "write_permit_exists" "$WRITE_PERMIT"
+exists_check "new_chat_exists" "$NEW_CHAT"
+exists_check "worktree_exists" "$WORKTREE"
+exists_check "prewrite_gate_exists" "$PREWRITE"
 exists_check "installed_version_exists" "$INSTALLED_VERSION"
 
 if [ -f "$CLAUDE" ] && grep -q 'HERMES_SHORTCUTS_START' "$CLAUDE"; then
@@ -89,7 +95,7 @@ else
 fi
 
 if [ -x "$HOOK_DOCTOR" ] && "$HOOK_DOCTOR" >/dev/null 2>&1; then
-  printf 'PASS %-28s %s\n' "hook_health" "3/3"
+  printf 'PASS %-28s %s\n' "hook_health" "4/4"
 else
   printf 'FAIL %-28s %s\n' "hook_health" "ด่านจริงไม่ผ่าน"
   pass=false

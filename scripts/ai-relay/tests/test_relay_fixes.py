@@ -755,15 +755,14 @@ def test_codex_review_adapter_is_read_only_json_and_no_silence_cut():
     assert prepared["silence_timeout"] == 0
 
 
-def test_grok_review_adapter_removes_write_approval_and_uses_plan_mode():
+def test_grok_review_adapter_removes_flags_missing_from_current_cli():
     local_grok = {"cmd": ["grok", "-p", "prompt", "--always-approve"]}
     prepared = relay_call.prepare_adapter_for_role(
         "grok", local_grok, "review"
     )
     assert "--always-approve" not in prepared["cmd"]
-    mode_pos = prepared["cmd"].index("--permission-mode")
-    assert prepared["cmd"][mode_pos + 1] == "plan"
-    assert "--no-subagents" in prepared["cmd"]
+    assert "--permission-mode" not in prepared["cmd"]
+    assert "--no-subagents" not in prepared["cmd"]
 
 
 def test_gemini_review_adapter_replaces_yolo_with_plan_mode():
@@ -796,12 +795,25 @@ def test_portal_is_default_and_review_does_not_add_vendor_cli_flags():
     assert "--sandbox" not in prepared["cmd"]
 
 
-def test_local_vendor_adapters_are_upgraded_to_portal_unless_explicitly_allowed(monkeypatch):
+def test_local_vendor_adapters_use_portal_only_when_portal_credentials_exist(monkeypatch):
     adapters = {
         "codex": {"cmd": ["/usr/local/bin/codex", "exec", "prompt"]},
         "grok": {"cmd": ["grok", "-p", "prompt"]},
         "opus": {"cmd": ["claude", "-p", "prompt"], "brain": True},
     }
+    for name in (
+        "AI_PORTAL_CLAUDE_TOKEN", "AI_RELAY_CLAUDE_TOKEN", "AI_PORTAL_TOKEN",
+        "AI_PORTAL_CODEX_TOKEN", "AI_RELAY_CODEX_TOKEN", "OPENAI_API_KEY",
+        "AI_PORTAL_CODEX_TOKEN_01", "AI_PORTAL_CODEX_TOKEN_02",
+        "AI_PORTAL_GROK_TOKEN", "AI_RELAY_GROK_TOKEN", "GROK_API_KEY",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    local = relay_call.prefer_portal_adapters(adapters)
+    assert all(Path(local[name]["cmd"][0]).name in {"codex", "grok", "claude"} for name in adapters)
+
+    monkeypatch.setenv("AI_PORTAL_TOKEN", "test-token")
+    monkeypatch.setenv("AI_PORTAL_CODEX_TOKEN", "test-token")
+    monkeypatch.setenv("AI_PORTAL_GROK_TOKEN", "test-token")
     upgraded = relay_call.prefer_portal_adapters(adapters)
     assert all(upgraded[name]["cmd"][0] == "relay-portal" for name in adapters)
 
@@ -892,8 +904,13 @@ def _run_relay_main(
     def fake_run_once(*args, **kwargs):
         invoked["count"] += 1
         if queued_results:
-            return queued_results.pop(0)
-        return 0, "RELAYOK", ""
+            result = queued_results.pop(0)
+            if role == "code" and result[0] == 0:
+                (tmp_path / f"fake-change-{task_id}-{invoked['count']}.txt").write_text("changed", encoding="utf-8")
+            return result
+        if role == "code":
+            (tmp_path / f"fake-change-{task_id}-{invoked['count']}.txt").write_text("changed", encoding="utf-8")
+        return 0, "PASS" if role == "review" else "RELAYOK", ""
 
     relay_call.run_once = fake_run_once
     argv = [
@@ -1052,7 +1069,7 @@ def test_different_reviewer_is_allowed_after_two_rounds(tmp_path):
 def test_codex_review_timeout_retries_once_inside_same_task(tmp_path):
     final_event = json.dumps({
         "type": "item.completed",
-        "item": {"type": "agent_message", "text": "ผลตรวจรอบย่อ"},
+        "item": {"type": "agent_message", "text": "ผลตรวจ: ผ่าน"},
     })
     exit_code, payload, tool_calls = _run_relay_main(
         tmp_path,
@@ -1072,7 +1089,7 @@ def test_codex_review_timeout_retries_once_inside_same_task(tmp_path):
     assert payload["timeout_retries"] == 1
     assert tool_calls == 2
     out_file = Path(payload["output_ref"])
-    assert out_file.read_text(encoding="utf-8") == "ผลตรวจรอบย่อ"
+    assert out_file.read_text(encoding="utf-8") == "ผลตรวจ: ผ่าน"
     partials = list((tmp_path / ".hermes" / "ai-relay").glob("*attempt1.txt"))
     assert len(partials) == 1
     assert "partial=true" in partials[0].read_text(encoding="utf-8")
@@ -1085,7 +1102,7 @@ def test_codex_review_without_final_message_is_not_accepted(tmp_path):
         "P17-I2-review",
         role="review",
         tool="codex",
-        run_results=[(0, progress_only, ""), (0, "Grok review final", "")],
+        run_results=[(0, progress_only, ""), (0, "PASS: Grok review final", "")],
         local_vendor_cli=True,
     )
 

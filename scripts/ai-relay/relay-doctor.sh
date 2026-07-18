@@ -116,9 +116,9 @@ relay_portal_bin="$(find_relay_portal || true)"
 gate_run_bin="$(find_gate_run || true)"
 
 claude_bin="$(command -v claude 2>/dev/null || true)"
-[ -n "$claude_bin" ] && mark_warn "พบ claude local ที่ ${claude_bin} แต่ AI Relay จะใช้ AI Portal แทน ไม่ต้อง login Claude local" || mark_ok "ไม่ต้องมี claude local เพราะสมองหลักวิ่งผ่าน AI Portal"
-[ -n "$grok_bin" ] && mark_warn "พบ grok local ที่ ${grok_bin} แต่ AI Relay จะใช้ AI Portal ก่อน" || mark_ok "ไม่ต้องมี grok local เพราะ Grok วิ่งผ่าน AI Portal"
-[ -n "$codex_bin" ] && mark_warn "พบ codex local ที่ ${codex_bin} แต่ AI Relay จะใช้ AI Portal ก่อน" || mark_ok "ไม่ต้องมี codex local เพราะ Codex วิ่งผ่าน AI Portal"
+[ -n "$claude_bin" ] && mark_ok "พบ claude local ที่ ${claude_bin} ใช้แทน Portal ได้เมื่อ token ขาด" || mark_warn "ไม่พบ claude local จึงต้องมี Claude Portal token"
+[ -n "$grok_bin" ] && mark_ok "พบ grok local ที่ ${grok_bin} ใช้แทน Portal ได้เมื่อ token ขาด" || mark_warn "ไม่พบ grok local จึงต้องมี Grok Portal token"
+[ -n "$codex_bin" ] && mark_ok "พบ codex local ที่ ${codex_bin} ใช้แทน Portal ได้เมื่อ token ขาด" || mark_warn "ไม่พบ codex local จึงต้องมี Codex Portal token"
 [ -n "$gemini_bin" ] && mark_ok "gemini พบที่ ${gemini_bin}" || mark_warn "gemini ไม่พบบนเครื่องนี้ ใช้เป็นตัวสำรองไม่ได้"
 [ -n "$ollama_bin" ] && mark_ok "ollama พบที่ ${ollama_bin}" || mark_warn "ollama ไม่พบบนเครื่องนี้ ใช้เป็นตัวสำรองในเครื่องไม่ได้"
 [ -n "$relay_call_bin" ] && mark_ok "relay-call พบที่ ${relay_call_bin}" || mark_fail "relay-call ไม่พบ ให้รัน bash scripts/ai-relay/install-local.sh"
@@ -138,24 +138,28 @@ echo "[2/4 สถานะ AI Portal token]"
 if [ -n "${AI_PORTAL_URL:-}" ] || [ -n "${AI_PORTAL_BASE_URL:-}" ]; then
   mark_ok "พบ AI_PORTAL_URL/AI_PORTAL_BASE_URL"
 else
-  mark_fail "ยังไม่มี AI_PORTAL_URL ใน ~/.hermes/.env"
+  if [ -n "$claude_bin" ] && [ -n "$codex_bin" ] && [ -n "$grok_bin" ]; then
+    mark_warn "ไม่มี AI Portal URL แต่มี Claude/Codex/Grok local ครบ ระบบจะใช้ CLI ในเครื่อง"
+  else
+    mark_fail "ยังไม่มี AI_PORTAL_URL และ CLI ในเครื่องไม่ครบ"
+  fi
 fi
 if [ -n "${AI_PORTAL_CLAUDE_TOKEN:-}" ] || [ -n "${AI_RELAY_CLAUDE_TOKEN:-}" ] || [ -n "${AI_PORTAL_TOKEN:-}" ]; then
   mark_ok "พบ Claude Portal token"
 else
-  mark_fail "ยังไม่มี AI_PORTAL_CLAUDE_TOKEN ใน ~/.hermes/.env"
+  [ -n "$claude_bin" ] && mark_ok "ไม่มี Claude Portal token แต่ใช้ claude local ได้" || mark_fail "ไม่มี Claude Portal token และไม่พบ claude local"
 fi
 if [ -n "${AI_PORTAL_CODEX_TOKEN_01:-}" ] && [ -n "${AI_PORTAL_CODEX_TOKEN_02:-}" ]; then
   mark_ok "พบ Codex Portal token แบบ cross-route 2 ID"
 elif [ -n "${AI_PORTAL_CODEX_TOKEN:-}" ] || [ -n "${AI_RELAY_CODEX_TOKEN:-}" ] || [ -n "${OPENAI_API_KEY:-}" ]; then
   mark_ok "พบ Codex Portal token"
 else
-  mark_fail "ยังไม่มี AI_PORTAL_CODEX_TOKEN_01/02 หรือ AI_PORTAL_CODEX_TOKEN ใน ~/.hermes/.env"
+  [ -n "$codex_bin" ] && mark_ok "ไม่มี Codex Portal token แต่ใช้ codex local ได้" || mark_fail "ไม่มี Codex Portal token และไม่พบ codex local"
 fi
 if [ -n "${AI_PORTAL_GROK_TOKEN:-}" ] || [ -n "${AI_RELAY_GROK_TOKEN:-}" ] || [ -n "${GROK_API_KEY:-}" ]; then
   mark_ok "พบ Grok Portal token"
 else
-  mark_fail "ยังไม่มี AI_PORTAL_GROK_TOKEN ใน ~/.hermes/.env"
+  [ -n "$grok_bin" ] && mark_ok "ไม่มี Grok Portal token แต่ใช้ grok local ได้" || mark_fail "ไม่มี Grok Portal token และไม่พบ grok local"
 fi
 
 echo
@@ -216,7 +220,7 @@ echo "ผ่าน: ${ok} · เตือน: ${warn} · ไม่ผ่าน: 
 
 if [ "$fail" -eq 0 ] && [ "$probe_login" -ne 1 ]; then
   echo "พร้อมระดับติดตั้งแล้ว (ยังไม่ได้ probe login จริงเพื่อเลี่ยง OAuth popup ซ้ำ)"
-  echo "Claude/Codex/Grok ใช้ AI Portal token ไม่ต้อง login local"
+  echo "พร้อมใช้ผ่าน AI Portal หรือ CLI ในเครื่องตามสิทธิ์ที่มี"
   exit 0
 fi
 

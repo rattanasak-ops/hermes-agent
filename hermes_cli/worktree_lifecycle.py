@@ -649,12 +649,85 @@ def command_open(args: argparse.Namespace) -> Dict[str, Any]:
         existing = data["tasks"].get(task_id)
         if existing:
             if path_key(Path(existing["worktree_path"])) == path_key(target):
-                same_writer = existing.get("machine_id") == machine_id and bool(existing.get("lease_id"))
-                ready = existing.get("state") == "ACTIVE" and same_writer
+                check = inspect_git(existing)
+                same_identity = (
+                    existing.get("project_id") == project_id
+                    and existing.get("staff_id") == staff_id
+                    and existing.get("machine_id") == machine_id
+                    and existing.get("write_owner") == staff_id
+                    and existing.get("branch") == branch
+                    and path_key(Path(existing["canonical_repo"])) == path_key(canonical)
+                )
+                git_ready = bool(
+                    check.get("path_exists")
+                    and check.get("is_git")
+                    and check.get("branch_match")
+                )
+                expires = parse_time(existing.get("lease_expires_at"))
+                lease_expired = bool(expires and utcnow() >= expires)
+                lease_ready = bool(existing.get("lease_id")) and bool(
+                    expires and utcnow() < expires
+                )
+                last_doctor_block = next(
+                    (
+                        item
+                        for item in reversed(existing.get("history") or [])
+                        if item.get("action") == "doctor-block"
+                    ),
+                    None,
+                )
+                blocked_by_expired_lease = bool(
+                    existing.get("state") == "BLOCKED"
+                    and existing.get("state_before_block") == "ACTIVE"
+                    and not existing.get("lease_id")
+                    and last_doctor_block
+                    and last_doctor_block.get("detail") == "lease หมดอายุ"
+                )
+                renewable = bool(
+                    same_identity
+                    and git_ready
+                    and (
+                        (existing.get("state") == "ACTIVE" and lease_expired)
+                        or blocked_by_expired_lease
+                    )
+                )
+                if renewable:
+                    if not args.apply:
+                        return {
+                            "ok": True,
+                            "decision": "WTL_OPEN_PROPOSED",
+                            "message": "พร้อมต่ออายุสิทธิ์ Task เดิม โดยไม่สร้าง Worktree ใหม่",
+                            "task": task_summary(existing),
+                        }
+                    existing["state"] = "ACTIVE"
+                    existing["lease_id"] = lease_id(task_id, machine_id)
+                    existing["lease_expires_at"] = (
+                        utcnow() + dt.timedelta(hours=args.lease_hours)
+                    ).isoformat()
+                    existing["last_seen_at"] = iso_now()
+                    append_history(
+                        data,
+                        existing,
+                        "lease-renewed",
+                        "ต่ออายุสิทธิ์ผู้เขียนเดิมบน Worktree เดิม",
+                    )
+                    save_registry(path, data)
+                    return {
+                        "ok": True,
+                        "decision": "WTL_READY",
+                        "message": "ต่ออายุสิทธิ์ Task เดิมแล้ว โดยไม่สร้าง Worktree ใหม่",
+                        "task": task_summary(existing),
+                    }
+                ready = bool(
+                    existing.get("state") == "ACTIVE"
+                    and same_identity
+                    and lease_ready
+                    and git_ready
+                )
                 return {
                     "ok": ready,
                     "decision": "WTL_READY" if ready else "WTL_BLOCKED",
-                    "message": "task นี้มีอยู่แล้วและสิทธิ์ตรงเครื่อง" if ready else "task นี้มีอยู่แล้ว แต่เครื่อง/สิทธิ์เขียนไม่ตรง",
+                    "message": "task นี้มีอยู่แล้วและสิทธิ์ตรงเครื่อง" if ready else "task นี้มีอยู่แล้ว แต่ path/branch/ผู้เขียน/เครื่อง/สิทธิ์ไม่ตรง",
                     "task": task_summary(existing),
                 }
             raise WorktreeLifecycleError("task_id นี้ถูกใช้กับ Worktree อื่นแล้ว")
@@ -792,19 +865,34 @@ def command_status(args: argparse.Namespace) -> Dict[str, Any]:
         task["git_check"] = check
         expires = parse_time(task.get("lease_expires_at"))
         lease_expired = bool(expires and utcnow() >= expires)
-        drift = not check.get("path_exists") or not check.get("is_git") or not check.get("branch_match") or lease_expired
-        if drift and task.get("state") != "ARCHIVED":
+        lease_ready = bool(task.get("lease_id")) and bool(expires and utcnow() < expires)
+        git_ready = bool(
+            check.get("path_exists")
+            and check.get("is_git")
+            and check.get("branch_match")
+        )
+        ready = task.get("state") == "ACTIVE" and lease_ready and git_ready
+        blocking_fault = not git_ready or lease_expired or (
+            task.get("state") == "ACTIVE" and not lease_ready
+        )
+        if blocking_fault and task.get("state") not in {"ARCHIVED", "BLOCKED"}:
             task["state_before_block"] = task.get("state")
             task["state"] = "BLOCKED"
             if lease_expired:
                 task["lease_id"] = None
                 task["lease_expires_at"] = None
-            append_history(data, task, "doctor-block", "lease หมดอายุ" if lease_expired else "path/git/branch ไม่ตรงทะเบียน")
+            if lease_expired:
+                detail = "lease หมดอายุ"
+            elif not git_ready:
+                detail = "path/git/branch ไม่ตรงทะเบียน"
+            else:
+                detail = "lease ไม่พร้อม"
+            append_history(data, task, "doctor-block", detail)
         save_registry(path, data)
         return {
-            "ok": not drift,
-            "decision": "WTL_READY" if not drift else "WTL_BLOCKED",
-            "message": "สถานะตรงทะเบียน" if not drift else "ของจริงไม่ตรงสมุดทะเบียน",
+            "ok": ready,
+            "decision": "WTL_READY" if ready else "WTL_BLOCKED",
+            "message": "สถานะตรงทะเบียน" if ready else "ของจริงไม่ตรงสมุดทะเบียน",
             "task": task_summary(task),
             "git": check,
         }

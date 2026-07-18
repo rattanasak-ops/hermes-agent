@@ -133,6 +133,82 @@ class WorktreeLifecycleTests(unittest.TestCase):
         self.assertEqual("WTL_BLOCKED", result["decision"])
         self.assertIsNone(self.task()["lease_id"])
 
+    def test_expired_lease_stays_blocked_without_duplicate_doctor_history(self) -> None:
+        wtl.command_open(self.open_args())
+        data = wtl.load_registry(self.registry)
+        data["tasks"]["TASK-1"]["lease_expires_at"] = (
+            wtl.utcnow() - dt.timedelta(minutes=1)
+        ).isoformat()
+        wtl.save_registry(self.registry, data)
+
+        first = wtl.command_status(
+            argparse.Namespace(task_id="TASK-1", registry=str(self.registry))
+        )
+        first_task = self.task()
+        first_doctor_blocks = sum(
+            item["action"] == "doctor-block" for item in first_task["history"]
+        )
+        second = wtl.command_status(
+            argparse.Namespace(task_id="TASK-1", registry=str(self.registry))
+        )
+        second_task = self.task()
+        second_doctor_blocks = sum(
+            item["action"] == "doctor-block" for item in second_task["history"]
+        )
+
+        self.assertEqual("WTL_BLOCKED", first["decision"])
+        self.assertEqual("WTL_BLOCKED", second["decision"])
+        self.assertIsNone(second_task["lease_id"])
+        self.assertEqual(1, first_doctor_blocks)
+        self.assertEqual(first_doctor_blocks, second_doctor_blocks)
+
+    def test_open_renews_expired_lease_for_same_writer_and_worktree(self) -> None:
+        opened = wtl.command_open(self.open_args())["task"]
+        worktree_count = len(wtl.git_worktrees(self.repo))
+        data = wtl.load_registry(self.registry)
+        data["tasks"]["TASK-1"]["lease_expires_at"] = (
+            wtl.utcnow() - dt.timedelta(minutes=1)
+        ).isoformat()
+        wtl.save_registry(self.registry, data)
+        blocked = wtl.command_status(
+            argparse.Namespace(task_id="TASK-1", registry=str(self.registry))
+        )
+
+        reopened = wtl.command_open(self.open_args())
+        current = self.task()
+
+        self.assertEqual("WTL_BLOCKED", blocked["decision"])
+        self.assertEqual("WTL_READY", reopened["decision"])
+        self.assertEqual("ACTIVE", current["state"])
+        self.assertIsNotNone(current["lease_id"])
+        self.assertGreater(wtl.parse_time(current["lease_expires_at"]), wtl.utcnow())
+        self.assertEqual(opened["worktree_path"], current["worktree_path"])
+        self.assertEqual(opened["branch"], current["branch"])
+        self.assertEqual("staff-1", current["staff_id"])
+        self.assertEqual("staff-1", current["write_owner"])
+        self.assertEqual("notebook-a", current["machine_id"])
+        self.assertEqual(1, len(wtl.load_registry(self.registry)["tasks"]))
+        self.assertEqual(worktree_count, len(wtl.git_worktrees(self.repo)))
+
+    def test_open_does_not_renew_expired_lease_when_branch_drifted(self) -> None:
+        wtl.command_open(self.open_args())
+        worktree = Path(self.task()["worktree_path"])
+        run(worktree, "git", "checkout", "--detach")
+        data = wtl.load_registry(self.registry)
+        data["tasks"]["TASK-1"]["lease_expires_at"] = (
+            wtl.utcnow() - dt.timedelta(minutes=1)
+        ).isoformat()
+        wtl.save_registry(self.registry, data)
+        wtl.command_status(
+            argparse.Namespace(task_id="TASK-1", registry=str(self.registry))
+        )
+
+        reopened = wtl.command_open(self.open_args())
+
+        self.assertEqual("WTL_BLOCKED", reopened["decision"])
+        self.assertEqual("BLOCKED", self.task()["state"])
+        self.assertIsNone(self.task()["lease_id"])
+
     def test_pause_releases_writer_lease(self) -> None:
         wtl.command_open(self.open_args())
         result = wtl.command_pause(argparse.Namespace(task_id="TASK-1", registry=str(self.registry), reason="พักทดสอบ"))

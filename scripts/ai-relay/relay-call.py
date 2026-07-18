@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 """relay-call — เรียก AI coder 1 ครั้ง · จับผลตายตัว · สลับบัญชี · นับงบ · เขียน ledger
 
 ส่วนของ Use AI Relay (Memory Schema v1.1) · LLM อ่านแค่ช่อง status ที่ตัวนี้คืน ไม่ parse stderr เอง
@@ -44,6 +46,23 @@ DEFAULT_ADAPTERS = {
     # สมองหลัก (brain) · คิด/วิเคราะห์/วางแผน/ตรวจ/ตัดสิน · Opus 4.8 ตัวเดียว (Fable ถอดออกแล้ว)
     "opus":   {"cmd": ["relay-portal","claude","--model","claude-opus-4-8","--prompt","{prompt}"], "run_in_cwd": True, "brain": True},
 }
+LOCAL_ADAPTERS = {
+    "codex": {"cmd": ["codex", "exec", "--dangerously-bypass-hook-trust", "--json", "--sandbox", "workspace-write", "-C", "{cwd}", "{prompt}"], "run_in_cwd": True},
+    "opus": {"cmd": ["claude", "-p", "{prompt}", "--model", "claude-opus-4-8"], "run_in_cwd": True, "brain": True},
+}
+
+
+def local_adapter(tool: str) -> dict:
+    if tool != "grok":
+        return dict(LOCAL_ADAPTERS[tool])
+    grok_bin = shutil.which("grok") or "grok"
+    try:
+        help_text = subprocess.run([grok_bin, "--help"], text=True, capture_output=True, timeout=5).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        help_text = ""
+    if "--single <PROMPT>" in help_text or "--cwd <CWD>" in help_text:
+        return {"cmd": [grok_bin, "--cwd", "{cwd}", "--single", "{prompt}", "--always-approve", "--output-format", "plain"], "run_in_cwd": True}
+    return {"cmd": [grok_bin, "--directory", "{cwd}", "--prompt", "{prompt}"], "run_in_cwd": True}
 DEFAULT_ACCOUNTS = {
     "fallback": {"code_writing": ["grok","codex","gemini","ollama"],
                  # สายสมอง: สมองหลัก = opus 4.8 (ถ้ามีสมองสำรองในอนาคต เติมต่อท้ายได้)
@@ -341,16 +360,28 @@ def resolve_codex_bin():
     return str(fb) if fb.exists() else "codex"
 
 def prefer_portal_adapters(adapters: dict) -> dict:
-    """บังคับ Claude/Codex/Grok ผ่าน AI Portal เว้นแต่ผู้ดูแลตั้งใจเปิด local CLI."""
+    """Use Portal when configured; otherwise fall back to an installed local CLI."""
     if os.environ.get("AI_RELAY_ALLOW_LOCAL_CLI") == "1":
         return adapters
     upgraded = dict(adapters)
+    token_envs = {
+        "opus": ("AI_PORTAL_CLAUDE_TOKEN", "AI_RELAY_CLAUDE_TOKEN", "AI_PORTAL_TOKEN"),
+        "codex": ("AI_PORTAL_CODEX_TOKEN", "AI_RELAY_CODEX_TOKEN", "OPENAI_API_KEY", "AI_PORTAL_CODEX_TOKEN_01", "AI_PORTAL_CODEX_TOKEN_02"),
+        "grok": ("AI_PORTAL_GROK_TOKEN", "AI_RELAY_GROK_TOKEN", "GROK_API_KEY"),
+    }
     for tool in ("opus", "codex", "grok"):
         spec = upgraded.get(tool) or {}
         cmd = list(spec.get("cmd") or [])
         bin_name = Path(str(cmd[0])).name if cmd else ""
+        portal_ready = any(os.environ.get(name) for name in token_envs[tool])
         if bin_name in {"claude", "codex", "grok"}:
-            upgraded[tool] = dict(DEFAULT_ADAPTERS[tool])
+            if portal_ready:
+                upgraded[tool] = dict(DEFAULT_ADAPTERS[tool])
+            continue
+        local = local_adapter(tool)
+        local_bin = str((local.get("cmd") or [""])[0])
+        if bin_name == "relay-portal" and not portal_ready and shutil.which(local_bin):
+            upgraded[tool] = dict(local)
     return upgraded
 
 def relay_now(action, tool="", task="", phase=""):
@@ -448,15 +479,25 @@ def prepare_adapter_for_role(tool: str, spec: dict, role: str) -> dict:
             cmd.insert(-1 if cmd else 0, "--json")
         prepared["silence_timeout"] = 0
     elif tool == "grok":
-        cmd[:] = [part for part in cmd if part != "--always-approve"]
-        if "--permission-mode" in cmd:
-            pos = cmd.index("--permission-mode")
-            if pos + 1 < len(cmd):
-                cmd[pos + 1] = "plan"
-        else:
-            cmd.extend(["--permission-mode", "plan"])
-        if "--no-subagents" not in cmd:
-            cmd.append("--no-subagents")
+        # Grok CLI รุ่นปัจจุบันไม่มี permission-mode/no-subagents; ผู้ตรวจถูกคุม
+        # ด้วย prompt บทบาทอ่านอย่างเดียวและ HERMES_RELAY_ROLE=review แทน
+        cleaned = []
+        skip = False
+        for part in cmd:
+            if skip:
+                skip = False
+                continue
+            if part == "--output-format":
+                skip = True
+                continue
+            if part == "--always-approve":
+                continue
+            cleaned.append(part)
+        cmd[:] = cleaned
+        if "--cwd" in cmd:
+            cmd.extend(["--permission-mode", "plan", "--no-subagents"])
+        elif "--directory" in cmd:
+            cmd.extend(["--max-tool-rounds", "0"])
     elif tool == "gemini":
         cmd[:] = [part for part in cmd if part not in ("--yolo", "-y")]
         if "--approval-mode" in cmd:
@@ -509,6 +550,52 @@ def compact_review_prompt(prompt: str, limit: int = 12000) -> str:
     return instruction + text[:half] + "\n\n[ตัดรายละเอียดช่วงกลาง]\n\n" + text[-half:]
 
 
+def workspace_fingerprint(cwd: Path) -> str:
+    """Hash real project changes while ignoring Relay's own local evidence."""
+    try:
+        root = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"], cwd=cwd, text=True,
+            capture_output=True, timeout=5,
+        )
+        if root.returncode != 0:
+            import hashlib
+            rows = []
+            for path in sorted(cwd.rglob("*")):
+                try:
+                    rel = path.relative_to(cwd).as_posix()
+                except ValueError:
+                    continue
+                if rel == ".hermes" or rel.startswith(".hermes/") or not path.is_file():
+                    continue
+                rows.append(f"{rel}:{hashlib.sha256(path.read_bytes()).hexdigest()}")
+            return "\n".join(rows)
+        status = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=all"], cwd=cwd,
+            text=True, capture_output=True, timeout=10,
+        ).stdout.splitlines()
+        rows = []
+        for row in status:
+            path_text = row[3:].split(" -> ")[-1]
+            if path_text == ".hermes" or path_text.startswith(".hermes/"):
+                continue
+            path = cwd / path_text
+            digest = ""
+            if path.is_file():
+                import hashlib
+                digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            rows.append(f"{row[:3]}{path_text}:{digest}")
+        return "\n".join(sorted(rows))
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def review_has_verdict(output: str) -> bool:
+    return bool(re.search(
+        r"^[ \t]*(?:#{1,6}[ \t]*)?(?:PASS|FIX_REQUIRED)(?:[ \t]*[:—-].*)?$|^[ \t]*(?:ตัดสิน|ผลตรวจ)\s*:\s*(?:ผ่าน|ไม่ผ่าน)\s*$",
+        output or "", re.I | re.M,
+    ))
+
+
 def acquire_task_lock(cwd: Path, issue_id: str):
     """หนึ่ง issue มี relay-call ที่ทำงานพร้อมกันได้เพียงหนึ่งโปรเซส."""
     lock_path = cfg_dir(cwd) / f".task-{re.sub(r'[^A-Za-z0-9._-]', '_', issue_id)}.lock"
@@ -549,10 +636,13 @@ def _kill_process_group(p):
     try: p.wait(timeout=1)
     except Exception: pass
 
-def run_once(spec, prompt, cwd, model, timeout=900, silence_timeout=None):
+def run_once(spec, prompt, cwd, model, timeout=900, silence_timeout=None, role="code", task_id=""):
     cmd = [a.replace("{prompt}",prompt).replace("{cwd}",str(cwd)).replace("{model}",model or "") for a in spec["cmd"]]
     workdir = str(cwd) if spec.get("run_in_cwd") else None
     env = os.environ.copy()
+    env["HERMES_RELAY_ROLE"] = role
+    env["HERMES_RELAY_TASK_ID"] = task_id
+    env["HERMES_RELAY_WORKTREE"] = str(cwd)
     if cmd and Path(cmd[0]).name == "claude":
         # ตัด token org ที่ใช้ไม่ได้ เพื่อให้ claude ใช้ login ของเครื่องแทน (จับ path เต็มด้วย)
         env.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
@@ -591,22 +681,26 @@ def run_once(spec, prompt, cwd, model, timeout=900, silence_timeout=None):
         joined = b"".join(b if isinstance(b, bytes) else str(b).encode("utf-8", "replace") for b in buf)
         return joined.decode("utf-8", "replace")
 
-    while True:
-        rc = p.poll()
-        if rc is not None:
-            for t in threads: t.join(timeout=1)
-            return rc, _dec(out_buf), _dec(err_buf)
-        now = time.monotonic()
-        if now - start > timeout:
-            _kill_process_group(p)
-            for t in threads: t.join(timeout=1)
-            # เก็บ stderr เดิมไว้ + ต่อป้าย TIMEOUT_MARK (ไม่ทิ้ง log วินิจฉัย · classify ยังจับ timeout ได้)
-            return 124, _dec(out_buf), _dec(err_buf) + TIMEOUT_MARK
-        if silence_timeout and now - last_output[0] > silence_timeout:
-            _kill_process_group(p)
-            for t in threads: t.join(timeout=1)
-            return 124, _dec(out_buf), _dec(err_buf) + TIMEOUT_MARK + ":silence"
-        time.sleep(0.5)
+    try:
+        while True:
+            rc = p.poll()
+            if rc is not None:
+                for t in threads: t.join(timeout=1)
+                return rc, _dec(out_buf), _dec(err_buf)
+            now = time.monotonic()
+            if now - start > timeout:
+                _kill_process_group(p)
+                for t in threads: t.join(timeout=1)
+                # เก็บ stderr เดิมไว้ + ต่อป้าย TIMEOUT_MARK (ไม่ทิ้ง log วินิจฉัย · classify ยังจับ timeout ได้)
+                return 124, _dec(out_buf), _dec(err_buf) + TIMEOUT_MARK
+            if silence_timeout and now - last_output[0] > silence_timeout:
+                _kill_process_group(p)
+                for t in threads: t.join(timeout=1)
+                return 124, _dec(out_buf), _dec(err_buf) + TIMEOUT_MARK + ":silence"
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        _kill_process_group(p)
+        raise
 
 # ---- ตัวนับงบระดับ session (ไฟล์เล็กใน cfg dir · ล็อกไฟล์กันนับพลาดเมื่อรันพร้อมกัน) ----
 def bump_counter(cwd: Path, name: str, session_hours=12):
@@ -860,12 +954,17 @@ def main():
         relay_now("set", tool, a.task_id, activity)
         active_prompt = prompt
         timeout_retry = 0
+        before_workspace = workspace_fingerprint(cwd) if a.role == "code" else ""
         while True:
             code, out, err = run_once(
                 active_spec, active_prompt, cwd, model,
                 timeout=call_timeout, silence_timeout=silence_timeout,
+                role=a.role, task_id=a.task_id,
             )
             st = classify(code, out, err)
+            if st == "ok" and a.role == "code" and workspace_fingerprint(cwd) == before_workspace:
+                st = "crash"
+                err = (err or "") + "\nAI จบคำสั่งแต่ไม่มีไฟล์โปรเจกต์เปลี่ยน จึงไม่นับว่างานเขียนสำเร็จ"
             tried.append(f"{tool}:{st}")
             if not (st == "timeout" and tool == "codex" and a.role == "review" and timeout_retry == 0):
                 break
@@ -901,6 +1000,11 @@ def main():
                 st = "crash"
                 tried[-1] = f"{tool}:missing-final"
                 err = (err or "") + "\nCodex JSONL ended without a final agent_message"
+
+        if st == "ok" and a.role == "review" and not review_has_verdict(out):
+            st = "crash"
+            tried[-1] = f"{tool}:missing-verdict"
+            err = (err or "") + "\nผู้ตรวจไม่คืนคำตัดสิน PASS/FIX_REQUIRED จึงไม่นับว่าตรวจสำเร็จ"
 
         if st == "ok":
             ofile = cfg_dir(cwd)/f"out-{re.sub(r'[^A-Za-z0-9]', '_', a.task_id)}.txt"

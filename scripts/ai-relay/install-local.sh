@@ -81,8 +81,23 @@ if [ ! -f "${HOME_RELAY_DIR}/accounts.yaml" ]; then
   cp "${ROOT}/scripts/ai-relay/sample-config/accounts.yaml" "${HOME_RELAY_DIR}/accounts.yaml"
 fi
 
-"${ROOT}/scripts/ai-relay/relay-add-grok.py" --cwd "${ROOT}" >/dev/null
-"${ROOT}/scripts/ai-relay/relay-add-grok.py" --cwd "${HOME}" >/dev/null
+ensure_valid_relay_config() {
+  local cwd="$1"
+  if "${ROOT}/scripts/ai-relay/relay-add-grok.py" --cwd "$cwd" >/dev/null 2>&1; then
+    return 0
+  fi
+  local config_dir="$cwd/.hermes/ai-relay"
+  local stamp
+  stamp="$(date +%Y%m%d%H%M%S)"
+  [ -f "$config_dir/adapters.yaml" ] && cp "$config_dir/adapters.yaml" "$config_dir/adapters.yaml.invalid.$stamp"
+  [ -f "$config_dir/accounts.yaml" ] && cp "$config_dir/accounts.yaml" "$config_dir/accounts.yaml.invalid.$stamp"
+  cp "${ROOT}/scripts/ai-relay/sample-config/adapters.yaml" "$config_dir/adapters.yaml"
+  cp "${ROOT}/scripts/ai-relay/sample-config/accounts.yaml" "$config_dir/accounts.yaml"
+  "${ROOT}/scripts/ai-relay/relay-add-grok.py" --cwd "$cwd" >/dev/null
+}
+
+ensure_valid_relay_config "${ROOT}"
+ensure_valid_relay_config "${HOME}"
 
 cat <<MSG
 AI Relay ติดตั้งคำสั่งให้เครื่องนี้แล้ว

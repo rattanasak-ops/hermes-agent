@@ -15,7 +15,7 @@ tags:
   - flow-13
   - web-factory
 status: active
-version: "1.1"
+version: "1.2"
 updated: 2026-07-15
 schema: memory-schema-v1.2
 companion: use-migrate-web-flow13 (เนื้อ Flow เต็ม — บังคับอ่านคู่)
@@ -61,7 +61,11 @@ P0-8 Elasticsearch ติดตั้ง+index ครบระดับโปร
 P0-9 Image Source Registry (.work/image-sources.yaml): Freepik(ค้น stock)/Recraft(เวกเตอร์)/Topaz(รีทัช)/Magnific(ขยาย-เติม) + เพิ่ม source = เพิ่มแถว config · ก่อนใช้ทุกครั้ง smoke call จริง 1 งานเล็ก — auth ผ่านเฉย ๆ ไม่นับ
 P0-10 ผูกชุดแจกความรู้ (คลัง layout 42 module / effects / QAQC) + จดเลขรุ่นใน profile
 P0-11 เช็ค Module แจ้งไฟล์เสียใน engine — ยังไม่มี = ใบงาน factory backlog + เมนูที่มีไฟล์แนบยังปิดเกตไม่ได้จนกว่าจะมี
-P0-12 ที่มาระบบดีไซน์ (owner สั่ง 2026-07-15): Design System ของโปรเจกต์ต้องสร้างด้วย `Use Create Design System` (มาตรฐานรุ่นปัจจุบัน) หรือถ้ามีของเดิมอยู่แล้วต้องตรวจย้อน (audit) ด้วย checklist ของ shortcut ตัวนั้นให้ผ่านก่อน · จดหลักฐานลง profile.yaml 3 ช่อง: ds_version / ds_standard_รุ่น / ds_origin (สร้างใหม่หรือตรวจย้อน + วันที่ + ผู้อนุมัติ) · ไม่มีหลักฐาน = `BLOCKED_DS_ORIGIN` ห้ามเข้าลูปเมนู
+P0-12 ที่มาระบบดีไซน์ = ด่านบังคับห้ามข้าม (owner สั่ง 2026-07-15): Design System ทุกโปรเจกต์ **ต้องผ่าน `Use Create Design System` เท่านั้น** — AI ห้ามตัดสินเรื่องดีไซน์/สี/token เองนอก shortcut นี้เด็ดขาด · กติกา 2 ทาง (บังคับเลือกตามของจริง ห้ามเดา):
+  - **มีของเก่าอยู่แล้ว → เอามาอัปเกรด** (โหมดตรวจย้อน/audit เทียบ checklist รุ่นปัจจุบัน → ปิดช่องว่างจนผ่าน · ห้ามทิ้งของกรรมการอนุมัติแล้วสร้างใหม่)
+  - **ยังไม่มี → สร้างใหม่** ด้วย `Use Create Design System` เต็ม 5 เฟส
+  จดหลักฐานลง profile.yaml 3 ช่อง: ds_version / ds_standard_รุ่น / ds_origin (upgrade/new + วันที่ + ผู้อนุมัติ)
+  **ครบทั้ง 3 ยังไม่พอ — DS ต้อง "ต่อเข้าระบบจริง" ด้วย: (ก) token gen เป็น ts/css (ข) หน้าเว็บ consume token ไม่ hardcode (ค) หน้าโชว์ URL เปิดได้ (ง) ds-check เป็นด่าน CI** · ขาดข้อใด = `BLOCKED_DS_ORIGIN` ห้ามเข้าลูปเมนู · เหตุ: DS ที่ "จดครบแต่ไม่ต่อระบบ" = ช่างแต่ละคนหยิบสีเองได้ (เคสจริง กปถ. 2026-07-15)
 
 [โหมดกำหนดรูปขั้น — ไม่มีการ "ข้ามขั้น" ทุกโหมดเดินครบ 13 สถานี]
 - MIGRATE: M1 = capture เว็บเก่า (ตามเนื้อ Flow เต็ม)
@@ -146,6 +150,7 @@ VPS = อ่านจาก mirror rsync (มีแล้ว) · notebook = git 
 
 ## Changelog
 
+- v1.2 (2026-07-15): เสริม `P0-12` เป็นด่านบังคับห้ามข้าม — DS ต้องผ่าน `Use Create Design System` เท่านั้น (มีของเก่า=อัปเกรด/ไม่มี=สร้างใหม่) + บังคับ "ต่อเข้าระบบจริง" 4 ข้อ (token gen/consume/หน้าโชว์/CI) · owner สั่งหลังเคส กปถ. DS จดครบแต่ไม่ต่อระบบ (DEC-173/175)
 - v1.1 (2026-07-15): เพิ่ม `P0-12` ด่านที่มาระบบดีไซน์ — DS ต้องสร้าง/ตรวจย้อนด้วย `Use Create Design System` + จดเวอร์ชันใน profile.yaml ก่อนเข้าลูปเมนู (owner สั่งหลังพบ DS กปถ. เกิดนอกพิธี · DEC-173 ใน newwebengine2026)
 - v1.0 (2026-07-14): ฉบับแรกตาม SPEC v1.2 (เจ้าของอนุมัติ) — ตารางแม่ 55 รายการ + จุดเคาะ 13 จุด · เนื้อ Flow เต็มอยู่ไฟล์คู่กัน `use-migrate-web-flow13.md` (sha256 ตรง baseline)
 
