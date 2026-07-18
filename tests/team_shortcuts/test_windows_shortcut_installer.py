@@ -17,6 +17,8 @@ def test_windows_powershell_installer_is_shipped_with_the_payload():
     assert 'Copy-Item -LiteralPath $RegistrySource' in text
     assert 'Copy-Item -LiteralPath $SkillSource' in text
     assert 'Copy-Item -LiteralPath $VersionFile' in text
+    assert 'Join-Path $PayloadRoot "skills\\agent-center"' in text
+    assert 'Join-Path $ScriptRoot "..\\plugins\\agent_center"' in text
 
 
 def test_windows_installer_connects_codex_app_and_cursor_with_windows_pointers():
@@ -28,6 +30,8 @@ def test_windows_installer_connects_codex_app_and_cursor_with_windows_pointers()
     assert "alwaysApply: true" in text
     assert "$RegistryDestination" in text
     assert "$SkillDestination\\SKILL.md" in text
+    assert 'Join-Path $HOME ".codex\\skills\\agent-center"' in text
+    assert 'plugins enable agent-center' in text
 
 
 def test_windows_installer_checks_all_migrate_phases_and_shared_contract_after_copy():

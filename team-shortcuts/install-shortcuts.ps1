@@ -11,12 +11,39 @@ $PayloadRoot = Join-Path $ScriptRoot "payload"
 $VersionFile = Join-Path $ScriptRoot "VERSION"
 $RegistrySource = Join-Path $PayloadRoot "ai-context\prompt-shortcut-registry.md"
 $SkillSource = Join-Path $PayloadRoot "skills\prompt-shortcuts"
+$AgentSkillSource = Join-Path $PayloadRoot "skills\agent-center"
+$AgentPluginSource = Join-Path $ScriptRoot "..\plugins\agent_center"
 $RegistryDestination = Join-Path $DestinationRoot "ai-context\prompt-shortcut-registry.md"
 $SkillDestination = Join-Path $DestinationRoot "skills\prompt-shortcuts"
+$AgentSkillDestination = Join-Path $DestinationRoot "skills\agent-center"
 $ReferencesDestination = Join-Path $SkillDestination "references"
 $CodexPointer = Join-Path $HOME ".codex\skills\prompt-shortcuts"
+$CodexAgentPointer = Join-Path $HOME ".codex\skills\agent-center"
 $CursorPointer = Join-Path $HOME ".cursor\rules\hermes-prompt-shortcuts.mdc"
 $InstalledVersion = Join-Path $DestinationRoot ".shortcut-version"
+
+$HermesCommand = Get-Command hermes -ErrorAction SilentlyContinue
+if ($null -eq $HermesCommand) {
+    throw "ไม่พบคำสั่ง hermes — Use Agent ต้องมี Hermes Agent ก่อนติดตั้ง"
+}
+$HermesHome = if ($env:HERMES_HOME) {
+    $env:HERMES_HOME
+}
+else {
+    $dump = (& $HermesCommand.Source dump 2>$null | Select-String '^hermes_home:\s*(.+)$' | Select-Object -First 1)
+    if ($null -ne $dump) {
+        $reported = $dump.Matches[0].Groups[1].Value.Trim()
+        if ($reported -eq "~") { $HOME }
+        elseif ($reported.StartsWith("~\") -or $reported.StartsWith("~/")) {
+            Join-Path $HOME $reported.Substring(2)
+        }
+        else { $reported }
+    }
+    else {
+        Join-Path $HOME ".hermes"
+    }
+}
+$AgentPluginDestination = Join-Path $HermesHome "plugins\agent-center"
 
 function Write-Step([string]$Message) {
     Write-Host $Message
@@ -62,6 +89,12 @@ if (-not (Test-Path -LiteralPath $RegistrySource -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $SkillSource -PathType Container)) {
     throw "ไม่พบชุดคำสั่งลัดที่ $SkillSource"
 }
+if (-not (Test-Path -LiteralPath $AgentSkillSource -PathType Container)) {
+    throw "ไม่พบ Agent Center skill ที่ $AgentSkillSource"
+}
+if (-not (Test-Path -LiteralPath $AgentPluginSource -PathType Container)) {
+    throw "ไม่พบ Agent Center plugin ที่ $AgentPluginSource"
+}
 Assert-File $VersionFile "หมายเลขชุดติดตั้ง"
 
 Write-Step "[1/4] คัดชุดคำสั่งลัดไป $DestinationRoot"
@@ -72,7 +105,20 @@ if (Test-Path -LiteralPath $SkillDestination) {
     Remove-Item -LiteralPath $SkillDestination -Recurse -Force
 }
 Copy-Item -LiteralPath $SkillSource -Destination $SkillDestination -Recurse -Force
+if (Test-Path -LiteralPath $AgentSkillDestination) {
+    Remove-Item -LiteralPath $AgentSkillDestination -Recurse -Force
+}
+Copy-Item -LiteralPath $AgentSkillSource -Destination $AgentSkillDestination -Recurse -Force
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $AgentPluginDestination) | Out-Null
+if (Test-Path -LiteralPath $AgentPluginDestination) {
+    Remove-Item -LiteralPath $AgentPluginDestination -Recurse -Force
+}
+Copy-Item -LiteralPath $AgentPluginSource -Destination $AgentPluginDestination -Recurse -Force
 Copy-Item -LiteralPath $VersionFile -Destination $InstalledVersion -Force
+& $HermesCommand.Source plugins enable agent-center
+if ($LASTEXITCODE -ne 0) {
+    throw "คัด Agent Center แล้ว แต่เปิดใช้ผ่าน Hermes Agent ไม่สำเร็จ"
+}
 
 Write-Step "[2/4] ทำจุดเชื่อมสำหรับ Codex App"
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $CodexPointer) | Out-Null
@@ -86,6 +132,10 @@ if (Test-Path -LiteralPath $CodexPointer) {
     }
 }
 New-Item -ItemType Junction -Path $CodexPointer -Target $SkillDestination | Out-Null
+if (Test-Path -LiteralPath $CodexAgentPointer) {
+    Remove-Item -LiteralPath $CodexAgentPointer -Recurse -Force
+}
+New-Item -ItemType Junction -Path $CodexAgentPointer -Target $AgentSkillDestination | Out-Null
 
 Write-Step "[3/4] สร้างกฎชี้ตำแหน่งสำหรับ Cursor"
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $CursorPointer) | Out-Null
@@ -107,6 +157,8 @@ Write-Step "[4/4] ตรวจ Migrate 14/14 และสัญญาหลั�
 Assert-File $RegistryDestination "ทะเบียนคำสั่งลัด"
 Assert-File (Join-Path $SkillDestination "SKILL.md") "ชุดคำสั่งลัด"
 Assert-File (Join-Path $SkillDestination "Prompt Shortcuts.md") "สารบัญคำสั่งลัด"
+Assert-File (Join-Path $AgentSkillDestination "SKILL.md") "Agent Center skill"
+Assert-File (Join-Path $AgentPluginDestination "plugin.yaml") "Agent Center plugin"
 Assert-File (Join-Path $ReferencesDestination "use-migrate-phase-contract.md") "สัญญากลาง Migrate"
 Assert-File $CursorPointer "กฎ Cursor"
 
