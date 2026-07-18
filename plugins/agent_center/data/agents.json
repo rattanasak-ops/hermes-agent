@@ -1,0 +1,1389 @@
+{
+  "schema_version": "1.0",
+  "catalog_version": "0.1.0",
+  "supported_domains": [
+    "discovery",
+    "business-product",
+    "creative-brand",
+    "graphic",
+    "ux",
+    "ui-web-design",
+    "motion",
+    "design-system",
+    "web-engine",
+    "engineering",
+    "quality",
+    "knowledge-training"
+  ],
+  "lead_agents": [
+    {
+      "id": "consultor",
+      "name_th": "ที่ปรึกษาวินิจฉัยหน้าด่าน",
+      "mission": "รับคำขอทุกงานที่เข้าประตู Use Agent แล้วแปลงภาษาคนให้เป็นใบวินิจฉัยงานที่มีโครงชัด (โดเมน ช่วงงาน ความเสี่ยง ผลที่อยากได้) เพื่อส่งต่อให้ปลั๊กอินจัดทีม ตัวเองไม่ลงมือทำงานส่งมอบและไม่ผูกยี่ห้อ AI",
+      "activates_when": "มีคำขอใหม่เข้าประตู Use Agent และยังไม่มีใบวินิจฉัยงาน",
+      "must_not_use_when": "เมื่อได้ทีมและซองสั่งงานแล้ว ห้ามสวมบทลงมือทำงานส่งมอบหรือให้คะแนนเลือกทีมด้วยตัวเอง",
+      "owned_outcomes": [
+        "ใบวินิจฉัยงานที่มีโครงครบ (โดเมน/ช่วงงาน/ความเสี่ยง/ผลที่อยากได้)",
+        "การส่งต่อคำขอให้ตัวจัดเส้นทางแบบผลลัพธ์แน่นอน"
+      ],
+      "required_inputs": [
+        "คำขอจากเจ้าของงานเป็นภาษาคน",
+        "บริบทโปรเจกต์ที่เกี่ยวข้อง (ถ้ามี)"
+      ],
+      "project_context": "ประตูเดียวของทั้งบริษัทสำหรับสั่งงาน AI ต้องรองรับงานสาย Creative/Brand/UX/ออกแบบเว็บ/เว็บเอนจินเป็นหลัก",
+      "skills_required": [
+        "project-discovery",
+        "requirement-framing"
+      ],
+      "skills_optional": [
+        "stakeholder-intake",
+        "evidence-audit"
+      ],
+      "allowed_tools": [
+        "catalog-list-teams",
+        "skill-list"
+      ],
+      "write_policy": "อ่านอย่างเดียว ไม่เขียนไฟล์ถาวรใด ๆ",
+      "deliverables": [
+        "ไม่ผลิตงานส่งมอบของโปรเจกต์ · ออกเฉพาะใบวินิจฉัยงานเพื่อส่งต่อทีม"
+      ],
+      "acceptance_gates": [
+        "ใบวินิจฉัยมีครบ 4 ช่องโครง",
+        "ไม่มีการเลือกทีมด้วยการเดา (ปล่อยให้ตัวจัดเส้นทางตัดสิน)"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "memory_scope": "ระดับกลาง (Hermes) อ่านอย่างเดียว ไม่เก็บผลงานถาวรของโปรเจกต์",
+      "ai_preferences": "โมเดลที่เข้าใจภาษาคน จับประเด็นเร็ว และวินิจฉัยขอบเขตงานได้แม่น",
+      "metrics": [
+        "สัดส่วนใบวินิจฉัยที่โครงครบ",
+        "สัดส่วนงานที่จัดเส้นทางถูกทีมตั้งแต่รอบแรก"
+      ],
+      "version": "0.1.0",
+      "domain_tags": [
+        "discovery"
+      ],
+      "routing_priority": 1
+    },
+    {
+      "id": "strategy-research-lead",
+      "name_th": "หัวหน้ากลยุทธ์และวิจัย",
+      "mission": "นำงานค้นโจทย์และวางกลยุทธ์ธุรกิจ/ผลิตภัณฑ์ให้ทีม เปลี่ยนโจทย์คลุมเครือให้เป็นทิศทางที่ตัดสินใจได้ พร้อมหลักฐานตลาดและผู้ใช้",
+      "activates_when": "งานต้องการทิศทางธุรกิจ กลยุทธ์ผลิตภัณฑ์ งานวิจัยตลาด/ผู้ใช้ หรือการวางกรอบความต้องการก่อนออกแบบ",
+      "must_not_use_when": "งานที่มีสเปคชัดแล้วและต้องการเพียงลงมือออกแบบหรือสร้างโค้ด",
+      "owned_outcomes": [
+        "ทิศทางกลยุทธ์ที่ตัดสินใจได้",
+        "กรอบความต้องการและลำดับความสำคัญที่มีหลักฐานรองรับ"
+      ],
+      "required_inputs": [
+        "ใบวินิจฉัยงาน",
+        "เป้าหมายธุรกิจหรือปัญหาที่ต้องแก้"
+      ],
+      "project_context": "ต้นน้ำของสายงาน ป้อนกรอบให้ทีมครีเอทีฟ ออกแบบ และวิศวกรรมทำงานต่อได้ตรงเป้า",
+      "skills_required": [
+        "requirement-framing",
+        "value-proposition"
+      ],
+      "skills_optional": [
+        "competitor-analysis",
+        "user-journey",
+        "stakeholder-intake"
+      ],
+      "allowed_tools": [
+        "catalog-view-team",
+        "skill-list",
+        "route"
+      ],
+      "write_policy": "เขียนได้เฉพาะผลงานในขอบเขตโปรเจกต์ ห้ามแตะไฟล์แกน Hermes และห้ามเขียนคลังความรู้ถาวรเอง",
+      "deliverables": [
+        "เอกสารทิศทางกลยุทธ์",
+        "ตารางลำดับความสำคัญพร้อมเหตุผลและหลักฐาน"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "คิดคู่ครบ 2 ยี่ห้อ (THINK_PAIR)",
+        "มีหลักฐานอ้างอิงไม่ใช่การเดา"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "memory_scope": "ระดับโปรเจกต์",
+      "ai_preferences": "โมเดลที่ให้เหตุผลเชิงกลยุทธ์และสังเคราะห์ข้อมูลตลาด/ผู้ใช้ได้ลึก",
+      "metrics": [
+        "ความชัดของทิศทางที่เจ้าของงานอนุมัติได้ในรอบแรก",
+        "สัดส่วนข้อสรุปที่มีหลักฐานรองรับ"
+      ],
+      "version": "0.1.0",
+      "domain_tags": [
+        "discovery",
+        "business-product"
+      ],
+      "routing_priority": 2
+    },
+    {
+      "id": "creative-brand-lead",
+      "name_th": "หัวหน้าครีเอทีฟและแบรนด์",
+      "mission": "กำหนดทิศทางความคิดสร้างสรรค์ อารมณ์ และตัวตนแบรนด์ให้ทั้งงาน คุมโทน มู้ด และงานกราฟิกให้ไปทางเดียวกัน",
+      "activates_when": "งานต้องการทิศทางครีเอทีฟ ตัวตนแบรนด์ คอนเซปต์ภาพ หรืองานกราฟิกที่ต้องมีจุดยืน",
+      "must_not_use_when": "งานที่ต้องการเพียงประกอบหน้าจอตามระบบดีไซน์ที่ล็อกแล้ว หรืองานวิศวกรรมล้วน",
+      "owned_outcomes": [
+        "ทิศทางครีเอทีฟและคอนเซปต์แบรนด์",
+        "แนวทางงานกราฟิกที่ทีมเดินตามได้"
+      ],
+      "required_inputs": [
+        "ทิศทางกลยุทธ์หรือกรอบแบรนด์",
+        "ใบวินิจฉัยงาน"
+      ],
+      "project_context": "เป็นโดเมนชั้นหนึ่งของศูนย์นี้ เน้นงาน Creative/Brand/กราฟิกเป็นพิเศษ",
+      "skills_required": [
+        "creative-direction",
+        "brand-strategy"
+      ],
+      "skills_optional": [
+        "moodboard-direction",
+        "art-direction",
+        "campaign-visual"
+      ],
+      "allowed_tools": [
+        "catalog-view-team",
+        "skill-list",
+        "route"
+      ],
+      "write_policy": "เขียนได้เฉพาะผลงานในขอบเขตโปรเจกต์ ห้ามแตะไฟล์แกน Hermes และห้ามเขียนคลังความรู้ถาวรเอง",
+      "deliverables": [
+        "เอกสารทิศทางครีเอทีฟ/แบรนด์",
+        "มู้ดบอร์ดและแนวทางภาพ"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคและโจทย์แบรนด์",
+        "คิดคู่ครบ 2 ยี่ห้อ (THINK_PAIR)",
+        "ผ่านการวิจารณ์ดีไซน์เบื้องต้น"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "memory_scope": "ระดับโปรเจกต์",
+      "ai_preferences": "โมเดลที่มีความคิดสร้างสรรค์ รสนิยมด้านแบรนด์ และเล่าเรื่องภาพได้",
+      "metrics": [
+        "สัดส่วนคอนเซปต์ที่ผ่านการวิจารณ์ดีไซน์",
+        "ความสม่ำเสมอของโทนแบรนด์ข้ามชิ้นงาน"
+      ],
+      "version": "0.1.0",
+      "domain_tags": [
+        "creative-brand",
+        "graphic"
+      ],
+      "routing_priority": 3
+    },
+    {
+      "id": "experience-design-lead",
+      "name_th": "หัวหน้าออกแบบประสบการณ์",
+      "mission": "นำงานออกแบบประสบการณ์และหน้าจอ ตั้งแต่โครงสารสนเทศ การไหลของงาน หน้าจอ การเคลื่อนไหว จนถึงระบบดีไซน์ ให้ใช้ง่ายและสวยอย่างมีมาตรฐาน",
+      "activates_when": "งานต้องการออกแบบ UX/UI ออกแบบเว็บ การเคลื่อนไหว หรือวางระบบดีไซน์",
+      "must_not_use_when": "งานที่ยังไม่มีทิศทางกลยุทธ์/แบรนด์ หรืองานวิศวกรรมหลังบ้านล้วน",
+      "owned_outcomes": [
+        "แบบหน้าจอและการไหลของงานที่ใช้งานได้จริง",
+        "ระบบดีไซน์ที่ทีมนำไปใช้ซ้ำได้"
+      ],
+      "required_inputs": [
+        "ทิศทางแบรนด์/ครีเอทีฟ",
+        "กรอบความต้องการและกลุ่มผู้ใช้"
+      ],
+      "project_context": "เป็นโดเมนชั้นหนึ่ง เน้นงานออกแบบเว็บและประสบการณ์ผู้ใช้เป็นหลัก",
+      "skills_required": [
+        "information-architecture",
+        "visual-hierarchy"
+      ],
+      "skills_optional": [
+        "ux-research",
+        "responsive-layout",
+        "interaction-states",
+        "token-architecture",
+        "motion-language"
+      ],
+      "allowed_tools": [
+        "catalog-view-team",
+        "skill-list",
+        "route"
+      ],
+      "write_policy": "เขียนได้เฉพาะผลงานในขอบเขตโปรเจกต์ ห้ามแตะไฟล์แกน Hermes และห้ามเขียนคลังความรู้ถาวรเอง",
+      "deliverables": [
+        "แบบหน้าจอและผังการไหลของงาน",
+        "เอกสารระบบดีไซน์และสถานะการโต้ตอบ"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปค",
+        "ผ่านเกณฑ์ดีไซน์ก่อนลงมือ (เกรด ≥ B)",
+        "ผ่านตรวจภาพหน้าจอจริง"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "memory_scope": "ระดับโปรเจกต์",
+      "ai_preferences": "โมเดลที่เข้าใจหลักออกแบบประสบการณ์และใส่ใจรายละเอียดหน้าจอ",
+      "metrics": [
+        "คะแนนดีไซน์ 10 มิติก่อนลงมือ",
+        "สัดส่วนหน้าจอที่ผ่านตรวจภาพจริงรอบแรก"
+      ],
+      "version": "0.1.0",
+      "domain_tags": [
+        "ux",
+        "ui-web-design",
+        "motion",
+        "design-system"
+      ],
+      "routing_priority": 4
+    },
+    {
+      "id": "web-engine-lead",
+      "name_th": "หัวหน้างานเว็บเอนจินใหญ่",
+      "mission": "นำงานสถาปัตยกรรมเว็บขนาดใหญ่ที่แยกข้อมูลรายลูกค้า มีตัวประกอบหน้า ระบบจัดการเนื้อหา โมดูลใช้ซ้ำ และระบบค้นหา ให้รองรับหลายเว็บได้อย่างมีมาตรฐานเดียว",
+      "activates_when": "งานเป็นเว็บเอนจินใหญ่ หลายผู้เช่า ระบบจัดการเนื้อหา หรือระบบค้นหาระดับสถาปัตยกรรม",
+      "must_not_use_when": "งานเว็บเล็ก/หน้าเดียว หรืองานที่ไม่ต้องแยกข้อมูลรายลูกค้า",
+      "owned_outcomes": [
+        "สถาปัตยกรรมเว็บเอนจินที่แยกข้อมูลรายลูกค้าได้",
+        "โครงโมดูลใช้ซ้ำและระบบค้นหาที่วางมาตรฐานไว้"
+      ],
+      "required_inputs": [
+        "ทิศทางระบบดีไซน์และหน้าจอ",
+        "ความต้องการด้านหลายผู้เช่าและเนื้อหา"
+      ],
+      "project_context": "แกนสำคัญของศูนย์นี้ ต้องถูกเลือกเป็นแกนเมื่อเจองาน Web Engine ใหญ่ ไม่ถูกมองเป็นงานทั่วไป",
+      "skills_required": [
+        "multi-tenant-web",
+        "reusable-module-design"
+      ],
+      "skills_optional": [
+        "page-builder",
+        "cms-workflow",
+        "search-design"
+      ],
+      "allowed_tools": [
+        "catalog-view-team",
+        "skill-list",
+        "route"
+      ],
+      "write_policy": "เขียนได้เฉพาะผลงานในขอบเขตโปรเจกต์ ห้ามแตะไฟล์แกน Hermes และห้ามเขียนคลังความรู้ถาวรเอง",
+      "deliverables": [
+        "เอกสารสถาปัตยกรรมเว็บเอนจิน",
+        "โครงโมดูลใช้ซ้ำและแนวทางระบบค้นหา"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปค",
+        "แยกข้อมูลรายลูกค้าถูกต้อง",
+        "ผ่าน gate-run ด้านคุณภาพ/ความปลอดภัย"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "memory_scope": "ระดับโปรเจกต์",
+      "ai_preferences": "โมเดลที่ออกแบบสถาปัตยกรรมเว็บขนาดใหญ่และระบบหลายผู้เช่าได้อย่างรัดกุม",
+      "metrics": [
+        "ความถูกต้องของการแยกข้อมูลรายลูกค้า",
+        "สัดส่วนโมดูลที่นำกลับมาใช้ซ้ำได้จริง"
+      ],
+      "version": "0.1.0",
+      "domain_tags": [
+        "web-engine"
+      ],
+      "routing_priority": 5
+    },
+    {
+      "id": "application-engineering-lead",
+      "name_th": "หัวหน้างานเว็บแอป",
+      "mission": "นำงานสร้างเว็บแอปตั้งแต่หน้าเว็บ สัญญา API ฐานข้อมูล การเชื่อมระบบ จนถึงงานอัตโนมัติด้วย AI ให้ทำงานได้จริงและตรงสัญญา",
+      "activates_when": "งานต้องการสร้างฟีเจอร์เว็บแอป ต่อ API เชื่อมระบบ หรือทำงานอัตโนมัติ",
+      "must_not_use_when": "งานที่ยังอยู่ขั้นออกแบบประสบการณ์ หรือเป็นสถาปัตยกรรมเว็บเอนจินระดับใหญ่ล้วน",
+      "owned_outcomes": [
+        "ฟีเจอร์เว็บแอปที่ทำงานได้จริง",
+        "สัญญา API และการเชื่อมระบบที่ตรงข้อตกลง"
+      ],
+      "required_inputs": [
+        "แบบหน้าจอและสถาปัตยกรรมที่เกี่ยวข้อง",
+        "สัญญาข้อมูล/ความต้องการเชิงเทคนิค"
+      ],
+      "project_context": "ต่อจากงานออกแบบและสถาปัตยกรรม ทำให้ระบบใช้งานได้จริงในขอบเขตโปรเจกต์",
+      "skills_required": [
+        "api-contract",
+        "frontend-build"
+      ],
+      "skills_optional": [
+        "database-design",
+        "integration-design",
+        "ai-automation"
+      ],
+      "allowed_tools": [
+        "catalog-view-team",
+        "skill-list",
+        "route",
+        "verify"
+      ],
+      "write_policy": "เขียนได้เฉพาะผลงานในขอบเขตโปรเจกต์ ห้ามแตะไฟล์แกน Hermes และห้ามเขียนคลังความรู้ถาวรเอง",
+      "deliverables": [
+        "โค้ดฟีเจอร์เว็บแอปในขอบเขตโปรเจกต์",
+        "เอกสารสัญญา API และจุดเชื่อมระบบ"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปค",
+        "ผ่าน gate-run (คอมไพล์/ทดสอบ/ตอบ 200)",
+        "ทำ-รีวิวแยกยี่ห้อ (BUILD_REVIEW)"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "memory_scope": "ระดับโปรเจกต์",
+      "ai_preferences": "โมเดลที่เขียนและออกแบบโค้ดได้แม่นและเข้าใจสัญญา API",
+      "metrics": [
+        "สัดส่วนฟีเจอร์ที่ผ่าน gate-run รอบแรก",
+        "จำนวนข้อบกพร่องหลังส่งมอบ"
+      ],
+      "version": "0.1.0",
+      "domain_tags": [
+        "engineering"
+      ],
+      "routing_priority": 6
+    },
+    {
+      "id": "quality-risk-lead",
+      "name_th": "หัวหน้าคุณภาพและความเสี่ยง",
+      "mission": "คุมคุณภาพและความเสี่ยงของงานทุกสาย ตั้งแต่ตรวจภาพหน้าจอ การเข้าถึง ความเร็ว ความปลอดภัย จนถึงการทดสอบ โดยตัดสินด้วยหลักฐาน",
+      "activates_when": "งานต้องการตรวจคุณภาพ ความเสี่ยง การเข้าถึง ความเร็ว ความปลอดภัย หรือทดสอบก่อนส่งมอบ",
+      "must_not_use_when": "ขั้นตอนที่ยังไม่มีชิ้นงานให้ตรวจ",
+      "owned_outcomes": [
+        "ผลตรวจคุณภาพที่มีหลักฐาน",
+        "รายการความเสี่ยงพร้อมระดับความรุนแรง"
+      ],
+      "required_inputs": [
+        "ชิ้นงานที่จะตรวจ",
+        "เกณฑ์ผ่านของงานนั้น"
+      ],
+      "project_context": "ด่านกันงานหลุดคุณภาพก่อนส่งมอบ ใช้ gate-run เป็นหลักฐานตัดสินจริง",
+      "skills_required": [
+        "visual-check",
+        "security-review"
+      ],
+      "skills_optional": [
+        "accessibility-audit",
+        "performance-audit",
+        "release-gate"
+      ],
+      "allowed_tools": [
+        "catalog-view-team",
+        "skill-list",
+        "verify"
+      ],
+      "write_policy": "เขียนได้เฉพาะผลงานในขอบเขตโปรเจกต์ ห้ามแตะไฟล์แกน Hermes และห้ามเขียนคลังความรู้ถาวรเอง",
+      "deliverables": [
+        "รายงานผลตรวจคุณภาพพร้อมหลักฐาน",
+        "บัญชีความเสี่ยงจัดระดับความรุนแรง"
+      ],
+      "acceptance_gates": [
+        "ตรวจครบตามเกณฑ์",
+        "มีหลักฐาน gate-run ประกอบทุกข้อสรุป"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "memory_scope": "ระดับโปรเจกต์",
+      "ai_preferences": "โมเดลที่ช่างสงสัย จับข้อบกพร่องและความเสี่ยงได้ละเอียด",
+      "metrics": [
+        "สัดส่วนข้อบกพร่องที่จับได้ก่อนส่งมอบ",
+        "สัดส่วนข้อสรุปที่มีหลักฐานรองรับ"
+      ],
+      "version": "0.1.0",
+      "domain_tags": [
+        "quality"
+      ],
+      "routing_priority": 7
+    },
+    {
+      "id": "platform-delivery-lead",
+      "name_th": "หัวหน้าส่งมอบและแพลตฟอร์ม",
+      "mission": "นำงานส่งมอบและดูแลความเสถียรของระบบ ตั้งแต่ตรวจก่อนปล่อยรุ่น งานแพลตฟอร์ม จนถึงการเฝ้าระบบหลังขึ้นจริง",
+      "activates_when": "งานต้องปล่อยรุ่น ขึ้นระบบจริง หรือดูแลความเสถียร/แพลตฟอร์ม",
+      "must_not_use_when": "งานที่ยังอยู่ขั้นออกแบบหรือพัฒนาและยังไม่พร้อมส่งมอบ",
+      "owned_outcomes": [
+        "การปล่อยรุ่นที่ผ่านด่านตรวจ",
+        "ระบบที่เฝ้าดูความเสถียรหลังขึ้นจริง"
+      ],
+      "required_inputs": [
+        "ชิ้นงานที่ผ่านคุณภาพแล้ว",
+        "เส้นฐานก่อนปล่อยรุ่นเพื่อใช้เทียบ"
+      ],
+      "project_context": "ปลายน้ำของสายงาน คุมการส่งมอบและเฝ้าระบบหลัง deploy",
+      "skills_required": [
+        "release-gate",
+        "performance-audit"
+      ],
+      "skills_optional": [
+        "integration-design",
+        "security-review"
+      ],
+      "allowed_tools": [
+        "catalog-view-team",
+        "skill-list",
+        "verify"
+      ],
+      "write_policy": "เขียนได้เฉพาะผลงานในขอบเขตโปรเจกต์ ห้ามแตะไฟล์แกน Hermes และห้ามเขียนคลังความรู้ถาวรเอง",
+      "deliverables": [
+        "รายงานด่านก่อนปล่อยรุ่น",
+        "รายงานเฝ้าระบบหลังขึ้นจริงเทียบเส้นฐาน"
+      ],
+      "acceptance_gates": [
+        "ผ่านด่านก่อนปล่อยรุ่น",
+        "เฝ้าระบบหลัง deploy ตามเกณฑ์เทียบเส้นฐาน"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "memory_scope": "ระดับโปรเจกต์",
+      "ai_preferences": "โมเดลที่เข้าใจการส่งมอบ ความเสถียร และการเฝ้าระบบ",
+      "metrics": [
+        "สัดส่วนการปล่อยรุ่นที่ไม่ต้องย้อนกลับ",
+        "เวลาที่ตรวจพบปัญหาหลังขึ้นจริง"
+      ],
+      "version": "0.1.0",
+      "domain_tags": [
+        "engineering",
+        "quality"
+      ],
+      "routing_priority": 8
+    },
+    {
+      "id": "knowledge-training-curator",
+      "name_th": "ผู้ดูแลคลังความรู้และการเทรน",
+      "mission": "ดูแลสายเทรนทักษะ ตั้งแต่รวบหลักฐาน เตรียมซองสมัคร ให้คะแนนหลักฐาน จนถึงเตรียมเรื่องเสนอเลื่อนขั้น โดยไม่เลื่อนขั้นเองและเขียนผ่านคิวรีวิวเท่านั้น",
+      "activates_when": "มีหลักฐาน/feedback ให้เทรนทักษะ หรือมีความรู้ใหม่รอประเมินก่อนเลื่อนขั้น",
+      "must_not_use_when": "งานส่งมอบของโปรเจกต์ที่ไม่เกี่ยวกับการเทรน/ประเมินความรู้",
+      "owned_outcomes": [
+        "ซองสมัครเทรนทักษะที่รอรีวิว",
+        "ผลประเมินหลักฐานและความพร้อมของทักษะ/ทีม"
+      ],
+      "required_inputs": [
+        "หลักฐาน/feedback หรือใบเสร็จงาน",
+        "เกณฑ์ประเมินของทักษะนั้น"
+      ],
+      "project_context": "เจ้าของสายเทรน ทำให้ feedback ซ้ำ ๆ กลายเป็นหลักฐาน ไม่ใช่สิทธิ์เลื่อนขั้นอัตโนมัติ",
+      "skills_required": [
+        "training-intake",
+        "evidence-scoring"
+      ],
+      "skills_optional": [
+        "skill-evaluation",
+        "agent-evaluation",
+        "promotion-review"
+      ],
+      "allowed_tools": [
+        "skill-list",
+        "training-intake-prepare"
+      ],
+      "write_policy": "เขียนได้เฉพาะซองรอรีวิวใน 95-Inbox-Lab/review ผ่านทาง obsidian_safe_write_review เท่านั้น ห้ามเลื่อนขั้นความรู้เอง",
+      "deliverables": [
+        "ซองสมัครเทรนที่เขียนลงคิวรีวิว",
+        "รายงานคะแนนหลักฐานและข้อเสนอเลื่อนขั้น (รอเจ้าของอนุมัติ)"
+      ],
+      "acceptance_gates": [
+        "ซองเขียนผ่านคิวรีวิวเท่านั้น",
+        "ยังไม่เลื่อนขั้นอัตโนมัติ",
+        "หลักฐานครบก่อนเสนอ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "memory_scope": "ระดับกลาง (Hermes) เขียนได้เฉพาะคิวรีวิว",
+      "ai_preferences": "โมเดลที่ประเมินหลักฐานและคุณภาพความรู้ได้เป็นระบบและเที่ยงตรง",
+      "metrics": [
+        "สัดส่วนซองที่มีหลักฐานครบ",
+        "สัดส่วนการเลื่อนขั้นที่ผ่านรีวิวอิสระ"
+      ],
+      "version": "0.1.0",
+      "domain_tags": [
+        "knowledge-training"
+      ],
+      "routing_priority": 9
+    }
+  ],
+  "specialist_roles": [
+    {
+      "id": "business-strategist",
+      "name_th": "นักกลยุทธ์ธุรกิจ",
+      "group": "strategy-discovery",
+      "lead_agent_id": "strategy-research-lead",
+      "domain_tags": [
+        "business-product"
+      ],
+      "activates_when": "ต้องการวางทิศทางธุรกิจและคุณค่าที่ส่งมอบ",
+      "must_not_use_when": "งานที่มีทิศทางธุรกิจชัดแล้วและรอเพียงลงมือ",
+      "skills_required": [
+        "value-proposition",
+        "competitor-analysis"
+      ],
+      "deliverables": [
+        "เอกสารทิศทางธุรกิจและคุณค่าหลัก"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "คิดคู่ครบ 2 ยี่ห้อ (THINK_PAIR)"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "product-strategist",
+      "name_th": "นักกลยุทธ์ผลิตภัณฑ์",
+      "group": "strategy-discovery",
+      "lead_agent_id": "strategy-research-lead",
+      "domain_tags": [
+        "business-product"
+      ],
+      "activates_when": "ต้องการจัดลำดับฟีเจอร์และเส้นทางผลิตภัณฑ์",
+      "must_not_use_when": "งานที่ไม่เกี่ยวกับการตัดสินใจเชิงผลิตภัณฑ์",
+      "skills_required": [
+        "product-prioritization",
+        "user-journey"
+      ],
+      "deliverables": [
+        "ตารางลำดับความสำคัญของฟีเจอร์",
+        "แผนที่เส้นทางผู้ใช้"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "คิดคู่ครบ 2 ยี่ห้อ (THINK_PAIR)"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "market-researcher",
+      "name_th": "นักวิจัยตลาด",
+      "group": "strategy-discovery",
+      "lead_agent_id": "strategy-research-lead",
+      "domain_tags": [
+        "discovery",
+        "business-product"
+      ],
+      "activates_when": "ต้องการหลักฐานตลาดและคู่แข่งก่อนตัดสินใจ",
+      "must_not_use_when": "งานที่มีข้อมูลตลาดครบและไม่ต้องวิจัยเพิ่ม",
+      "skills_required": [
+        "competitor-analysis",
+        "evidence-audit"
+      ],
+      "deliverables": [
+        "รายงานวิจัยตลาดพร้อมแหล่งอ้างอิง"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "ux-researcher",
+      "name_th": "นักวิจัยผู้ใช้",
+      "group": "strategy-discovery",
+      "lead_agent_id": "strategy-research-lead",
+      "domain_tags": [
+        "discovery",
+        "ux"
+      ],
+      "activates_when": "ต้องการเข้าใจผู้ใช้จริงก่อนออกแบบ",
+      "must_not_use_when": "งานที่ไม่มีผู้ใช้ปลายทางให้ศึกษา",
+      "skills_required": [
+        "ux-research",
+        "stakeholder-intake"
+      ],
+      "deliverables": [
+        "รายงานวิจัยผู้ใช้และข้อค้นพบหลัก"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "content-strategist",
+      "name_th": "นักกลยุทธ์เนื้อหา",
+      "group": "strategy-discovery",
+      "lead_agent_id": "strategy-research-lead",
+      "domain_tags": [
+        "business-product",
+        "discovery"
+      ],
+      "activates_when": "ต้องการวางกรอบและทิศทางเนื้อหา",
+      "must_not_use_when": "งานที่ไม่เกี่ยวกับเนื้อหา",
+      "skills_required": [
+        "requirement-framing",
+        "value-proposition"
+      ],
+      "deliverables": [
+        "แผนกลยุทธ์เนื้อหาและกรอบข้อความหลัก"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "คิดคู่ครบ 2 ยี่ห้อ (THINK_PAIR)"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "creative-director",
+      "name_th": "ผู้กำกับครีเอทีฟ",
+      "group": "creative-brand-graphic",
+      "lead_agent_id": "creative-brand-lead",
+      "domain_tags": [
+        "creative-brand"
+      ],
+      "activates_when": "ต้องการทิศทางความคิดสร้างสรรค์ของทั้งงาน",
+      "must_not_use_when": "งานที่ต้องทำตามคอนเซปต์ที่ล็อกแล้วเท่านั้น",
+      "skills_required": [
+        "creative-direction",
+        "art-direction"
+      ],
+      "deliverables": [
+        "เอกสารทิศทางครีเอทีฟและคอนเซปต์หลัก"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "ผ่านการวิจารณ์ดีไซน์"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "brand-strategist",
+      "name_th": "นักกลยุทธ์แบรนด์",
+      "group": "creative-brand-graphic",
+      "lead_agent_id": "creative-brand-lead",
+      "domain_tags": [
+        "creative-brand"
+      ],
+      "activates_when": "ต้องการวางตัวตนและจุดยืนแบรนด์",
+      "must_not_use_when": "งานที่ไม่เกี่ยวกับตัวตนแบรนด์",
+      "skills_required": [
+        "brand-strategy",
+        "moodboard-direction"
+      ],
+      "deliverables": [
+        "เอกสารกลยุทธ์แบรนด์และจุดยืน"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "คิดคู่ครบ 2 ยี่ห้อ (THINK_PAIR)"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "art-director",
+      "name_th": "ผู้กำกับศิลป์",
+      "group": "creative-brand-graphic",
+      "lead_agent_id": "creative-brand-lead",
+      "domain_tags": [
+        "creative-brand",
+        "graphic"
+      ],
+      "activates_when": "ต้องการคุมทิศทางศิลป์และอารมณ์ภาพ",
+      "must_not_use_when": "งานที่ไม่มีองค์ประกอบภาพให้กำกับ",
+      "skills_required": [
+        "art-direction",
+        "moodboard-direction"
+      ],
+      "deliverables": [
+        "แนวทางกำกับศิลป์และมู้ดบอร์ด"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "ผ่านการวิจารณ์ดีไซน์"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "graphic-designer",
+      "name_th": "นักออกแบบกราฟิก",
+      "group": "creative-brand-graphic",
+      "lead_agent_id": "creative-brand-lead",
+      "domain_tags": [
+        "graphic"
+      ],
+      "activates_when": "ต้องการชิ้นงานกราฟิกจริงตามคอนเซปต์",
+      "must_not_use_when": "งานที่ไม่ต้องผลิตชิ้นงานภาพ",
+      "skills_required": [
+        "logo-system",
+        "campaign-visual"
+      ],
+      "deliverables": [
+        "ชิ้นงานกราฟิกและระบบโลโก้"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "ผ่านการวิจารณ์ดีไซน์"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "illustrator",
+      "name_th": "นักวาดภาพประกอบ",
+      "group": "creative-brand-graphic",
+      "lead_agent_id": "creative-brand-lead",
+      "domain_tags": [
+        "graphic"
+      ],
+      "activates_when": "ต้องการภาพประกอบหรือชุดไอคอนตามสไตล์",
+      "must_not_use_when": "งานที่ไม่ต้องใช้ภาพวาด",
+      "skills_required": [
+        "illustration-direction",
+        "iconography"
+      ],
+      "deliverables": [
+        "ชุดภาพประกอบและไอคอนตามแนวทาง"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "ผ่านการวิจารณ์ดีไซน์"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "content-designer",
+      "name_th": "นักออกแบบเนื้อหา",
+      "group": "creative-brand-graphic",
+      "lead_agent_id": "creative-brand-lead",
+      "domain_tags": [
+        "creative-brand",
+        "ux"
+      ],
+      "activates_when": "ต้องการจัดเนื้อหาและถ้อยคำให้เข้ากับดีไซน์",
+      "must_not_use_when": "งานที่ไม่มีเนื้อหาให้ออกแบบ",
+      "skills_required": [
+        "creative-direction",
+        "web-page-composition"
+      ],
+      "deliverables": [
+        "โครงเนื้อหาและถ้อยคำบนหน้าจอ"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "ผ่านการวิจารณ์ดีไซน์"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "information-architect",
+      "name_th": "สถาปนิกสารสนเทศ",
+      "group": "ux-ui-web-design",
+      "lead_agent_id": "experience-design-lead",
+      "domain_tags": [
+        "ux"
+      ],
+      "activates_when": "ต้องการจัดโครงข้อมูลและเมนูให้ค้นเจอง่าย",
+      "must_not_use_when": "งานที่ไม่มีโครงสารสนเทศให้จัด",
+      "skills_required": [
+        "information-architecture",
+        "task-flow"
+      ],
+      "deliverables": [
+        "ผังโครงสารสนเทศและการจัดหมวด"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "ux-designer",
+      "name_th": "นักออกแบบประสบการณ์",
+      "group": "ux-ui-web-design",
+      "lead_agent_id": "experience-design-lead",
+      "domain_tags": [
+        "ux"
+      ],
+      "activates_when": "ต้องการออกแบบการไหลของงานให้ใช้ง่าย",
+      "must_not_use_when": "งานที่ไม่เกี่ยวกับประสบการณ์ผู้ใช้",
+      "skills_required": [
+        "ux-research",
+        "task-flow"
+      ],
+      "deliverables": [
+        "แบบการไหลของงานและโครงหน้าจอ"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "interaction-designer",
+      "name_th": "นักออกแบบการโต้ตอบ",
+      "group": "ux-ui-web-design",
+      "lead_agent_id": "experience-design-lead",
+      "domain_tags": [
+        "ux",
+        "ui-web-design"
+      ],
+      "activates_when": "ต้องการออกแบบพฤติกรรมการกด/ตอบสนอง",
+      "must_not_use_when": "งานที่ไม่มีการโต้ตอบให้ออกแบบ",
+      "skills_required": [
+        "interaction-states",
+        "task-flow"
+      ],
+      "deliverables": [
+        "ข้อกำหนดสถานะการโต้ตอบ"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "ui-designer",
+      "name_th": "นักออกแบบหน้าจอ",
+      "group": "ux-ui-web-design",
+      "lead_agent_id": "experience-design-lead",
+      "domain_tags": [
+        "ui-web-design"
+      ],
+      "activates_when": "ต้องการออกแบบหน้าจอให้สวยและอ่านง่าย",
+      "must_not_use_when": "งานที่ยังไม่มีโครงหน้าจอ",
+      "skills_required": [
+        "visual-hierarchy",
+        "interaction-states"
+      ],
+      "deliverables": [
+        "แบบหน้าจอพร้อมลำดับสายตา"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "ผ่านการวิจารณ์ดีไซน์"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "web-designer",
+      "name_th": "นักออกแบบเว็บ",
+      "group": "ux-ui-web-design",
+      "lead_agent_id": "experience-design-lead",
+      "domain_tags": [
+        "ui-web-design"
+      ],
+      "activates_when": "ต้องการออกแบบหน้าเว็บที่รองรับทุกจอ",
+      "must_not_use_when": "งานที่ไม่ใช่หน้าเว็บ",
+      "skills_required": [
+        "web-page-composition",
+        "responsive-layout"
+      ],
+      "deliverables": [
+        "แบบหน้าเว็บที่รองรับจอเล็กจอใหญ่"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "ผ่านการวิจารณ์ดีไซน์"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "motion-designer",
+      "name_th": "นักออกแบบการเคลื่อนไหว",
+      "group": "ux-ui-web-design",
+      "lead_agent_id": "experience-design-lead",
+      "domain_tags": [
+        "motion"
+      ],
+      "activates_when": "ต้องการออกแบบการเคลื่อนไหวและทรานสิชัน",
+      "must_not_use_when": "งานที่ไม่ต้องมีการเคลื่อนไหว",
+      "skills_required": [
+        "motion-language",
+        "scroll-interaction"
+      ],
+      "deliverables": [
+        "แนวทางการเคลื่อนไหวและทรานสิชัน"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "ผ่านการวิจารณ์ดีไซน์"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "design-system-architect",
+      "name_th": "สถาปนิกระบบดีไซน์",
+      "group": "ux-ui-web-design",
+      "lead_agent_id": "experience-design-lead",
+      "domain_tags": [
+        "design-system"
+      ],
+      "activates_when": "ต้องการวางระบบดีไซน์ที่ใช้ซ้ำได้",
+      "must_not_use_when": "งานชิ้นเดียวที่ไม่ต้องมีระบบดีไซน์",
+      "skills_required": [
+        "token-architecture",
+        "component-anatomy"
+      ],
+      "deliverables": [
+        "เอกสารระบบดีไซน์และชุดโทเคน"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "design-engineer",
+      "name_th": "วิศวกรดีไซน์",
+      "group": "ux-ui-web-design",
+      "lead_agent_id": "experience-design-lead",
+      "domain_tags": [
+        "design-system",
+        "ui-web-design"
+      ],
+      "activates_when": "ต้องการต่อระบบดีไซน์เข้ากับโค้ดจริง",
+      "must_not_use_when": "งานที่ไม่ต้องเชื่อมดีไซน์กับโค้ด",
+      "skills_required": [
+        "theming",
+        "component-anatomy"
+      ],
+      "deliverables": [
+        "คอมโพเนนต์ที่ต่อระบบดีไซน์เข้ากับโค้ด"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "web-engine-architect",
+      "name_th": "สถาปนิกเว็บเอนจิน",
+      "group": "web-engine-application",
+      "lead_agent_id": "web-engine-lead",
+      "domain_tags": [
+        "web-engine"
+      ],
+      "activates_when": "ต้องการวางสถาปัตยกรรมเว็บเอนจินใหญ่",
+      "must_not_use_when": "งานเว็บเล็กที่ไม่ต้องมีสถาปัตยกรรมกลาง",
+      "skills_required": [
+        "multi-tenant-web",
+        "reusable-module-design"
+      ],
+      "deliverables": [
+        "เอกสารสถาปัตยกรรมเว็บเอนจิน"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "multi-tenant-architect",
+      "name_th": "สถาปนิกหลายผู้เช่า",
+      "group": "web-engine-application",
+      "lead_agent_id": "web-engine-lead",
+      "domain_tags": [
+        "web-engine"
+      ],
+      "activates_when": "ต้องการแยกข้อมูลรายลูกค้าให้ปลอดภัย",
+      "must_not_use_when": "งานที่มีลูกค้าเดียวและไม่ต้องแยกข้อมูล",
+      "skills_required": [
+        "multi-tenant-web",
+        "search-design"
+      ],
+      "deliverables": [
+        "แบบการแยกข้อมูลรายลูกค้า"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "cms-workflow-designer",
+      "name_th": "นักออกแบบขั้นตอนจัดการเนื้อหา",
+      "group": "web-engine-application",
+      "lead_agent_id": "web-engine-lead",
+      "domain_tags": [
+        "web-engine"
+      ],
+      "activates_when": "ต้องการออกแบบขั้นตอนสร้าง/อนุมัติเนื้อหา",
+      "must_not_use_when": "งานที่ไม่มีการจัดการเนื้อหา",
+      "skills_required": [
+        "cms-workflow",
+        "page-builder"
+      ],
+      "deliverables": [
+        "แบบขั้นตอนจัดการเนื้อหา"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "search-architect",
+      "name_th": "สถาปนิกระบบค้นหา",
+      "group": "web-engine-application",
+      "lead_agent_id": "web-engine-lead",
+      "domain_tags": [
+        "web-engine"
+      ],
+      "activates_when": "ต้องการออกแบบระบบค้นหาให้ตรงและเร็ว",
+      "must_not_use_when": "งานที่ไม่มีความต้องการค้นหา",
+      "skills_required": [
+        "search-design",
+        "reusable-module-design"
+      ],
+      "deliverables": [
+        "แบบสถาปัตยกรรมระบบค้นหา"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "frontend-engineer",
+      "name_th": "วิศวกรหน้าเว็บ",
+      "group": "web-engine-application",
+      "lead_agent_id": "application-engineering-lead",
+      "domain_tags": [
+        "engineering"
+      ],
+      "activates_when": "ต้องการแปลงแบบหน้าจอเป็นหน้าเว็บจริง",
+      "must_not_use_when": "งานหลังบ้านล้วนที่ไม่มีหน้าจอ",
+      "skills_required": [
+        "frontend-build",
+        "api-contract"
+      ],
+      "deliverables": [
+        "หน้าเว็บที่ทำงานได้ตามแบบ"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "backend-engineer",
+      "name_th": "วิศวกรหลังบ้าน",
+      "group": "web-engine-application",
+      "lead_agent_id": "application-engineering-lead",
+      "domain_tags": [
+        "engineering"
+      ],
+      "activates_when": "ต้องการสร้างตรรกะและ API หลังบ้าน",
+      "must_not_use_when": "งานหน้าเว็บล้วนที่ไม่มีตรรกะหลังบ้าน",
+      "skills_required": [
+        "api-contract",
+        "database-design"
+      ],
+      "deliverables": [
+        "บริการหลังบ้านและสัญญา API"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "database-engineer",
+      "name_th": "วิศวกรฐานข้อมูล",
+      "group": "web-engine-application",
+      "lead_agent_id": "application-engineering-lead",
+      "domain_tags": [
+        "engineering"
+      ],
+      "activates_when": "ต้องการออกแบบและดูแลฐานข้อมูล",
+      "must_not_use_when": "งานที่ไม่แตะข้อมูล",
+      "skills_required": [
+        "database-design",
+        "integration-design"
+      ],
+      "deliverables": [
+        "แบบฐานข้อมูลและแผนย้ายข้อมูล"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "integration-engineer",
+      "name_th": "วิศวกรเชื่อมระบบ",
+      "group": "web-engine-application",
+      "lead_agent_id": "application-engineering-lead",
+      "domain_tags": [
+        "engineering"
+      ],
+      "activates_when": "ต้องการเชื่อมระบบภายนอก/ภายในเข้าด้วยกัน",
+      "must_not_use_when": "งานที่ไม่มีระบบอื่นให้เชื่อม",
+      "skills_required": [
+        "integration-design",
+        "api-contract"
+      ],
+      "deliverables": [
+        "แบบการเชื่อมระบบและจุดต่อ"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "ai-automation-engineer",
+      "name_th": "วิศวกรงานอัตโนมัติด้วย AI",
+      "group": "web-engine-application",
+      "lead_agent_id": "application-engineering-lead",
+      "domain_tags": [
+        "engineering"
+      ],
+      "activates_when": "ต้องการให้ AI ทำงานซ้ำ ๆ แทนคน",
+      "must_not_use_when": "งานที่ต้องให้คนตัดสินทุกขั้นและอัตโนมัติไม่ได้",
+      "skills_required": [
+        "ai-automation",
+        "integration-design"
+      ],
+      "deliverables": [
+        "ระบบงานอัตโนมัติด้วย AI"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "design-critic",
+      "name_th": "ผู้วิจารณ์ดีไซน์",
+      "group": "quality-delivery",
+      "lead_agent_id": "quality-risk-lead",
+      "domain_tags": [
+        "quality"
+      ],
+      "activates_when": "ต้องการวิจารณ์งานดีไซน์ก่อนส่ง",
+      "must_not_use_when": "งานที่ไม่มีชิ้นงานดีไซน์ให้วิจารณ์",
+      "skills_required": [
+        "visual-check",
+        "design-system-audit"
+      ],
+      "deliverables": [
+        "บันทึกวิจารณ์ดีไซน์พร้อมจุดที่ต้องแก้"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "visual-qa",
+      "name_th": "ผู้ตรวจภาพหน้าจอ",
+      "group": "quality-delivery",
+      "lead_agent_id": "quality-risk-lead",
+      "domain_tags": [
+        "quality"
+      ],
+      "activates_when": "ต้องการตรวจภาพหน้าจอจริงก่อนปิดงาน",
+      "must_not_use_when": "งานที่ไม่มีหน้าจอให้ตรวจ",
+      "skills_required": [
+        "visual-check",
+        "accessibility-audit"
+      ],
+      "deliverables": [
+        "รายงานตรวจภาพหน้าจอพร้อมหลักฐาน"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "accessibility-specialist",
+      "name_th": "ผู้เชี่ยวชาญการเข้าถึง",
+      "group": "quality-delivery",
+      "lead_agent_id": "quality-risk-lead",
+      "domain_tags": [
+        "quality"
+      ],
+      "activates_when": "ต้องการให้ทุกคนเข้าถึงงานได้",
+      "must_not_use_when": "งานที่ไม่มีส่วนติดต่อผู้ใช้",
+      "skills_required": [
+        "accessibility-audit",
+        "usability-review"
+      ],
+      "deliverables": [
+        "รายงานการเข้าถึงและข้อต้องแก้"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "performance-specialist",
+      "name_th": "ผู้เชี่ยวชาญความเร็ว",
+      "group": "quality-delivery",
+      "lead_agent_id": "quality-risk-lead",
+      "domain_tags": [
+        "quality"
+      ],
+      "activates_when": "ต้องการตรวจและปรับความเร็ว",
+      "must_not_use_when": "งานที่ยังไม่มีระบบให้วัดความเร็ว",
+      "skills_required": [
+        "performance-audit",
+        "visual-check"
+      ],
+      "deliverables": [
+        "รายงานความเร็วและจุดที่ต้องปรับ"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "security-reviewer",
+      "name_th": "ผู้ตรวจความปลอดภัย",
+      "group": "quality-delivery",
+      "lead_agent_id": "quality-risk-lead",
+      "domain_tags": [
+        "quality"
+      ],
+      "activates_when": "ต้องการตรวจช่องโหว่และความปลอดภัย",
+      "must_not_use_when": "งานที่ไม่มีความเสี่ยงด้านความปลอดภัย",
+      "skills_required": [
+        "security-review",
+        "release-gate"
+      ],
+      "deliverables": [
+        "รายงานความปลอดภัยและช่องโหว่ที่พบ"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "test-engineer",
+      "name_th": "วิศวกรทดสอบ",
+      "group": "quality-delivery",
+      "lead_agent_id": "quality-risk-lead",
+      "domain_tags": [
+        "quality"
+      ],
+      "activates_when": "ต้องการทดสอบให้ครอบคลุมก่อนส่ง",
+      "must_not_use_when": "งานที่ยังไม่มีสิ่งให้ทดสอบ",
+      "skills_required": [
+        "release-gate",
+        "visual-check"
+      ],
+      "deliverables": [
+        "ชุดทดสอบและผลการทดสอบ"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "release-reviewer",
+      "name_th": "ผู้ตรวจก่อนปล่อยรุ่น",
+      "group": "quality-delivery",
+      "lead_agent_id": "platform-delivery-lead",
+      "domain_tags": [
+        "quality"
+      ],
+      "activates_when": "ต้องการตรวจความพร้อมก่อนปล่อยรุ่น",
+      "must_not_use_when": "งานที่ยังไม่พร้อมปล่อยรุ่น",
+      "skills_required": [
+        "release-gate",
+        "security-review"
+      ],
+      "deliverables": [
+        "รายงานด่านก่อนปล่อยรุ่น"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "platform-engineer",
+      "name_th": "วิศวกรแพลตฟอร์ม",
+      "group": "quality-delivery",
+      "lead_agent_id": "platform-delivery-lead",
+      "domain_tags": [
+        "engineering",
+        "quality"
+      ],
+      "activates_when": "ต้องการเตรียม/ดูแลแพลตฟอร์มรันงาน",
+      "must_not_use_when": "งานที่ไม่แตะโครงสร้างพื้นฐาน",
+      "skills_required": [
+        "integration-design",
+        "performance-audit"
+      ],
+      "deliverables": [
+        "แบบและสถานะแพลตฟอร์มรันงาน"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    },
+    {
+      "id": "reliability-engineer",
+      "name_th": "วิศวกรความเสถียร",
+      "group": "quality-delivery",
+      "lead_agent_id": "platform-delivery-lead",
+      "domain_tags": [
+        "engineering",
+        "quality"
+      ],
+      "activates_when": "ต้องการเฝ้าและรักษาความเสถียรหลังขึ้นจริง",
+      "must_not_use_when": "งานที่ยังไม่ขึ้นระบบจริง",
+      "skills_required": [
+        "performance-audit",
+        "release-gate"
+      ],
+      "deliverables": [
+        "รายงานเฝ้าระบบและแผนกู้คืน"
+      ],
+      "acceptance_gates": [
+        "ตรงสเปคที่เจ้าของงานสั่ง",
+        "มีหลักฐาน gate-run ประกอบ"
+      ],
+      "reviewer_policy": "ผู้ตรวจต้องเป็นยี่ห้อ AI คนละตัวกับคนทำงาน และคนละรอบ (session) อ่านอย่างเดียว ตัดสินผลด้วยแถว gate-run เท่านั้น ไม่ตัดสินด้วยความเห็นปากเปล่า",
+      "version": "0.1.0"
+    }
+  ]
+}
