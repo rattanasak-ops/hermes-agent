@@ -2,6 +2,7 @@ import importlib.util
 import io
 import json
 import os
+import subprocess
 import time
 from pathlib import Path
 
@@ -865,7 +866,7 @@ _PLAN_WITH_TASKS = """\
 
 def _run_relay_main(
     tmp_path, task_id, *, plan_text=None, no_plan=False, role="code",
-    tool="grok", run_results=None, local_vendor_cli=False,
+    tool="grok", run_results=None, local_vendor_cli=False, run_hook=None,
 ):
     """เรียก relay-call.main() ใน tmp cwd · คืน (exit_code, json_payload, tool_invocations)"""
     import sys
@@ -891,6 +892,8 @@ def _run_relay_main(
 
     def fake_run_once(*args, **kwargs):
         invoked["count"] += 1
+        if run_hook is not None:
+            run_hook(tmp_path)
         if queued_results:
             return queued_results.pop(0)
         return 0, "RELAYOK", ""
@@ -943,6 +946,34 @@ def _ledger_text(tmp_path):
     ledger_dir = tmp_path / ".hermes" / "ai-relay"
     files = sorted(ledger_dir.glob("calls-*.md"))
     return files[0].read_text(encoding="utf-8") if files else ""
+
+
+def test_coder_commit_after_crash_is_reported_as_success(tmp_path):
+    """ถ้า coder commit แล้วแต่โปรเซสคืน crash ให้ยึด HEAD ที่เลื่อนเป็นหลักฐาน."""
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    (tmp_path / "base.txt").write_text("base\n", encoding="utf-8")
+    subprocess.run(["git", "add", "base.txt"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "base"], cwd=tmp_path, check=True, capture_output=True)
+
+    def commit_result(path: Path):
+        (path / "result.txt").write_text("coder finished\n", encoding="utf-8")
+        subprocess.run(["git", "add", "result.txt"], cwd=path, check=True, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "coder result"], cwd=path, check=True, capture_output=True)
+
+    exit_code, payload, tool_calls = _run_relay_main(
+        tmp_path,
+        "DSU-P4-I5",
+        no_plan=True,
+        run_results=[(1, "partial output", "coder crashed after commit")],
+        run_hook=commit_result,
+    )
+
+    assert exit_code == 0
+    assert payload["status"] == "ok"
+    assert "HEAD" in payload["reason_human"]
+    assert tool_calls == 1
 
 
 def test_off_plan_task_blocks_tool_and_writes_ledger(tmp_path):
