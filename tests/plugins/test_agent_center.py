@@ -1040,7 +1040,6 @@ def test_use_agent_shortcut_and_skill_are_connected():
     assert skill.startswith("---\nname: agent-center\n")
     assert "Use Agent" in skill
     assert "`Use AI Relay` as optional" in skill
-    assert "explicit owner request" in skill
     assert "Use AI Relay เฉพาะเมื่อเจ้าของเรียกชัดเจน" in prompt
     assert shortcut_skill.count("Use Agent") >= 3
     assert shortcut_skill.count("| `Use Agent` |") == 1

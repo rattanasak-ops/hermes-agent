@@ -86,8 +86,6 @@ For `Use AI Relay`, load `references/use-ai-relay.md` and `references/ai-relay-c
 
 For `Use Agent`, load `references/use-agent.md` and the in-repo `skills/agent-center/SKILL.md` when available. Diagnose the task, validate the catalog, and use the Agent Center route tool to return a Team Manifest plus Work Packet. Keep the four-seat policies intact, keep durable knowledge pending owner review, work only in the current workspace, and use AI Relay only when the owner explicitly requests it.
 
-For `Use Agent`, load `references/use-agent.md` and the in-repo `skills/agent-center/SKILL.md` when available. Diagnose the task, validate the catalog, and use the Agent Center route tool to return a Team Manifest plus Work Packet. Keep the four-seat policies intact, keep durable knowledge pending owner review, work only in the current workspace, and use AI Relay only when the owner explicitly requests it.
-
 For `Use Business Plan`, review the owner's raw business/marketing/pitch/tender/website question before execution, choose the right business modules and expert roles, build phase and issue checklists, ask for missing inputs first, and do not create files or durable writes until approved.
 
 For `Use SaaS Opus Master Prompt`, send the owner-approved detailed one-file Opus 4.8 master prompt for SaaS business, product, marketing, pricing, pitch, WOW proof, and portfolio decision work. Do not replace it with a short summary.

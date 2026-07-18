@@ -193,6 +193,38 @@ def test_worktree_mutation_cannot_hide_behind_wrappers(workspace, command):
 @pytest.mark.parametrize(
     "command",
     [
+        "git -C . status --short",
+        "git -C. log --oneline -3",
+        "git --no-pager -C . diff --stat",
+        "git -C . -C .. status --short",
+    ],
+)
+def test_git_c_allows_read_only_subcommands(workspace, command):
+    assert GATE.run(payload(workspace, "Bash", {"command": command})) == 0
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git -C . checkout -- README.md",
+        "git -C . reset --hard HEAD",
+        "git -C . clean -fd",
+        "git -C . stash push",
+        "git -C . worktree add /tmp/hidden -b task/nat/hidden",
+        "git --no-pager -C . checkout -- README.md",
+        "git -C . -C .. reset --hard HEAD",
+        "git -C . push --force origin main",
+        "git -C . -c alias.erase=reset erase --hard HEAD",
+        "git -C",
+    ],
+)
+def test_git_c_cannot_hide_dangerous_subcommands(workspace, command):
+    assert GATE.run(payload(workspace, "Bash", {"command": command})) == 2
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
         "git switch -c badword_tracking",
         "git checkout -b badword_tracking",
         "git branch badword_tracking",
