@@ -160,6 +160,152 @@ def test_workspace_mutation_and_dangerous_commands_are_blocked(workspace, comman
     assert GATE.run(payload(workspace, "Bash", {"command": command})) == 2
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "hermes-new-chat open --project demo --task-id DEMO-1 --title demo --staff-id nat",
+        "hermes-worktree open --project demo --task-id DEMO-1",
+        "hermes worktree open --project demo --task-id DEMO-1",
+        "hermes worktree enter --task-id DEMO-1",
+    ],
+)
+def test_shortcut_cannot_create_or_enter_worktree_through_manager_commands(workspace, command):
+    assert GATE.run(payload(workspace, "Bash", {"command": command})) == 2
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git -C . worktree add /tmp/hidden -b task/nat/hidden",
+        "git --git-dir=.git worktree add /tmp/hidden -b task/nat/hidden",
+        "env git worktree add /tmp/hidden -b task/nat/hidden",
+        "env HERMES_TEST=1 hermes-new-chat open --task-id HIDDEN",
+        "bash -lc 'git worktree add /tmp/hidden -b task/nat/hidden'",
+        "zsh -c 'hermes-new-chat open --task-id HIDDEN'",
+    ],
+)
+def test_worktree_mutation_cannot_hide_behind_wrappers(workspace, command):
+    assert GATE.run(payload(workspace, "Bash", {"command": command})) == 2
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git switch -c badword_tracking",
+        "git checkout -b badword_tracking",
+        "git branch badword_tracking",
+    ],
+)
+def test_owner_explicit_named_branch_request_is_allowed(workspace, command):
+    data = payload(workspace, "Bash", {"command": command})
+    data["user_prompt"] = "สร้าง new branch = badword_tracking"
+    assert GATE.run(data) == 0
+
+
+def test_owner_branch_request_can_be_read_from_transcript(workspace, tmp_path):
+    transcript = tmp_path / "transcript.jsonl"
+    transcript.write_text(
+        json.dumps(
+            {
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": [{"type": "text", "text": "สร้าง branch ชื่อ feature/owner-approved"}],
+                },
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    data = payload(
+        workspace,
+        "Bash",
+        {"command": "git switch -c feature/owner-approved"},
+    )
+    data["transcript_path"] = str(transcript)
+    assert GATE.run(data) == 0
+
+
+def test_owner_prompt_hook_grants_short_lived_branch_intent(workspace):
+    recorder = ROOT / "scripts/new-chat/hermes_owner_intent.py"
+    proc = subprocess.run(
+        ["python3", str(recorder)],
+        input=json.dumps(
+            {
+                "cwd": str(workspace["repo"]),
+                "user_message": "สร้าง new branch = feature/from-owner-hook",
+            },
+            ensure_ascii=False,
+        ),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    data = payload(
+        workspace,
+        "Bash",
+        {"command": "git switch -c feature/from-owner-hook"},
+    )
+    assert GATE.run(data) == 0
+
+
+def test_pasted_example_prompt_hook_does_not_grant_branch_intent(workspace):
+    recorder = ROOT / "scripts/new-chat/hermes_owner_intent.py"
+    proc = subprocess.run(
+        ["python3", str(recorder)],
+        input=json.dumps(
+            {
+                "cwd": str(workspace["repo"]),
+                "user_message": "นี่คือตัวอย่างจากแชทเก่า: สร้าง new branch = badword_tracking",
+            },
+            ensure_ascii=False,
+        ),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    data = payload(workspace, "Bash", {"command": "git switch -c badword_tracking"})
+    assert GATE.run(data) == 2
+
+
+def test_ai_cannot_invoke_owner_intent_recorder(workspace):
+    command = "hermes-owner-intent"
+    assert GATE.run(payload(workspace, "Bash", {"command": command})) == 2
+
+
+def test_branch_name_must_match_owner_request(workspace):
+    data = payload(
+        workspace,
+        "Bash",
+        {"command": "git switch -c feature/ai-invented"},
+    )
+    data["user_prompt"] = "สร้าง branch ชื่อ feature/owner-approved"
+    assert GATE.run(data) == 2
+
+
+def test_long_pasted_example_is_not_branch_approval(workspace):
+    data = payload(
+        workspace,
+        "Bash",
+        {"command": "git switch -c badword_tracking"},
+    )
+    data["user_prompt"] = (
+        "ช่วยตรวจปัญหา Shortcut ทุกตัวว่าทำไม AI สร้าง Worktree มั่ว "
+        "นี่คือตัวอย่างจากแชทเก่า: สร้าง new branch = badword_tracking "
+        "แต่รอบนี้ให้ตรวจและแก้ระบบกลางเท่านั้น " + ("รายละเอียด " * 40)
+    )
+    assert GATE.run(data) == 2
+
+
+def test_owner_cannot_authorize_protected_branch_name(workspace):
+    data = payload(workspace, "Bash", {"command": "git switch -c main"})
+    data["user_prompt"] = "สร้าง new branch = main"
+    assert GATE.run(data) == 2
+
+
 def test_git_worktree_list_is_read_only_and_allowed(workspace):
     assert GATE.run(payload(workspace, "Bash", {"command": "git worktree list --porcelain"})) == 0
 

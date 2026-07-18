@@ -8,6 +8,8 @@ session และไม่ต้องผ่าน AI Relay แต่ยัง�
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -47,8 +49,9 @@ NEUTRAL_BINS = {"export", "cd", "echo", "printf", "true", ":", "set", "unset"}
 BLOCKED_BINS = {
     "rm", "rmdir", "shred", "dd", "mkfs", "truncate", "tee", "chmod", "chown", "sudo",
     "su", "kill", "pkill", "killall", "launchctl", "systemctl", "service", "reboot",
-    "shutdown", "kubectl", "helm", "terraform", "ansible", "rsync",
+    "shutdown", "kubectl", "helm", "terraform", "ansible", "rsync", "xargs", "eval",
 }
+SHELL_BINS = {"bash", "sh", "zsh", "fish"}
 FIND_WRITE_FLAGS = {"-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fprintf", "-fls"}
 CURL_WRITE_FLAGS = {"-o", "-O", "--output", "--remote-name", "--output-dir", "-J", "--remote-header-name"}
 GIT_BLOCKED_SUBCOMMANDS = {
@@ -56,13 +59,20 @@ GIT_BLOCKED_SUBCOMMANDS = {
     "filter-branch", "update-ref", "reflog",
 }
 GIT_PROTECTED_MUTATIONS = {"add", "commit", "push", "merge", "tag"}
+WORKTREE_READ_ACTIONS = {"list", "status", "doctor"}
 PACKAGE_WRITE_ACTIONS = {
     "add", "install", "i", "remove", "rm", "uninstall", "update", "upgrade", "publish",
     "link", "unlink", "import", "patch", "deploy", "exec", "dlx", "create", "init",
 }
-HERMES_WORKSPACE_MUTATIONS = {
-    "accept", "abandon", "archive", "cleanup", "close", "handoff", "open", "remove",
-}
+MAX_OWNER_PROMPT_CHARS = 500
+BRANCH_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
+OWNER_BRANCH_NEGATION = re.compile(
+    r"(?:ห้าม|อย่า|ไม่ต้อง|ไม่ให้|ไม่ควร|do\s+not|don't|never)"
+    r"\s*(?:ให้\s+\S+\s*)?(?:สร้าง|เปิด|create|make|new)?\s*"
+    r"(?:new\s*)?(?:branch|สาขา|กิ่ง)",
+    re.IGNORECASE,
+)
+PASTED_EXAMPLE_MARKERS = {"ตัวอย่าง", "แชทเก่า", "เหตุการณ์เดิม", "example from", "old chat"}
 
 
 def block(reason: str) -> int:
@@ -99,6 +109,7 @@ def protected_paths() -> list[Path]:
     return [
         hermes / "new-chat",
         hermes / "new-chat-tools",
+        hermes / "owner-intents",
         home / ".claude" / "hooks",
         home / ".claude" / "settings.json",
         home / ".claude" / "settings.local.json",
@@ -152,16 +163,194 @@ def redirects_safe(segment: str) -> bool:
 
 
 def _unwrap(tokens: list[str]) -> list[str]:
-    while tokens and ENV_ASSIGN.match(tokens[0]):
-        tokens = tokens[1:]
-    while tokens and Path(tokens[0]).name in {"command", "nice", "time", "nohup"}:
-        tokens = tokens[1:]
+    while tokens:
+        while tokens and ENV_ASSIGN.match(tokens[0]):
+            tokens = tokens[1:]
+        if not tokens:
+            break
+        first = Path(tokens[0]).name
+        if first == "env":
+            tokens = tokens[1:]
+            while tokens:
+                if ENV_ASSIGN.match(tokens[0]) or tokens[0] in {"-i", "--ignore-environment"}:
+                    tokens = tokens[1:]
+                    continue
+                if tokens[0] in {"-u", "--unset", "-C", "--chdir"} and len(tokens) >= 2:
+                    tokens = tokens[2:]
+                    continue
+                if tokens[0].startswith(("--unset=", "--chdir=")):
+                    tokens = tokens[1:]
+                    continue
+                break
+            continue
+        if first in {"command", "nice", "time", "nohup"}:
+            tokens = tokens[1:]
+            continue
+        break
     return tokens
 
 
-def git_segment_ok(tokens: list[str], branch: str) -> bool:
+def _content_text(value: object) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "\n".join(filter(None, (_content_text(item) for item in value)))
+    if isinstance(value, dict):
+        for key in ("text", "content", "message"):
+            if key in value:
+                text = _content_text(value[key])
+                if text:
+                    return text
+    return ""
+
+
+def _entry_user_text(entry: object) -> str:
+    if not isinstance(entry, dict) or entry.get("isMeta") is True:
+        return ""
+    message = entry.get("message")
+    role = str(entry.get("role") or "").lower()
+    entry_type = str(entry.get("type") or "").lower()
+    if isinstance(message, dict):
+        role = str(message.get("role") or role).lower()
+    if role != "user" and entry_type not in {"user", "human", "user_message"}:
+        return ""
+    return _content_text(message if message is not None else entry.get("content"))
+
+
+def _transcript_last_user(path_value: object) -> str:
+    if not isinstance(path_value, str) or not path_value.strip():
+        return ""
+    path = Path(path_value).expanduser()
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return ""
+    entries: list[object] = []
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        for line in raw.splitlines():
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    else:
+        entries = parsed if isinstance(parsed, list) else [parsed]
+    texts = [_entry_user_text(entry) for entry in entries]
+    return next((text for text in reversed(texts) if text.strip()), "")
+
+
+def latest_owner_prompt(payload: dict) -> str:
+    transcript = _transcript_last_user(
+        payload.get("transcript_path") or payload.get("transcript")
+    )
+    if transcript:
+        return transcript.strip()
+    for key in ("user_prompt", "last_user_message", "user_message", "prompt"):
+        text = _content_text(payload.get(key))
+        if text.strip():
+            return text.strip()
+    return ""
+
+
+def valid_branch_name(name: str) -> bool:
+    lowered = name.lower()
+    return bool(BRANCH_NAME.fullmatch(name)) and not (
+        lowered in PROTECTED_BRANCHES
+        or name.startswith("-")
+        or name.endswith(("/", ".", ".lock"))
+        or ".." in name
+        or "@{" in name
+        or "//" in name
+    )
+
+
+def owner_requested_branch(payload: dict | None, branch_name: str) -> bool:
+    if payload is None or not valid_branch_name(branch_name):
+        return False
+    prompt = latest_owner_prompt(payload)
+    if not prompt:
+        return stored_owner_branch_intent(payload, branch_name)
+    if (
+        len(prompt) > MAX_OWNER_PROMPT_CHARS
+        or prompt.count("\n") > 8
+        or any(marker in prompt.lower() for marker in PASTED_EXAMPLE_MARKERS)
+        or OWNER_BRANCH_NEGATION.search(prompt)
+    ):
+        return False
+    escaped = re.escape(branch_name)
+    patterns = (
+        rf"(?:สร้าง|เปิด|create|make)\s*(?:new\s*)?(?:branch|สาขา|กิ่ง)"
+        rf"\s*(?:ใหม่\s*)?(?:ชื่อ|name)?\s*(?:=|:)?\s*[`'\"]?{escaped}(?![A-Za-z0-9._/-])",
+        rf"git\s+(?:switch\s+-c|checkout\s+-b|branch)\s+{escaped}(?![A-Za-z0-9._/-])",
+    )
+    return any(re.search(pattern, prompt, re.IGNORECASE) for pattern in patterns)
+
+
+def stored_owner_branch_intent(payload: dict, branch_name: str) -> bool:
+    cwd = resolve_loose(Path(str(payload.get("cwd") or Path.cwd())))
+    root = git_root(cwd)
+    if root is None:
+        return False
+    key = hashlib.sha256(str(root).encode("utf-8")).hexdigest()
+    path = Path.home() / ".hermes" / "owner-intents" / f"{key}.json"
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+        expires = datetime.fromisoformat(str(record.get("expires_at") or ""))
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return False
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) >= expires:
+        path.unlink(missing_ok=True)
+        return False
+    return (
+        record.get("schema") == "hermes-owner-branch-intent-v1"
+        and record.get("git_root") == str(root)
+        and record.get("branch") == branch_name
+    )
+
+
+def branch_creation_target(tokens: list[str]) -> str:
     args = tokens[1:]
+    if args == ["branch"]:
+        return ""
+    if len(args) == 2 and args[0] == "branch":
+        return args[1]
+    if len(args) == 3 and args[0] == "switch" and args[1] in {"-c", "--create"}:
+        return args[2]
+    if len(args) == 3 and args[0] == "checkout" and args[1] == "-b":
+        return args[2]
+    return ""
+
+
+def worktree_manager_ok(tokens: list[str]) -> bool | None:
+    first = Path(tokens[0]).name
+    if first in {"hermes-new-chat", "hermes-worktree"}:
+        action = next((item for item in tokens[1:] if not item.startswith("-")), "")
+        return not action or action in WORKTREE_READ_ACTIONS
+    if first != "hermes":
+        return None
+    args = [item for item in tokens[1:] if not item.startswith("-")]
+    if not args or args[0] not in {"worktree", "new-chat"}:
+        return None
+    action = args[1] if len(args) > 1 else ""
+    return not action or action in WORKTREE_READ_ACTIONS
+
+
+def git_segment_ok(tokens: list[str], branch: str, payload: dict | None = None) -> bool:
+    args = tokens[1:]
+    if any(
+        item == "-C"
+        or item in {"--git-dir", "--work-tree", "--namespace"}
+        or item.startswith(("--git-dir=", "--work-tree=", "--namespace="))
+        for item in args
+    ):
+        return False
     sub = next((item for item in args if not item.startswith("-")), "")
+    create_target = branch_creation_target(tokens)
+    if create_target:
+        return owner_requested_branch(payload, create_target)
     if not sub or sub in GIT_BLOCKED_SUBCOMMANDS:
         return False
     if sub == "push" and any(item in {"--force", "-f", "--force-with-lease"} for item in args):
@@ -176,18 +365,6 @@ def git_segment_ok(tokens: list[str], branch: str) -> bool:
     return True
 
 
-def hermes_workspace_segment_ok(tokens: list[str]) -> bool:
-    first = Path(tokens[0]).name
-    args = tokens[1:]
-    if first == "hermes-new-chat":
-        return not args or args[0] != "open"
-    if first == "hermes-worktree":
-        return not args or args[0] not in HERMES_WORKSPACE_MUTATIONS
-    if first == "hermes" and len(args) >= 2 and args[0] == "worktree":
-        return args[1] not in HERMES_WORKSPACE_MUTATIONS
-    return True
-
-
 def package_segment_ok(tokens: list[str]) -> bool:
     args = [item for item in tokens[1:] if not item.startswith("-")]
     if not args:
@@ -195,7 +372,14 @@ def package_segment_ok(tokens: list[str]) -> bool:
     return args[0].lower() not in PACKAGE_WRITE_ACTIONS
 
 
-def segment_ok(segment: str, branch: str) -> bool:
+def shell_segment_ok(tokens: list[str], branch: str) -> bool:
+    for index, item in enumerate(tokens[1:], start=1):
+        if item == "-c" or (item.startswith("-") and "c" in item[1:]):
+            return index + 1 < len(tokens) and bash_allowed(tokens[index + 1], branch)
+    return True
+
+
+def segment_ok(segment: str, branch: str, payload: dict | None = None) -> bool:
     segment = segment.strip()
     if not segment:
         return True
@@ -216,14 +400,17 @@ def segment_ok(segment: str, branch: str) -> bool:
     if not tokens:
         return True
     first = Path(tokens[0]).name
+    manager_result = worktree_manager_ok(tokens)
+    if manager_result is not None:
+        return manager_result
     if first in BLOCKED_BINS:
         return False
+    if first in SHELL_BINS:
+        return shell_segment_ok(tokens, branch)
     if first in NEUTRAL_BINS:
         return True
-    if first in {"hermes", "hermes-new-chat", "hermes-worktree"}:
-        return hermes_workspace_segment_ok(tokens)
     if first == "git":
-        return git_segment_ok(tokens, branch)
+        return git_segment_ok(tokens, branch, payload)
     if first in {"pnpm", "npm", "yarn", "bun"}:
         return package_segment_ok(tokens)
     if first in {"pip", "pip3", "uv"} and any(item in PACKAGE_WRITE_ACTIONS for item in tokens[1:]):
@@ -248,12 +435,23 @@ def segment_ok(segment: str, branch: str) -> bool:
     return True
 
 
-def bash_allowed(command: str, branch: str = "") -> bool:
-    return all(segment_ok(part, branch) for part in SEGMENT_SPLIT.split(command))
+def bash_allowed(command: str, branch: str = "", payload: dict | None = None) -> bool:
+    return all(segment_ok(part, branch, payload) for part in SEGMENT_SPLIT.split(command))
 
 
 def bash_hits_protected(command: str) -> bool:
     return any(protected_target(Path(token)) for token in ABS_PATH_TOKEN.findall(command))
+
+
+def bash_invokes_owner_intent(command: str) -> bool:
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        return True
+    return any(
+        Path(token).name in {"hermes-owner-intent", "hermes_owner_intent.py"}
+        for token in tokens
+    )
 
 
 def extract_targets(tool: str, tool_input: dict, cwd: Path) -> list[Path]:
@@ -288,9 +486,11 @@ def run(payload: dict) -> int:
 
     if tool == "bash":
         command = str(tool_input.get("command") or tool_input.get("cmd") or "")
-        if bash_hits_protected(command) and not bash_allowed(command, branch):
+        if bash_invokes_owner_intent(command):
+            return block("ห้าม AI สร้างใบอนุญาตกิ่งแทนข้อความจากเจ้าของ")
+        if bash_hits_protected(command) and not bash_allowed(command, branch, payload):
             return block("คำสั่งพยายามแก้พื้นที่ Hook/Settings/เครื่องมือ Hermes")
-        if not bash_allowed(command, branch):
+        if not bash_allowed(command, branch, payload):
             return block("คำสั่งสร้าง/สลับพื้นที่ ติดตั้งของ ลบไฟล์ เขียนผ่าน shell หรือเป็นคำสั่งอันตราย")
         return 0
 

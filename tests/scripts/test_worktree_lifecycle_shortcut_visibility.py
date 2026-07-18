@@ -24,6 +24,8 @@ class ShortcutVisibilityTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertIn('"shortcut_visibility": "32/32"', result.stdout)
         self.assertIn('"direct_integrations": "18/18"', result.stdout)
+        self.assertIn('"worktree_auto_create": "0/32"', result.stdout)
+        self.assertIn('"owner_branch_policy": "32/32"', result.stdout)
 
     def test_shortcut_auto_open_rule_is_blocked(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -37,8 +39,8 @@ class ShortcutVisibilityTests(unittest.TestCase):
             target = fake / "skills" / "prompt-shortcuts" / "references" / "use-new-chat.md"
             target.write_text(
                 target.read_text(encoding="utf-8").replace(
-                    "## Worktree แบบสั่งตรงเท่านั้น",
-                    "งานเขียนใหม่ต้องเรียก `hermes-new-chat open`\n\n## Worktree แบบสั่งตรงเท่านั้น",
+                    "## Worktree แบบอ่านและจัดการของเดิมเท่านั้น",
+                    "งานเขียนใหม่ต้องเรียก `hermes-new-chat open`\n\n## Worktree แบบอ่านและจัดการของเดิมเท่านั้น",
                     1,
                 ),
                 encoding="utf-8",

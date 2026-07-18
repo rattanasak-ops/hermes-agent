@@ -32,9 +32,9 @@ REQUIRED_HEADINGS = [
 REQUIRED_PHRASES = [
     "CURRENT_WORKSPACE_ONLY",
     "ห้ามสร้าง/สลับ Worktree/กิ่ง",
-    "เมื่อเจ้าของสั่งจัดการ Worktree โดยชัดเจนเท่านั้น",
+    "ด่าน AI ไม่เปิด Worktree ใหม่",
     "หนึ่งโครงการมีพื้นที่หลักหนึ่งแห่ง",
-    "หนึ่งงานเขียนมี task worktree ของตัวเอง",
+    "OWNER_EXPLICIT_BRANCH_ONLY",
     "หนึ่ง task มีเครื่องถือสิทธิ์เขียนได้ครั้งละหนึ่งเครื่อง",
     "~/Documents/Worktrees/<project-id>/<staff-id>/<task-id>-<slug>",
     "/home/linux-nat/.worktree/<project-id>/<staff-id>/<task-id>-<slug>",

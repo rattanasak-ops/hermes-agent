@@ -14,13 +14,13 @@ tags:
   - safe-workflow
   - workspace
 status: active
-version: "2.0"
+version: "2.1"
 updated: 2026-07-18
 execution_policy: work-execution-policy >= 2.0
 default_mode: CURRENT_WORKSPACE_ONLY
 ---
 
-# Use Flow Guardian (v2.0 · 2026-07-18)
+# Use Flow Guardian (v2.1 · 2026-07-18)
 
 ## Shortcut
 
@@ -62,8 +62,11 @@ Use Flow Guardian
 
 ถ้าเจ้าของสั่งตรวจวงจรชีวิต Worktree ที่มีอยู่ ให้โหลด `worktree-lifecycle-contract.md` เพิ่มได้ แต่ Flow Guardian ยังมีสิทธิ์อ่านและรายงานเท่านั้น
 
+คำสั่งสั้นแยกต่างหากจากเจ้าของที่ระบุชื่อกิ่งตรง ๆ ไม่ใช่งานตรวจของ Flow Guardian และให้ทำตาม `OWNER_EXPLICIT_BRANCH_ONLY` ในกติกากลาง โดยห้ามสร้าง Worktree
+
 ## Changelog
 
+- v2.1 (2026-07-18): ระบุว่าคำสั่งสร้างกิ่งตรงจากเจ้าของใช้กติกากลางได้ แต่ Flow Guardian เองยังอ่านอย่างเดียวและไม่เปิด Worktree
 - v2.0 (2026-07-18): ตรวจพื้นที่ปัจจุบันอย่างเดียว · ไม่สร้าง/สลับ Worktree หรือกิ่ง · ไม่บังคับ AI Relay
 - v1.1 (2026-06-24): เพิ่มรายงาน Git และไฟล์ค้าง
 

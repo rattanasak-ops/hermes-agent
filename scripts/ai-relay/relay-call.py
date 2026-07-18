@@ -11,6 +11,8 @@
 สมอง (brain) = Opus 4.8 ตัวเดียว (--tool opus) · Fable ถอดออกแล้ว (เจ้าของสั่ง 2026-07-06)
 เพดานรอบต่อ issue นับข้าม coder · cooldown ตัวที่พังซ้ำ · อ่าน YAML ได้แม้ไม่มี PyYAML (ตัวอ่านสำรองในตัว)
 """
+from __future__ import annotations
+
 import argparse, glob, json, os, re, shutil, signal, socket, subprocess, sys, threading, time
 from datetime import datetime, timezone
 from pathlib import Path
