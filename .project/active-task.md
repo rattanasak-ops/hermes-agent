@@ -1,8 +1,8 @@
 ---
 task_id: UAG-P5
 goal_id: UAG-P5-DIRECT-CODEX-20260718
-status: commit_created_push_blocked
-owner_decision_at: 2026-07-18
+status: pull_request_open_owner_merge_pending
+owner_decision_at: 2026-07-19
 writer: codex-current-chat
 external_ai_relay: disabled
 worktree: /Users/rattanasak/Documents/Worktrees/hermes-agent/nat/UAG-P1-I1-agent-center-foundation
@@ -29,7 +29,9 @@ spec: .project/spec/UAG.md
 - `plugins/agent_center/**`
 - `tests/plugins/test_agent_center.py`
 - `scripts/ai-relay/gate-run.py`
+- `scripts/ai-relay/relay-call.py`
 - `scripts/ai-relay/tests/test_gate_run_scoped.py`
+- `.savegit.json`
 - `skills/agent-center/**`
 - `team-shortcuts/payload/ai-context/prompt-shortcut-registry.md`
 - `team-shortcuts/payload/skills/prompt-shortcuts/SKILL.md`
@@ -40,6 +42,7 @@ spec: .project/spec/UAG.md
 - `.project/spec/UAG.md`
 - `.project/ledger/**`
 - `.project/gate-output/**`
+- `/Users/rattanasak/ObsidianVault/HermesAgent/99-System/scripts/save_git_gate.py` และไฟล์ทดสอบคู่กัน ตามคำอนุมัติขยายขอบเขต 2026-07-19
 
 ## ขอบเขตที่ห้ามแตะในงานนี้
 
@@ -67,7 +70,7 @@ spec: .project/spec/UAG.md
 
 ## ขั้นตอนถัดไปเพียงหนึ่งขั้น
 
-ขออนุมัติแยกงานซ่อม `save-git` ให้รองรับไฟล์ค้างนอกขอบเขตที่เจ้าของอนุมัติ และแก้คำสั่งตรวจ Python 3.9 ก่อน push
+เจ้าของตรวจและ merge PR #71 เมื่อเห็นสมควร
 
 ## จุดติดที่เคลียร์แล้วใน UAG-P3
 
@@ -88,10 +91,10 @@ spec: .project/spec/UAG.md
 ## ผลด่าน Git
 
 - สร้าง commit เนื้องาน UAG สำเร็จที่ `be72f338f` โดยกัน UAG-P0 ออก 2/2 ไฟล์
-- `save-git --stage local --json` คืน `BLOCKED_DO_NOT_MERGE`
-- จุดติด 1/2: worktree ยังมี UAG-P0 ค้าง 2 ไฟล์ ซึ่งเจ้าของสั่งให้แยกจากงานนี้
-- จุดติด 2/2: `.savegit.json` เรียก `python3` รุ่น 3.9.6 และ `relay-call.py` เดิมล้มจากรูปแบบชนิดข้อมูลที่รุ่นนี้ไม่รองรับ
-- ยังไม่ push และยังไม่เปิด PR ตามกฎ fail-closed
+- แก้ `relay-call.py` ให้รองรับ Python 3.9 และเพิ่มรายการไฟล์ค้างที่อนุมัติใน `.savegit.json` ที่ commit `1064068aa`
+- ด่านกลางรองรับรายการไฟล์ค้างเฉพาะเมื่อเปิด `SAVE_GIT_ALLOW_DIRTY=1`; ไม่เปิดกุญแจยังบล็อกตามเดิม · การทดสอบผ่าน 3/3
+- `save-git --stage local --json` คืน `SAFE_TO_MERGE` ด้วย exit 0 และตรวจไฟล์ค้างที่อนุมัติ 2/2
+- push กิ่งขึ้น `origin` สำเร็จ 1/1 และเปิด PR #71 สำเร็จ 1/1: https://github.com/rattanasak-ops/hermes-agent/pull/71
 
 ## แบบ UAG-P3 ที่ลงมือแล้ว
 
