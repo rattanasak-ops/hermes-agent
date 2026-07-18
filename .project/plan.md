@@ -231,3 +231,53 @@
 - grok headless ต้องมี API key (งานคนค้างเดิม) → ถ้า Grok เรียกไม่ได้ 2 รอบ ให้สลับผู้ตรวจ/เครื่องตรวจตาม DEC-MW-002 และรายงานเจ้าของ
 - ไฟล์คลัง Obsidian อยู่นอก repo นี้ (commit แยกในคลัง · push ขึ้น GitLab = งานคนของเจ้าของ)
 - ด่านดิสก์ 85%: เจ้าของเลือกเคลียร์พื้นที่เอง (2026-07-15) → เปิด worktree เมื่อต่ำกว่าเพดาน
+
+---
+
+# Plan — BRM (Branch Remediation and Main Integration)
+
+> plan_id: BRM · เจ้าของอนุมัติ 2026-07-18: “ให้ทำตามแผนได้เลย โดยใช้ Use Continue”
+> task: `BRM-P1-I1` · branch: `task/codex/BRM-P1-I1-branch-remediation-main-integration`
+> base: `origin/main` @ `d0cf379ca15f63510eb48cdb855bb20e405786ac`
+> หลักบังคับ: ย้ายเฉพาะงานใหม่จริงจากฐานล่าสุด · ห้ามรวมสาขาเก่าทั้งก้อน · ห้ามทับงานค้างใน worktree อื่น · ห้ามลบสาขาทันที
+
+## BRM-P1 — ตรวจสาขาและจำแนกงาน · สถานะ: ตรวจแล้ว
+
+- **BRM-P1-I1** นับและจำแนก local/origin/VPS branches, worktrees, dirty files และงานที่ main มีแล้ว
+- verify: ตารางตรวจสาขา + หลักฐาน commit/patch-equivalence + รายการงานใหม่จริงและรายการห้ามย้าย
+
+## BRM-P2 — เตรียมพื้นที่รวมงานจาก main ล่าสุด · สถานะ: กำลังทำ
+
+- **BRM-P2-I1** เปิด registered worktree + writer lease + write permit จาก `origin/main`
+- **BRM-P2-I2** บันทึกขอบเขตและข้อห้ามของเฟสให้แชทถัดไปอ่านต่อได้
+- zone: A · verify: `hermes-new-chat status` = `NEW_CHAT_READY` + `WTL_READY`
+
+## BRM-P3 — ย้ายงานใหม่จริงและตรวจรายกลุ่ม
+
+- **BRM-P3-I1** STD-I2: ย้าย project-dir และ owner rules รุ่นใหม่ โดยไม่เอางานเก่าที่ main มีแล้ว
+- **BRM-P3-I2** BWT V2: จบ badword command center และแก้ด่านทดสอบที่ขาด pytest-xdist
+- **BRM-P3-I3** UAG: จบ Agent Center แบบ plugin-only; ตัด diff ที่ถอดเพดาน worktree ออก
+- **BRM-P3-I4** NCR: จบ New Chat/relay enforcement จากไฟล์ค้าง โดยไม่เขียนทับชุดเครื่องมือที่ติดตั้งนอก repo
+- **BRM-P3-I5** Fable memory: สร้างเฉพาะ decision/session log ที่ยังไม่มีบน main
+- zone: A · verify: `scripts/run_tests.sh` ตามขอบเขต + gate-run รายกลุ่ม + review diff เทียบ `origin/main`
+
+## BRM-P4 — ประเมิน upstream v0.17.0 แยกเฟส
+
+- **BRM-P4-I1** ประเมินความต่าง 3,519 ไฟล์และ custom fixes 2 commit แยกจากงาน BRM-P3
+- **BRM-P4-I2** รวมเฉพาะเมื่อ test/build/ภาพจริง (ถ้ามี UI) ผ่านบนสาขาอัปเกรดเฉพาะ
+- zone: B · external_effect: เปลี่ยนฐาน upstream ขนาดใหญ่ · ต้องยืนยันขอบเขตอีกครั้งถ้าผลประเมินต่างจากแผนที่อนุมัติ
+
+## BRM-P5 — ส่งเข้า main และจัดคิวเก็บสาขา
+
+- **BRM-P5-I1** ตรวจ closeout + diff + secret + test ก่อน push/merge
+- **BRM-P5-I2** รวมเข้า `main` ตามคำอนุมัติรอบนี้ เฉพาะเมื่อฐาน/ขอบเขต/ผลตรวจยังตรง
+- **BRM-P5-I3** ปิดทะเบียนงานที่ merged และทำ cleanup แบบ dry-run; เข้ากักพัก 72 ชั่วโมงก่อนลบ worktree/branch
+- zone: B · external_effect: push/merge/cleanup · verify: SHA ตรง origin + closeout ผ่าน + cleanup 6/6
+
+## ข้อห้ามเฉพาะ BRM
+
+- ห้าม cherry-pick `cd8e8a622` ทั้งก้อน และห้ามนำ `.project/tmp_repair_gate_helper_test.py` กลับมา
+- ห้าม merge `control_webengine_flow`, `fix/mw-flow-station-gate` หรือ `upgrade-audit/v0170` ทั้งก้อน
+- ห้าม commit `.codex/hooks.json` และห้ามแตะ secret/`.env*`
+- ห้าม commit UAG diff ที่ถอดเพดานจำนวน worktree
+- ห้ามลบ branch/worktree ก่อนสถานะ merged + cleanup dry-run + quarantine ตาม WTL
