@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Center"
+  short_description: "Route work to the right AI team"
+  default_prompt: "Use $agent-center to diagnose this task, select the right AI team, and prepare a work packet."

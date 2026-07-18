@@ -2,10 +2,12 @@
 """gate-run — รัน quality gate ของ repo จริง จับผล เขียน ledger
 
 แหล่งความจริงเดียวของคำว่า verified (Memory Schema v1.1) · ผลถูกรันและจดโดยโค้ดนี้ ไม่ใช่ LLM
-ใช้:  python gate-run.py --cwd <worktree> --task-id <P#-I#>
+ใช้:  python gate-run.py --cwd <worktree> --task-id <P#-I#> [--test-path <path> ...]
 คืน: JSON บรรทัดเดียว + exit (pass=0 / fail=1 / no_gate=2 / error=3)
 """
-import argparse, json, os, re, subprocess, sys
+from __future__ import annotations
+
+import argparse, json, os, re, shlex, subprocess, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,7 +24,44 @@ def repo_python(cwd: Path):
             return str(p)
     return sys.executable
 
-def detect_gate(cwd: Path):
+def has_python_gate(cwd: Path) -> bool:
+    return any(
+        (cwd / filename).exists()
+        for filename in ("pyproject.toml", "pytest.ini", "tox.ini", "setup.cfg")
+    )
+
+
+def normalize_test_paths(cwd: Path, test_paths: list[str]) -> list[str]:
+    normalized = []
+    seen = set()
+    for raw in test_paths:
+        if not raw or any(char in raw for char in "\r\n|"):
+            raise ValueError("test path มีอักขระที่ไม่อนุญาต")
+        path_text, separator, node_id = raw.partition("::")
+        if not path_text:
+            raise ValueError("test path ว่างเปล่า")
+        resolved = (cwd / path_text).resolve() if not Path(path_text).is_absolute() else Path(path_text).resolve()
+        try:
+            relative = resolved.relative_to(cwd)
+        except ValueError as exc:
+            raise ValueError("test path อยู่นอก Git root") from exc
+        if not resolved.exists():
+            raise ValueError(f"ไม่พบ test path: {relative.as_posix()}")
+        target = relative.as_posix()
+        if separator:
+            target = f"{target}::{node_id}"
+        if target not in seen:
+            normalized.append(target)
+            seen.add(target)
+    return normalized
+
+
+def detect_gate(cwd: Path, test_paths: list[str] | None = None):
+    if test_paths:
+        if not has_python_gate(cwd):
+            raise ValueError("--test-path ใช้ได้เฉพาะโครงการ pytest")
+        command = [repo_python(cwd), "-m", "pytest", "-q", *test_paths]
+        return (command, shlex.join(["pytest", "-q", *test_paths]))
     pkg = cwd / "package.json"
     if pkg.exists():
         try:
@@ -39,7 +78,7 @@ def detect_gate(cwd: Path):
         for target in ("test", "lint", "check", "build"):
             if re.search(rf"^{re.escape(target)}:", txt, re.M):
                 return (["make", target], f"make {target}")
-    if any((cwd/f).exists() for f in ("pyproject.toml", "pytest.ini", "tox.ini", "setup.cfg")):
+    if has_python_gate(cwd):
         return ([repo_python(cwd), "-m", "pytest", "-q"], "pytest -q")
     return (None, None)
 
@@ -88,7 +127,7 @@ def git_value(cwd: Path, *args):
 def write_ledger(cwd: Path, row: dict):
     branch = row.get("branch") or "nobranch"
     safe = re.sub(r"[^A-Za-z0-9._-]", "_", branch)
-    d = cwd / ".hermes" / "ledger"; d.mkdir(parents=True, exist_ok=True)
+    d = cwd / ".project" / "ledger"; d.mkdir(parents=True, exist_ok=True)
     ledger = d / f"{safe}.md"
     cols = ["schema_version","timestamp","machine","staff","branch","issue_id",
             "tool","gate_command","gate_exit","result","commit_sha","status","output_ref"]
@@ -104,6 +143,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cwd", required=True)
     ap.add_argument("--task-id", required=True)
+    ap.add_argument(
+        "--test-path",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="พาธไฟล์หรือโฟลเดอร์ทดสอบ pytest; ระบุซ้ำได้",
+    )
     a = ap.parse_args()
     cwd = Path(a.cwd).expanduser().resolve()
     if not cwd.is_dir():
@@ -117,7 +163,16 @@ def main():
     base = {"schema_version":"relay-1","timestamp":ts,"machine":machine,"staff":staff,
             "branch":branch,"issue_id":a.task_id,"commit_sha":sha or "","tool":"gate-run"}
 
-    cmd, label = detect_gate(cwd)
+    try:
+        test_paths = normalize_test_paths(cwd, a.test_path)
+        cmd, label = detect_gate(cwd, test_paths)
+    except ValueError as exc:
+        reason = str(exc)
+        write_ledger(cwd, {**base,"gate_command":"","gate_exit":"invalid_test_path",
+                           "result":"error","status":"error","output_ref":""})
+        print(json.dumps({"gate_status":"error","reason":reason,
+                          "ledger_written":True}, ensure_ascii=False))
+        sys.exit(3)
     if cmd is None:
         write_ledger(cwd, {**base,"gate_command":"","gate_exit":"","result":"no_gate","status":"no_gate","output_ref":""})
         print(json.dumps({"gate_status":"no_gate","gate_exit":None,"gate_command":None,
@@ -136,7 +191,7 @@ def main():
     except Exception as e:
         print(json.dumps({"gate_status":"error","reason":str(e)}, ensure_ascii=False)); sys.exit(3)
 
-    od = cwd/".hermes"/"gate-output"; od.mkdir(parents=True, exist_ok=True)
+    od = cwd/".project"/"gate-output"; od.mkdir(parents=True, exist_ok=True)
     safe_task = re.sub(r"[^A-Za-z0-9._-]","_",a.task_id)
     out_file = od/f"{safe_task}-{ts.replace(':','')}-{os.getpid()}.log"  # ใส่ pid กันชื่อชนเมื่อรันพร้อมกันในวินาทีเดียว
     out_file.write_text(redact(output), encoding="utf-8")
