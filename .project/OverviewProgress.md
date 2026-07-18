@@ -2,9 +2,13 @@
 > อ่านตามลำดับ: plan-wtl.md (plan_id: WTL — active · Worktree Lifecycle) → plan.md (plan_id: QAQC/MW) → plan-grd.md (แผน GRD จบแล้ว + คิว GRD-P5..P9) → decisions.md → hermes-standard/REQUIREMENTS.md (บัญชีความต้องการ 66 ข้อ)
 
 # Overview & Progress — Hermes Agent
-อัปเดตล่าสุด: 2026-07-18 (BRM ตรวจสาขา Fable/NCR + ล็อกกฎ AI Portal กลาง) · branch งานปัจจุบัน: `task/codex/BRM-P1-I1-branch-remediation-main-integration` · ป้าย: [fact] เว้นแต่ระบุ
+อัปเดตล่าสุด: 2026-07-18 (BRM รวมงานใหม่เข้า `main` แล้ว · closeout 146/146) · branch งานปัจจุบัน: `task/codex/BRM-P1-I1-branch-remediation-main-integration` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
+- **2026-07-18 (BRM-P5): รวมงานสาขาที่ตรวจแล้วกลับ `main` สำเร็จ** [fact]
+  - ฐานล่าสุด `origin/main` ถูกผนวกใน commit `c076984d0` และ local `main` เลื่อนแบบ fast-forward ไป SHA เดียวกัน · ไม่ push ขึ้นเครือข่าย
+  - ชุดทดสอบเฉพาะงานหลังรวมฐานผ่าน **146/146** · `git diff --check` ผ่าน · worktree สะอาด
+  - branch/worktree ยังเก็บไว้ในช่วงกัก 72 ชั่วโมงตามกฎ WTL; ยังไม่ลบสิ่งใด
 - **2026-07-18 (BRM · ตรวจสาขา Fable/NCR): ล็อกกฎปัจจุบันว่า AI ทุกตัวผ่าน AI Portal; ไม่รวม commit ความจำ Fable local-only และไม่ย้าย local fallback จาก NCR** [fact · `DEC-AIR-001` · รายละเอียด `session-log-2026-07-18-ai-portal-routing.md`]
   - งานใหม่จริงจาก NCR ที่รอเขียน: ต่ออายุ lease อย่างตรวจตัวตนครบ · status กัน permit หมดอายุ · Relay ต้องเห็นไฟล์เปลี่ยนและคำตัดสินรีวิว · cleanup ตอนยกเลิก
   - ตัวกั้นปัจจุบัน: Codex DNS ล้ม · Grok ไหลไป CLI ผิดตัว · Gemini รอ login · Ollama exit 1 → UAG Skill ยังไม่ถูกเขียนและห้ามนับว่าจบ
