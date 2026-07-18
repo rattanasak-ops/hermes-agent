@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import pwd
 import shutil
+import shlex
 import subprocess
 import sys
 
@@ -388,6 +389,43 @@ def install_hermes_prompt_entry(config_path: Path, runner: Path) -> None:
     tmp.replace(config_path)
 
 
+def install_hermes_response_entry(config_path: Path, runner: Path) -> None:
+    raw_command = str(runner)
+    command = f"{shlex.quote(sys.executable)} {shlex.quote(raw_command)}"
+    response_gate = runner.parent / "enforce-workspace-response.py"
+    text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+    lines, hooks_index, section_end = config_hook_section(text)
+    for index in range(hooks_index + 1, section_end):
+        line = lines[index]
+        if "command:" not in line:
+            continue
+        prefix, _value = line.split("command:", 1)
+        if "team-stop-gates.py" in line:
+            lines[index] = f"{prefix}command: {command}"
+        elif "enforce-workspace-response.py" in line:
+            lines[index] = f"{prefix}command: {shlex.quote(sys.executable)} {shlex.quote(str(response_gate))}"
+    response_index = next(
+        (i for i in range(hooks_index + 1, section_end) if lines[i].strip() == "transform_llm_output:"),
+        None,
+    )
+    entry = [f"    - command: {command}", "      timeout: 10"]
+    if response_index is None:
+        lines[section_end:section_end] = ["  transform_llm_output:", *entry]
+    else:
+        insert_at = section_end
+        for i in range(response_index + 1, section_end):
+            if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].strip():
+                insert_at = i
+                break
+        existing = "\n".join(lines[response_index:insert_at])
+        if raw_command not in existing and command not in existing:
+            lines[insert_at:insert_at] = entry
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = config_path.with_suffix(config_path.suffix + ".tmp")
+    tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    tmp.replace(config_path)
+
+
 def install_hermes_allowlist(path: Path, runner: Path, event: str = "pre_tool_call") -> None:
     data = load_json(path)
     approvals = data.setdefault("approvals", [])
@@ -441,6 +479,7 @@ def main() -> int:
         hermes_home / "config.yaml", hermes_runner
     )
     install_hermes_prompt_entry(hermes_home / "config.yaml", owner_intent)
+    install_hermes_response_entry(hermes_home / "config.yaml", hermes_hooks / "team-stop-gates.py")
     install_hermes_allowlist(
         hermes_home / "shell-hooks-allowlist.json",
         hermes_runner,
@@ -449,6 +488,11 @@ def main() -> int:
         hermes_home / "shell-hooks-allowlist.json",
         owner_intent,
         event="pre_llm_call",
+    )
+    install_hermes_allowlist(
+        hermes_home / "shell-hooks-allowlist.json",
+        shlex.quote(str(hermes_hooks / "team-stop-gates.py")),
+        event="transform_llm_output",
     )
     print("ติดตั้ง Hook พื้นที่ปัจจุบันให้ Claude Code, Codex, Cursor และ Hermes Agent แล้ว")
     return 0

@@ -139,6 +139,12 @@ _DEFAULT_PAYLOADS = {
         "model": "gpt-4",
         "platform": "cli",
     },
+    "transform_llm_output": {
+        "response_text": "ให้เจ้าของเปิด workspace ใหม่ก่อน แล้วค่อยส่งมาให้ผมทำต่อ",
+        "session_id": "test-session",
+        "model": "gpt-4",
+        "platform": "cli",
+    },
     "on_session_start": {"session_id": "test-session"},
     "on_session_end": {"session_id": "test-session"},
     "on_session_finalize": {"session_id": "test-session"},

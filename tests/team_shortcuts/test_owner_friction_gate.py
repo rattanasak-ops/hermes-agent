@@ -60,3 +60,25 @@ def test_team_stop_gate_runs_owner_friction_gate():
     text = TEAM_STOP.read_text(encoding="utf-8")
 
     assert '"owner-friction-gate.py"' in text
+
+
+def test_team_stop_gate_replaces_bad_hermes_final_response():
+    payload = {
+        "hook_event_name": "transform_llm_output",
+        "extra": {
+            "response_text": "ให้เจ้าของเปิด workspace ใหม่ก่อน แล้วค่อยส่งมาให้ผมทำต่อ",
+        },
+    }
+
+    result = subprocess.run(
+        [sys.executable, str(TEAM_STOP)],
+        input=json.dumps(payload, ensure_ascii=False),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    parsed = json.loads(result.stdout)
+    assert parsed["response_text"].startswith("BLOCK")
+    assert "workspace" in parsed["response_text"]

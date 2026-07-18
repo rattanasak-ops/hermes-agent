@@ -44,7 +44,14 @@ def read_message() -> str:
         return raw
     if not isinstance(data, dict) or data.get("stop_hook_active"):
         return ""
-    value = data.get("last_assistant_message") or data.get("response") or data.get("message") or ""
+    extra = data.get("extra") if isinstance(data.get("extra"), dict) else {}
+    value = (
+        data.get("last_assistant_message")
+        or data.get("response")
+        or data.get("message")
+        or extra.get("response_text")
+        or ""
+    )
     return value if isinstance(value, str) else ""
 
 

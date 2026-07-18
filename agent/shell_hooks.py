@@ -507,6 +507,9 @@ def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
     For ``pre_llm_call``, ``{"context": "..."}`` is passed through
     unchanged to match the existing plugin-hook contract.
 
+    For ``transform_llm_output``, ``{"response_text": "..."}`` returns the
+    replacement string expected by the LLM-output transform hook.
+
     Anything else returns ``None``.
     """
     stdout = (stdout or "").strip()
@@ -530,6 +533,13 @@ def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
             return {"action": "block", "message": _block_message(data.get("message"), data.get("reason"))}
         if data.get("decision") == "block":
             return {"action": "block", "message": _block_message(data.get("reason"), data.get("message"))}
+        return None
+
+    if event == "transform_llm_output":
+        for key in ("response_text", "text", "replacement"):
+            value = data.get(key)
+            if isinstance(value, str) and value:
+                return value
         return None
 
     context = data.get("context")

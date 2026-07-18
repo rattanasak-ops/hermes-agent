@@ -48,7 +48,7 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     installer = (TEAM / "install-shortcuts.sh").read_text(encoding="utf-8")
     checker = (TEAM / "check-shortcuts.sh").read_text(encoding="utf-8")
 
-    assert version == "2026.07.19-1"
+    assert version == "2026.07.19-2"
     assert "INSTALLED_VERSION" in installer
     assert "ไม่พบตัวตรวจสุขภาพ Hook" in installer
     assert installer.index('bash "$NEW_CHAT_INSTALLER"') < installer.index(
@@ -216,19 +216,22 @@ def test_team_hook_installer_adds_current_workspace_gate_to_four_apps(tmp_path):
     assert "hermes-owner-intent" in hermes_config
     assert "keep-hermes-prompt-hook" in hermes_config
     assert hermes_config.count("pre_llm_call:") == 1
+    assert "transform_llm_output:" in hermes_config
+    assert "team-stop-gates.py" in hermes_config
     assert "hermes-owner-intent" in settings.read_text(encoding="utf-8")
     assert "hermes-owner-intent" in (home / ".codex/hooks.json").read_text(encoding="utf-8")
     assert "hermes-owner-intent" in (home / ".cursor/hooks.json").read_text(encoding="utf-8")
     allowlist = json.loads((active_hermes / "shell-hooks-allowlist.json").read_text(encoding="utf-8"))
     assert any(row.get("event") == "pre_tool_call" for row in allowlist["approvals"])
     assert any(row.get("event") == "pre_llm_call" for row in allowlist["approvals"])
+    assert any(row.get("event") == "transform_llm_output" for row in allowlist["approvals"])
 
 
 def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     home = tmp_path / "home"
     root = home / "ObsidianVault/HermesAgent"
     shutil.copytree(TEAM / "payload", root)
-    (root / ".shortcut-version").write_text("2026.07.19-1\n", encoding="utf-8")
+    (root / ".shortcut-version").write_text("2026.07.19-2\n", encoding="utf-8")
 
     # แยกการทดสอบไฟล์ Migrate ออกจากจำนวนรายการ Shortcut อื่นใน payload
     (root / "ai-context/prompt-shortcut-registry.md").write_text("| `fixture` |\n", encoding="utf-8")
@@ -256,7 +259,7 @@ def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
 
     env = os.environ.copy()
     env["HOME"] = str(home)
-    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.19-1"
+    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.19-2"
     return root, env
 
 
