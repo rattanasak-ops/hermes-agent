@@ -1,7 +1,7 @@
 ---
 task_id: UAG-P5
 goal_id: UAG-P5-DIRECT-CODEX-20260718
-status: git_closeout_in_progress
+status: commit_created_push_blocked
 owner_decision_at: 2026-07-18
 writer: codex-current-chat
 external_ai_relay: disabled
@@ -67,7 +67,7 @@ spec: .project/spec/UAG.md
 
 ## ขั้นตอนถัดไปเพียงหนึ่งขั้น
 
-สร้าง commit จากไฟล์ UAG ที่คัดไว้ แล้วรันด่าน `save-git` ก่อน push และเปิด PR
+ขออนุมัติแยกงานซ่อม `save-git` ให้รองรับไฟล์ค้างนอกขอบเขตที่เจ้าของอนุมัติ และแก้คำสั่งตรวจ Python 3.9 ก่อน push
 
 ## จุดติดที่เคลียร์แล้วใน UAG-P3
 
@@ -84,6 +84,14 @@ spec: .project/spec/UAG.md
 - เขียนสมุดหลักฐานลง `.project/ledger/` และผลคำสั่งลง `.project/gate-output/`
 - ด่าน UAG-P2 และ UAG-P3 ผ่าน 2/2 แถวด้วย exit 0
 - สำเนา `gate-run` ที่ติดตั้งนอก Git root ไม่ถูกแก้ รอบนี้เรียกไฟล์ในพื้นที่งานโดยตรง
+
+## ผลด่าน Git
+
+- สร้าง commit เนื้องาน UAG สำเร็จที่ `be72f338f` โดยกัน UAG-P0 ออก 2/2 ไฟล์
+- `save-git --stage local --json` คืน `BLOCKED_DO_NOT_MERGE`
+- จุดติด 1/2: worktree ยังมี UAG-P0 ค้าง 2 ไฟล์ ซึ่งเจ้าของสั่งให้แยกจากงานนี้
+- จุดติด 2/2: `.savegit.json` เรียก `python3` รุ่น 3.9.6 และ `relay-call.py` เดิมล้มจากรูปแบบชนิดข้อมูลที่รุ่นนี้ไม่รองรับ
+- ยังไม่ push และยังไม่เปิด PR ตามกฎ fail-closed
 
 ## แบบ UAG-P3 ที่ลงมือแล้ว
 
