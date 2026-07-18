@@ -48,7 +48,7 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     installer = (TEAM / "install-shortcuts.sh").read_text(encoding="utf-8")
     checker = (TEAM / "check-shortcuts.sh").read_text(encoding="utf-8")
 
-    assert version == "2026.07.18-1"
+    assert version == "2026.07.18-2"
     assert "INSTALLED_VERSION" in installer
     assert "ไม่พบตัวตรวจสุขภาพ Hook" in installer
     assert installer.index('bash "$NEW_CHAT_INSTALLER"') < installer.index(
@@ -77,6 +77,7 @@ def test_fresh_home_installs_new_chat_tools_and_fail_closed_gate(tmp_path):
     local_bin = home / ".local/bin"
     for name in (
         "hermes-prewrite-gate",
+        "hermes-owner-intent",
         "hermes-new-chat",
         "hermes-worktree",
         "hermes-hook-doctor",
@@ -123,6 +124,7 @@ def test_fresh_home_installs_new_chat_tools_and_fail_closed_gate(tmp_path):
         check=False,
     )
     assert hooks.returncode == 0, hooks.stdout + hooks.stderr
+    assert (home / ".local/bin/hermes-current-workspace-hook").is_file()
     doctor = subprocess.run(
         [str(local_bin / "hermes-hook-doctor")],
         env=env,
@@ -135,7 +137,7 @@ def test_fresh_home_installs_new_chat_tools_and_fail_closed_gate(tmp_path):
     assert len(health["gates"]) == 4
     current = next(row for row in health["gates"] if row["gate"] == "current_workspace_prewrite")
     assert current["ok"] is True
-    assert current["checks"] == "12/12"
+    assert current["checks"] == "18/18"
     assert current["wiring"] == {"claude": True, "codex": True, "cursor": True, "hermes": True}
 
 
@@ -158,8 +160,23 @@ def test_team_hook_installer_adds_current_workspace_gate_to_four_apps(tmp_path):
         ),
         encoding="utf-8",
     )
+    active_hermes = tmp_path / "active-hermes"
+    hermes_config_path = active_hermes / "config.yaml"
+    hermes_config_path.parent.mkdir(parents=True)
+    hermes_config_path.write_text(
+        "hooks:\n"
+        "  pre_tool_call:\n"
+        "    - command: /old/path/enforce-new-chat-relay.py\n"
+        "      matcher: terminal\n"
+        "      timeout: 20\n"
+        "  pre_llm_call:\n"
+        "    - command: keep-hermes-prompt-hook\n"
+        "      timeout: 3\n",
+        encoding="utf-8",
+    )
     env = os.environ.copy()
     env["HOME"] = str(home)
+    env["HERMES_HOME"] = str(active_hermes)
 
     result = subprocess.run(
         [sys.executable, str(TEAM / "install-team-hooks.py")],
@@ -170,7 +187,7 @@ def test_team_hook_installer_adds_current_workspace_gate_to_four_apps(tmp_path):
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
-    for root in (home / ".claude/hooks", home / ".codex/hooks", home / ".cursor/hooks", home / ".hermes/hooks"):
+    for root in (home / ".claude/hooks", home / ".codex/hooks", home / ".cursor/hooks", active_hermes / "hooks"):
         assert (root / "enforce-new-chat-relay.py").is_file()
     data = json.loads(settings.read_text(encoding="utf-8"))
     entries = data["hooks"]["PreToolUse"]
@@ -188,11 +205,21 @@ def test_team_hook_installer_adds_current_workspace_gate_to_four_apps(tmp_path):
     )
     cursor_data = json.loads((home / ".cursor/hooks.json").read_text(encoding="utf-8"))
     assert any("enforce-new-chat-relay.py" in entry.get("command", "") for entry in cursor_data["hooks"]["preToolUse"])
-    hermes_config = (home / ".hermes/config.yaml").read_text(encoding="utf-8")
+    hermes_config = (active_hermes / "config.yaml").read_text(encoding="utf-8")
     assert "pre_tool_call:" in hermes_config
-    assert "enforce-new-chat-relay.py" in hermes_config
-    allowlist = json.loads((home / ".hermes/shell-hooks-allowlist.json").read_text(encoding="utf-8"))
+    assert "hermes-current-workspace-hook" in hermes_config
+    assert "    - command: " + str(home / ".local/bin/hermes-current-workspace-hook") in hermes_config
+    assert "/old/path/enforce-new-chat-relay.py" not in hermes_config
+    assert "pre_llm_call:" in hermes_config
+    assert "hermes-owner-intent" in hermes_config
+    assert "keep-hermes-prompt-hook" in hermes_config
+    assert hermes_config.count("pre_llm_call:") == 1
+    assert "hermes-owner-intent" in settings.read_text(encoding="utf-8")
+    assert "hermes-owner-intent" in (home / ".codex/hooks.json").read_text(encoding="utf-8")
+    assert "hermes-owner-intent" in (home / ".cursor/hooks.json").read_text(encoding="utf-8")
+    allowlist = json.loads((active_hermes / "shell-hooks-allowlist.json").read_text(encoding="utf-8"))
     assert any(row.get("event") == "pre_tool_call" for row in allowlist["approvals"])
+    assert any(row.get("event") == "pre_llm_call" for row in allowlist["approvals"])
 
 
 def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:

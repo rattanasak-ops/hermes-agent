@@ -22,15 +22,16 @@ This is the shared prompt shortcut contract for Codex, Qwen, Claude Code, Gemini
 
 ## Runtime Rule
 
-When the user invokes a shortcut, the AI must read `skills/prompt-shortcuts/references/work-execution-policy.md` and then read the mapped prompt file. Apply both to the current task. Read `worktree-lifecycle-contract.md` only when the owner explicitly asks to manage a Worktree. Work Execution Policy v2 takes precedence over older branch/Worktree and Relay rules.
+When the user invokes a shortcut, the AI must read `skills/prompt-shortcuts/references/work-execution-policy.md` and then read the mapped prompt file. Apply both to the current task. Read `worktree-lifecycle-contract.md` only when the owner explicitly asks to inspect or manage an existing Worktree. Work Execution Policy v2.1 takes precedence over older branch/Worktree and Relay rules.
 
 ## Current Workspace Only — Shortcut Integration
 
 - Shortcut ทุกตัวใช้เฉพาะ Git root และกิ่งที่แอปเปิดอยู่
 - Shortcut ห้ามสร้าง ลบ ย้าย หรือสลับ Worktree/กิ่งโดยอัตโนมัติ
+- `OWNER_EXPLICIT_BRANCH_ONLY`: AI สร้างกิ่งได้เฉพาะคำสั่งสั้นล่าสุดจากเจ้าของที่ระบุชื่อกิ่งตรงกัน และต้องไม่สร้าง Worktree
 - งานอ่านบันทึก path/branch/SHA; งานเขียนต้องได้ `CURRENT_WORKSPACE_READY`
 - AI Relay เป็นทางเลือกและไม่มีสิทธิ์จัดการ Worktree/กิ่ง
-- Worktree Lifecycle v1 ใช้เฉพาะคำสั่ง Worktree ที่เจ้าของเรียกตรงเท่านั้น
+- Worktree Lifecycle v1 ใช้ตรวจและจัดการ Worktree ที่มีอยู่; ด่าน AI ไม่เปิด Worktree ใหม่
 
 ## Shortcut Map
 
@@ -47,7 +48,7 @@ When the user invokes a shortcut, the AI must read `skills/prompt-shortcuts/refe
 | `Use Blog Auto` | `use-blog-auto`, `Blog Auto`, `blog-auto`, `ใช้ Blog Auto`, `เขียนบล็อกอัตโนมัติ`, `ทำบล็อกจากงานนี้`, `ส่งเข้า One Man Fleet` | [[skills/prompt-shortcuts/references/use-blog-auto|use-blog-auto]] | Extract work knowledge into One Man Fleet draft-first blog planning, privacy review, Obsidian index, and Content Factory handoff without publishing before owner approval. |
 | `Use WOW Resource` | `use-wow-resource`, `WOW Resource`, `wow-resource`, `ใช้ WOW Resource`, `ใช้ WOW`, `WOW Layout`, `WOW Menu`, `WOW Script`, `WOW Design`, `WOW Web Engine` | [[skills/prompt-shortcuts/references/use-wow-resource|use-wow-resource]] | Read WOW System and Web Design Intelligence resources from Obsidian, select suitable layout/design/script references for the project goal, reject mismatched options, and transform choices into project-specific direction without copying scripts directly. |
 | `Use Flow Guardian` | `use-flow-guardian`, `Flow Guardian`, `Safe Flow`, `New Chat Gate`, `ใช้ Flow Guardian`, `ใช้ Safe Flow`, `เปิด Flow Guardian`, `ตรวจ worktree`, `กัน AI แก้งานทับกัน` | [[skills/prompt-shortcuts/references/use-flow-guardian|use-flow-guardian]] | v2.0 · ตรวจ Git root/branch/SHA/dirty/ขอบเขตของพื้นที่ที่เปิดอยู่เท่านั้น · คืนสถานะ CURRENT_WORKSPACE_* · ไม่สร้างหรือสลับ Worktree/กิ่ง. |
-| `Use New Chat` | `use-new-chat`, `Start New Chat`, `New Chat Startup`, `Initialize Hermes Agent chat`, `เริ่ม New Chat`, `เปิด New Chat`, `เริ่มแชทใหม่`, `เปิดแชทใหม่` | [[skills/prompt-shortcuts/references/use-new-chat|use-new-chat]] | v4.0 · CURRENT_WORKSPACE_ONLY · อ่านความจำและตรวจพื้นที่ที่แอปเปิดอยู่ · ห้ามเรียก open หรือสร้าง/สลับ Worktree/กิ่ง · AI Relay เป็นทางเลือก. |
+| `Use New Chat` | `use-new-chat`, `Start New Chat`, `New Chat Startup`, `Initialize Hermes Agent chat`, `เริ่ม New Chat`, `เปิด New Chat`, `เริ่มแชทใหม่`, `เปิดแชทใหม่` | [[skills/prompt-shortcuts/references/use-new-chat|use-new-chat]] | v4.1 · CURRENT_WORKSPACE_ONLY · Shortcut ไม่สร้าง Worktree/กิ่ง · คำสั่งเจ้าของที่ระบุชื่อกิ่งตรง ๆ ใช้ OWNER_EXPLICIT_BRANCH_ONLY · AI Relay เป็นทางเลือก. |
 | `Use Close Chat` | `use-close-chat`, `Close Chat`, `close-chat`, `ใช้ Close Chat`, `ปิดแชท`, `ปิดงานแชท`, `จบแชท` | [[skills/prompt-shortcuts/references/use-close-chat|use-close-chat]] | v2.5 (2026-07-17 · SPEC-CENTRAL: เพิ่มขั้น Spec Sync + บรรทัด `Spec:` ใน Output · owner_approved แตะได้เมื่อเจ้าของพิมพ์อนุมัติจริง) · เดิม v2.4 PREVIEW + CLOSE ในตัวเดียว · รับ Save Git receipt ที่ project/task/branch/SHA ตรงเพื่อลดด่านหนักซ้ำ · ยังรัน git status สด · ไม่ push/merge/deploy เอง. |
 | `Use Save Git` | `use-save-git`, `Save Git`, `save-git`, `Save Grid`, `save-grid`, `Use Save Grid`, `ใช้ Save Git`, `เซฟ Git`, `ก่อน push`, `ก่อน merge`, `ก่อน deploy`, `Git Safe Flow`, `GitLab Deploy Safe Flow`, `Use GitLab Deploy Safe Flow`, `Use Ship Gate`, `Merge Gate`, `Pre-Merge Gate`, `Pre-Merge Production Gate` | [[skills/prompt-shortcuts/references/use-save-git|use-save-git]] | v2.3 (2026-07-17 · SPEC-CENTRAL: Spec Gate ก่อนออกใบผ่าน merge — draft = OWNER_DECISION_REQUIRED · done ห้ามพฤติกรรมใหม่ · ประกาศ field `spec_gate`) · เดิม v2.2 Save Grid เป็น alias · รัน 5 ด่านเฉพาะเมื่อมี commit/push/merge/deploy/คำกล่าวอ้าง Git พร้อม · ออก receipt ผูก project/task/branch/SHA. |
 | `Use Merge to Production` | `use-merge-to-production`, `Merge to Production`, `merge-to-production`, `ใช้ Merge to Production`, `ขึ้น production`, `deploy production`, `Ship to Production` | [[skills/prompt-shortcuts/references/use-merge-to-production|use-merge-to-production]] | Merger-only shortcut to merge into the production branch then deploy to the real VPS: verify the caller is an allowlisted merger (default nat, namton, nam), run save-git merge-gate then ship-gate, deploy from origin/target only, and return one decision token plus a 6-stage Grid. Builds on Use Save Git; GitLab protected branch is the authoritative server-side enforcement. |

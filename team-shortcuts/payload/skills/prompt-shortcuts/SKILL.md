@@ -60,12 +60,13 @@ When the user invokes a shortcut:
 ทุก Shortcut ใช้โหมด `CURRENT_WORKSPACE_ONLY` จาก `references/work-execution-policy.md` รุ่นเดียวกัน:
 
 - Shortcut ใช้เฉพาะ Git root และกิ่งที่แอปเปิดอยู่
-- Shortcut ห้ามสร้าง ลบ ย้าย หรือสลับ Worktree/กิ่ง และห้ามเรียก `hermes-new-chat open` หรือ `hermes worktree open`
+- Shortcut ห้ามสร้าง ลบ ย้าย หรือสลับ Worktree/กิ่งเอง และห้ามเรียก `hermes-new-chat open` หรือ `hermes worktree open`
+- `OWNER_EXPLICIT_BRANCH_ONLY`: เมื่อข้อความสั้นล่าสุดจากเจ้าของระบุให้สร้างกิ่งพร้อมชื่อชัดเจน AI จึงสร้างกิ่งชื่อนั้นใน Git root ปัจจุบันได้หนึ่งครั้งโดยไม่สร้าง Worktree และไม่ผลักให้เจ้าของใช้ Terminal; ข้อความตัวอย่างยาวและชื่อที่ AI คิดเองไม่ให้สิทธิ์
 - ก่อนเขียนต้องตรวจ path/branch/SHA/dirty และต้องไม่ใช่กิ่งร่วม กิ่งใช้งานจริง หรือ detached HEAD
 - AI ในแอปปัจจุบันเขียนตรงได้; AI Relay เป็นทางเลือกเมื่อเจ้าของเรียกเท่านั้น
 - `.env`, `.hermes`, `.grok`, secret, การเขียนข้าม Git root และคำสั่งอันตรายยังถูกขวาง
 - Decision token กลางคือ `CURRENT_WORKSPACE_READY`, `CURRENT_WORKSPACE_READ_ONLY`, `CURRENT_WORKSPACE_BLOCKED`
-- Worktree Lifecycle v1 เป็นส่วนเสริมแบบสั่งตรงสำหรับ Worktree ที่มีอยู่หรือเมื่อเจ้าของสั่งจัดการ Worktree โดยชัดเจนเท่านั้น
+- Worktree Lifecycle v1 เป็นส่วนเสริมสำหรับตรวจและจัดการ Worktree ที่มีอยู่โดยกระบวนการของเจ้าของ ด่าน AI ไม่เปิด Worktree ใหม่
 
 ## Important Behavior
 
@@ -98,7 +99,7 @@ For `Use WOW Resource`, read the mapped prompt, route through WOW System and Web
 
 For `Use Flow Guardian`, inspect and report the current folder, Git root, branch, SHA, dirty state, target paths, secret-path safety, and overlap risk. Return a current-workspace decision without creating, switching, moving, or deleting a branch/Worktree. Require no-write audit, approval gates, verification, tracking, and handoff when applicable.
 
-For `Use New Chat`, inspect only the workspace and branch already open in the app. Read project memory, branch, SHA, dirty state, target paths, and hook health, then return `CURRENT_WORKSPACE_READY`, `CURRENT_WORKSPACE_READ_ONLY`, or `CURRENT_WORKSPACE_BLOCKED`. It must never call `hermes-new-chat open`, create/switch a branch/Worktree, or treat the shortcut invocation as permission to do so. Report AI Relay as optional unless the owner invoked it explicitly.
+For `Use New Chat`, inspect only the workspace and branch already open in the app. Read project memory, branch, SHA, dirty state, target paths, and hook health, then return `CURRENT_WORKSPACE_READY`, `CURRENT_WORKSPACE_READ_ONLY`, or `CURRENT_WORKSPACE_BLOCKED`. It must never call `hermes-new-chat open`, create/switch a branch/Worktree, or treat the shortcut invocation as permission to do so. A separate short owner command naming an exact branch follows `OWNER_EXPLICIT_BRANCH_ONLY`. Report AI Relay as optional unless the owner invoked it explicitly.
 
 For `Use Migrate 0` through `Use Migrate 13`, read `references/use-migrate-phase-contract.md` and the exact numbered phase file. The owner advances phases by number. These phases still obey `CURRENT_WORKSPACE_ONLY`; they may lock a menu inside the current branch but may not create or switch a branch/Worktree.
 

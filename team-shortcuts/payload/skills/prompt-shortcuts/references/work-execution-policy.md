@@ -1,7 +1,7 @@
 ---
 title: Hermes Work Execution Policy
 status: owner-approved
-version: "2.0"
+version: "2.1"
 updated: 2026-07-18
 schema: memory-schema-v1.2
 default_mode: CURRENT_WORKSPACE_ONLY
@@ -9,7 +9,7 @@ default_mode: CURRENT_WORKSPACE_ONLY
 
 # กติกากลางการลงมือทำงาน
 
-ไฟล์นี้คุม Shortcut ทุกตัวใน Codex App, Claude Code App, Cursor และ Hermes Agent โดยมีหลักง่าย ๆ ว่า เจ้าของเป็นคนเปิดโครงการและกิ่งที่จะทำงาน ส่วน Shortcut มีหน้าที่ตรวจและทำงานในพื้นที่ที่เปิดอยู่เท่านั้น
+ไฟล์นี้คุม Shortcut ทุกตัวใน Codex App, Claude Code App, Cursor และ Hermes Agent โดยมีหลักง่าย ๆ ว่า Shortcut ใช้พื้นที่ปัจจุบันและไม่มีสิทธิ์สร้างพื้นที่เพิ่ม ส่วน AI สร้างกิ่งได้เฉพาะคำสั่งตรงจากเจ้าของตามกฎ `OWNER_EXPLICIT_BRANCH_ONLY`
 
 ## 1. โหมดหลัก `CURRENT_WORKSPACE_ONLY`
 
@@ -18,10 +18,22 @@ default_mode: CURRENT_WORKSPACE_ONLY
 1. ใช้โฟลเดอร์ Git และกิ่งที่แอปเปิดอยู่ในขณะนั้น
 2. ตรวจ `pwd`, Git root, กิ่งปัจจุบัน, SHA และไฟล์ค้างก่อนเขียน
 3. ห้ามสร้าง ลบ ย้าย หรือสลับ Worktree และกิ่งโดยอัตโนมัติ
-4. ห้ามเรียก `hermes-new-chat open`, `hermes worktree open`, `git worktree add`, `git worktree remove`, `git switch`, `git checkout` หรือคำสั่งสร้าง/สลับกิ่งจาก Shortcut
-5. ถ้าพื้นที่หรือกิ่งไม่เหมาะกับงาน ให้คืน `CURRENT_WORKSPACE_BLOCKED` พร้อมบอกการกระทำเดียวที่เจ้าของต้องทำ ห้ามสร้างพื้นที่ใหม่เพื่อหนีปัญหา
+4. ห้ามเรียก `hermes-new-chat open`, `hermes worktree open`, `git worktree add` หรือ `git worktree remove` จาก Shortcut หรือ AI
+5. ถ้าพื้นที่ไม่ใช่โครงการที่เจ้าของต้องการ ให้คืน `CURRENT_WORKSPACE_BLOCKED` พร้อมชี้โฟลเดอร์หลักของโครงการเพียงแห่งเดียว ห้ามเสนอหรือสร้าง Worktree ใหม่เพื่อหนีปัญหา
 
 Worktree ที่มีอยู่แล้วใช้ต่อได้เมื่อเป็นพื้นที่ปัจจุบัน แต่ Shortcut ต้องไม่สร้างเพิ่ม ไม่ย้ายเข้าเอง และไม่ลบของเดิม
+
+### ข้อยกเว้นเดียว `OWNER_EXPLICIT_BRANCH_ONLY`
+
+AI สร้างและสลับกิ่งใน Git root ปัจจุบันได้เมื่อครบทุกข้อ:
+
+1. ข้อความสั้นล่าสุดจากเจ้าของสั่งสร้างกิ่งและระบุชื่อกิ่งตรง ๆ
+2. ชื่อในคำสั่ง Git ต้องตรงกับชื่อที่เจ้าของพิมพ์ทุกตัวอักษร
+3. ใช้ได้เฉพาะ `git switch -c <ชื่อ>`, `git checkout -b <ชื่อ>` หรือ `git branch <ชื่อ>` หนึ่งคำสั่ง
+4. ห้ามสร้างกิ่งร่วม/กิ่งใช้งานจริง และยังต้องผ่านด่านไฟล์ลับ คำสั่งอันตราย และ Git root
+5. ข้อความยาว ข้อความยกตัวอย่าง ประวัติแชทที่วางมา หรือชื่อที่ AI คิดเอง ไม่ถือเป็นคำอนุมัติ
+
+ถ้าเจ้าของสั่งสร้างกิ่งอย่างชัดเจน AI ต้องทำให้ในพื้นที่ปัจจุบัน ไม่ผลักให้เจ้าของเปิด Terminal เอง และต้องไม่สร้าง Worktree ประกอบ ส่วน Shortcut เพียงอย่างเดียวไม่เคยให้สิทธิ์นี้
 
 ## 2. ความหมายของสถานะกลาง
 
@@ -85,9 +97,9 @@ tsc
 
 ## 7. Worktree เป็นเครื่องมือที่เจ้าของเรียกเอง
 
-`worktree-lifecycle-contract.md` ยังใช้สำหรับการตรวจ ส่งต่อ ปิด และเก็บกวาด Worktree ที่มีอยู่ หรือเมื่อเจ้าของสั่งสร้าง Worktree โดยตรง แต่ไม่ใช่ด่านบังคับของ Shortcut ปกติ
+`worktree-lifecycle-contract.md` ใช้สำหรับอ่าน ตรวจ ส่งต่อ ปิด และเก็บกวาด Worktree ที่มีอยู่โดยกระบวนการของเจ้าของ แต่ไม่ใช่ด่านบังคับของ Shortcut ปกติ และด่าน AI ไม่เปิด Worktree ใหม่
 
-Shortcut จะเข้าสู่โหมด Worktree ได้ต่อเมื่อเจ้าของใช้คำสั่งตรงที่มีคำว่า Worktree และระบุงานชัดเจน การเรียก `Use New Chat`, `Use Continue`, `Use Flow Guardian` หรือ Shortcut อื่นเพียงอย่างเดียวไม่ใช่สิทธิ์ให้สร้าง Worktree/กิ่ง
+การเรียก `Use New Chat`, `Use Continue`, `Use Flow Guardian` หรือ Shortcut อื่นไม่ใช่สิทธิ์ให้สร้าง Worktree หรือกิ่ง คำสั่งสร้างกิ่งใช้ข้อยกเว้น `OWNER_EXPLICIT_BRANCH_ONLY`; คำสั่งสร้าง Worktree ไม่ใช้ข้อยกเว้นนี้
 
 ## 8. การต่อสายทุกแอป
 
@@ -98,4 +110,5 @@ Shortcut จะเข้าสู่โหมด Worktree ได้ต่อเ�
 3. ไม่ต้องมี New Chat session หรือ AI Relay
 4. เขียนข้าม Git root ไม่ได้
 5. กิ่งร่วม, detached HEAD, ไฟล์ลับ และคำสั่งอันตรายยังถูกขวาง
-6. Shortcut ไม่สร้างหรือสลับ Worktree/กิ่ง
+6. Worktree mutation ถูกขวาง และ Shortcut ไม่สร้างหรือสลับ Worktree/กิ่งเอง
+7. คำสั่งสร้างกิ่งจากเจ้าของที่ชื่อตรงกันผ่าน แต่ชื่อไม่ตรง ไม่มีข้อความอนุมัติ หรือมาจากตัวอย่างยาวถูกขวาง

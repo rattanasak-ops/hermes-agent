@@ -12,31 +12,32 @@ tags:
   - notebook
   - vps
 status: owner-approved
-version: "1.2.0"
+version: "1.3.0"
 updated: 2026-07-18
 plan_id: WTL
 ---
 
-# Hermes Worktree Lifecycle Contract v1.2
+# Hermes Worktree Lifecycle Contract v1.3
 
-> สัญญาส่วนเสริมสำหรับคำสั่งที่เจ้าของใช้จัดการ Git worktree โดยตรงบน Notebook และ VPS
+> สัญญาส่วนเสริมสำหรับตรวจ ส่งต่อ ปิด และเก็บกวาด Git worktree ที่มีอยู่บน Notebook และ VPS
 >
-> หลักสูงสุด: Shortcut ปกติใช้ `CURRENT_WORKSPACE_ONLY` ตาม `work-execution-policy.md` และห้ามสร้าง/สลับ Worktree/กิ่ง · สัญญานี้เริ่มทำงานเมื่อเจ้าของสั่งจัดการ Worktree โดยชัดเจนเท่านั้น
+> หลักสูงสุด: Shortcut ปกติใช้ `CURRENT_WORKSPACE_ONLY` ตาม `work-execution-policy.md` และห้ามสร้าง/สลับ Worktree/กิ่งเอง · ด่าน AI ไม่เปิด Worktree ใหม่ · การสร้างกิ่งตามคำสั่งเจ้าของใช้ `OWNER_EXPLICIT_BRANCH_ONLY` ใน Git root ปัจจุบัน
 
 ## 0. เงื่อนไขการเรียกใช้
 
 - `Use New Chat`, `Use Continue`, `Use Flow Guardian` และ Shortcut อื่นไม่เรียกสัญญานี้โดยอัตโนมัติ
 - การเรียก Shortcut เพียงอย่างเดียวไม่ใช่สิทธิ์ให้ `open`, `handoff`, `close` หรือ `cleanup`
-- AI โหลดสัญญานี้เพิ่มเมื่อเจ้าของระบุคำว่า Worktree และสั่งสร้าง ตรวจ ส่งต่อ ปิด หรือเก็บกวาดโดยตรง
+- AI โหลดสัญญานี้เพิ่มเมื่อเจ้าของระบุคำว่า Worktree และสั่งตรวจ ส่งต่อ ปิด หรือเก็บกวาดของเดิมโดยตรง
 - Worktree ที่มีอยู่แล้วและถูกเปิดเป็นพื้นที่ปัจจุบัน ใช้กฎ `CURRENT_WORKSPACE_ONLY` สำหรับงานทั่วไป
-- เมื่อเจ้าของสั่งจัดการ Worktree โดยตรง จึงใช้หลักเดิมว่า หนึ่งโครงการมีพื้นที่หลักหนึ่งแห่ง · หนึ่งงานเขียนมี task worktree ของตัวเอง · หนึ่ง task มีเครื่องถือสิทธิ์เขียนได้ครั้งละหนึ่งเครื่อง
+- เมื่อเจ้าของสั่งจัดการ Worktree ที่มีอยู่ จึงใช้หลักว่า หนึ่งโครงการมีพื้นที่หลักหนึ่งแห่ง · หนึ่ง task มีเครื่องถือสิทธิ์เขียนได้ครั้งละหนึ่งเครื่อง
+- การเปิด Worktree ใหม่เป็นงานของผู้ดูแลนอกด่าน AI และไม่ใช่ผลของ Shortcut ใด
 
 ## 1. ขอบเขตและแหล่งจริง
 
 เมื่อถูกเรียกแบบสั่งตรง สัญญานี้คุม:
 
 - การตั้งชื่อและตำแหน่ง Worktree
-- การสร้าง branch และ Worktree ต่อ task
+- การตรวจ branch และ Worktree ต่อ task ที่มีอยู่
 - สมุดทะเบียนกลางและสำเนาบนเครื่อง
 - สิทธิ์เขียนและการส่งต่อ Notebook ↔ VPS
 - พอร์ต คอนเทนเนอร์ ฐานข้อมูลทดสอบ ไฟล์ชั่วคราว และแฟ้มสะสม
@@ -409,7 +410,7 @@ Act:
 8. ลบด้วย `rm -rf`
 9. remote/registry ใช้ไม่ได้แต่พยายามสร้างหรือโอนงาน
 10. พื้นที่เครื่องถึง 85% แล้วยังเปิด Worktree ใหม่
-11. Shortcut สร้างหรือสลับ Worktree/กิ่งโดยไม่มีคำสั่งตรงจากเจ้าของ
+11. Shortcut หรือ AI เปิด Worktree ใหม่ หรือ Shortcut สร้างกิ่งเองโดยไม่มีคำสั่งตรงจากเจ้าของ
 12. AI อ้างผ่านโดยไม่มีผลตัวตรวจ
 
 ## 17. เกณฑ์ประกาศใช้
@@ -418,7 +419,7 @@ Act:
 
 - ตัวตรวจสัญญาปฏิเสธเหตุการณ์เสีย 12/12
 - Worktree Manager ผ่านเหตุการณ์ทดสอบ WTL-P5 12/12
-- Shortcut visibility เห็นกฎ `CURRENT_WORKSPACE_ONLY` ครบ และไม่มี Shortcut สร้าง/สลับ Worktree/กิ่ง
+- Shortcut visibility เห็นกฎ `CURRENT_WORKSPACE_ONLY` ครบ ไม่มี Shortcut เปิด Worktree/สร้างกิ่งเอง และเห็น `OWNER_EXPLICIT_BRANCH_ONLY` ครบ
 - Pilot Hermes Agent และโครงการไม่ใช้งานจริงลูกค้าผ่าน
 - Notebook และ VPS มีหลักฐาน route/registry/disk จริง
 - cleanup dry-run ไม่ลบไฟล์และแสดงผลกระทบครบ
