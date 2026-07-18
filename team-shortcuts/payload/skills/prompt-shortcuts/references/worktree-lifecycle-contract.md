@@ -346,7 +346,7 @@ Use New Chat, Use Flow Guardian, Use AI Relay, Use Continue, Use Close Chat, Rev
 
 ### เพิ่มจุดเชื่อม
 
-Use Act-As, Use Comply, Use OverviewProgress, Use QA QC, Use SonarQube, Use Hermes Structure, Use Viber Structure, Use Viber Audit
+Use Act-As, Use Agent, Use Comply, Use OverviewProgress, Use QA QC, Use SonarQube, Use Hermes Structure, Use Viber Structure, Use Viber Audit
 
 ### รับกฎจากด่านกลาง
 
