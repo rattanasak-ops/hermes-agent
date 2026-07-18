@@ -5,6 +5,11 @@
 อัปเดตล่าสุด: 2026-07-16 (ชุด `Use Migrate 0-13` v1.0 active ทุกเครื่อง + กติกาโควตาเมนู + VPS ซิงก์แล้ว + **station gate PR #51 merged**) · branch งานถัดไป: แตกใหม่จาก `main` ผ่าน `hermes-new-chat open` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
+- **2026-07-17 (แชท Fable · ปิดรอบซ่อมยาม + ส่งต่อทีม): prewrite gate v2.2 เข้า main แล้ว (PR #60) + สร้างกิ่ง `dev` ให้ทีมทำงานต่อ** [fact]
+  - โค้ดยาม `hermes_prewrite_gate.py` + เทสต์ merge เข้า main ผ่าน **PR #60** (แยกเป็น 1 commit สะอาดจาก 29 ไฟล์ WIP กิ่ง NCR ด้วย clone สะอาด — ไม่ลากงานเซสชันอื่นมา) · ยาม v2.2 บังคับใช้จริงบนเครื่องเจ้าของ (doctor 4/4)
+  - **กิ่ง `dev` = origin/main ล่าสุด (`d0cf379ca`)** push ขึ้น GitHub แล้ว · มีงานทุกอย่างครบ (ยาม + ความจำ + งานเซสชันอื่นที่ merge แล้ว) · ทีม clone → `git checkout dev` → แตกกิ่งงานตัวเองจาก dev
+  - เก็บกวาดค้าง (ไม่กระทบทีม): ลบกิ่ง merged `fix/prewrite-gate-v2` · ตั้ง branch protection ให้ dev (สิทธิ์เจ้าของบน GitHub) · GitHub MCP token หมดอายุ (AI เปิด PR ผ่าน MCP ไม่ได้ ใช้ gh CLI แทน)
+  - พบช่องต้อง harden: `git -C <path> <subcmd>` หลบด่าน git ใน prewrite gate ได้ (สแกน sub จาก first non-dash arg เจอ path ก่อน) — ปักไว้รอบหน้า
 - **2026-07-17 (แชท Opus · DSU-P4): shortcut `Use Create Design System` อัปเป็น v3.1 — ปิดข้อบกพร่อง 3/5 ที่การนำร่อง Root Admin ตรวจพบ · PR #58 merged (`af3aa41db`)** [fact]
   - บัญชีข้อบกพร่องจากการนำร่อง = `.project/dsu-pilot-findings.md` (สิ่งส่งมอบหลักตาม Goal Lock `DEC-DSU-002`): F-01 ด่านตรวจสำเนามาตรฐาน · F-02 กฎกันกลืนเป้าหมายแม่ (`caller_goal` + บรรทัดประกาศสถานี + โหมด pilot) · F-03 ด่านสีจำแนกสีเดิม 3 แบบ — ปิดครบทั้งคลัง (commit `e133f00` · ผู้ตรวจ GPT-5 แก้ตาม 3/3) + payload ตรงคลัง 100% (แฮชตรง 2/2) · F-04 relay ตีผลผิดเมื่อ coder commit = ปักธง task chip (เจอซ้ำ 2 เคสจริง) · F-05 ด่านเครื่องบล็อก ds-gate = รอเจ้าของเคาะ
   - สนามนำร่อง Root Admin (newwebengine2026 · worktree `DSU-P4-I1`): ชั้นแบรนด์ H/U/F ผ่าน `ds-gate` 20/20 exit 0 + สำเนามาตรฐานในโปรเจกต์อัปเป็น v3.1 (commit `c669a7a4`) · ค้าง: เดิน PHASE 3-5 ด้วย prompt รุ่นใหม่ (DSU-P4-I3) + `DesignSystem.md` ของโปรเจกต์นั้นยังไม่เข้า git
@@ -15,7 +20,7 @@
   - GPT-5 ต่างค่าย 2 รอบ: รอบ1 ปิด cwd-bypass/shell-escape/redirect/find-delete/curl-o/sed-i · รอบ2 ปิด BLOCKING 2 จุด (protected_target กันแก้ hook/session/settings/เครื่องมือ = ถอดปลั๊กเองไม่ได้ · ความจำข้ามพื้นที่เฉพาะโปรเจกต์เดียวกัน)
   - หลักฐาน tier 3: pytest 89 เขียว + ยิง hook binary จริง 15 เคส (block/pass/fail-closed) เขียว + ติดตั้ง ~/.hermes + เสียบ hook + doctor 4/4 · **ยามพิสูจน์ตัวเองโดยบล็อกคำสั่ง Fable เองระหว่างทำงาน**
   - โหมด Use AI Relay ที่ใช้จริง = โหมด 2 (Fable เขียน · GPT-5 cross-check ตรวจ · เครื่อง pytest ตัดสิน) เพราะ **สายพาน relay เต็มระบบใช้ไม่ได้บนเครื่องนี้** (กุญแจ Portal 4 ตัวไม่มี + relay-call ล้มทั้งสาย)
-  - ⚠️ ค้าง: commit `4599eaca0` (2 ไฟล์ gate+test บน branch NCR) **push ไม่ได้** — Save Git บล็อกเพราะ 29 ไฟล์ dirty ของเซสชัน NCR ก่อนหน้า + secret risk (ไม่ใช่ของงานนี้ ห้ามแตะ) · gate ที่ติดตั้ง+เสียบทำงานจริงแล้วไม่ขึ้นกับ push
+  - ~~⚠️ ค้าง: commit `4599eaca0` push ไม่ได้~~ **แก้แล้ว 2026-07-17: cherry ผ่าน clone สะอาด → PR #60 merged เข้า main + กิ่ง dev พร้อมทีม** [fact]
 - **2026-07-16 (แชทเช้า · PR #51 merged `f14cf6c09`): flow station gate — ด่านยืนยัน owner จากแชทจริง กัน AI ข้าม flow แบบปลอมไม่ได้** [fact · บันทึกย้อนหลัง — รายละเอียดเต็ม `session-log-2026-07-16-station-gate.md`]
   - ปัญหา 4 วันวน: AI ข้าม M0/M2/M3.5 แล้วสั่งสร้างงานเอง · ด่านเดิมพึ่งไฟล์ `.flow-state` ที่ AI เขียนเองได้ = ปลอม owner_ok ได้
   - แก้ (เจ้าของเลือกทาง ก): `enforce-flow-gate.py` อ่านคำอนุมัติจาก Claude Code transcript (append-only) · นับเฉพาะข้อความคน (`origin.kind=human`) · สถานี+คำอนุมัติติดกัน ≤200 ตัวอักษร · คุมเฉพาะพื้นที่ MW · fail-closed

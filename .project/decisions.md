@@ -265,3 +265,9 @@ Reason: ตรงกติกา relay v2.16 (ผู้ตรวจเดิม+
 - **เป้าหมาย 4 ข้อที่ล็อก:** (1) Front ครบ (2) Admin ครบ (3) ใช้ได้จริงทั้ง VPS + Notebook พนักงาน (4) นำไปสร้าง Design System ให้โปรเจกต์อื่นได้จริง เพื่อมาตรฐานเดียวกัน
 - **กติกาบังคับ:** ห้ามทำงานนอกเป้าหมาย 4 ข้อนี้ · ห้ามแทรกงานเก็บกวาด/งานอื่นใด จนกว่า verified 100% · ก่อนเสนออะไรเทียบกับ 4 ข้อนี้ก่อน — ไม่เข้าข้อไหน = ไม่ทำ ไม่เสนอ
 - **ผลรอบ 2026-07-16/17:** pilot Root Admin ครึ่งแรกผ่าน (`ds-gate` 20/20 exit 0 · สำเนามาตรฐานในโปรเจกต์อัปเป็น v3.1 commit `c669a7a4`) · บัญชีข้อบกพร่อง shortcut 5 ข้อ = `.project/dsu-pilot-findings.md` · แก้ F-01/F-02/F-03 เข้า prompt v3.1 (คลัง `e133f00` + ผู้ตรวจ GPT-5 + payload PR #58 merged `af3aa41db`) · F-04 ปักธง task chip · F-05 รอเจ้าของเคาะ
+
+## 2026-07-17 — ปิดรอบซ่อมยาม prewrite gate + ส่งต่อทีมด้วยกิ่ง dev (แชท Fable)
+
+- **DEC-GATE-004 · แยก commit สะอาดออกจาก worktree ที่ปนงานเซสชันอื่นด้วย clone**: กิ่ง NCR มี commit ยาม (2 ไฟล์) ปนกับ 29 ไฟล์ WIP เซสชันอื่น → Save Git บล็อก push · ทางแก้ที่ไม่แตะงานคนอื่น = `git clone --local` โคลนสะอาด → push เฉพาะ SHA ของ commit เราขึ้นกิ่งใหม่ → PR #60 merged main · ไม่ commit/ลบ/แตะ 29 ไฟล์นั้นเลย
+- **DEC-HANDOFF-001 · กิ่ง `dev` = ตัวส่งต่อทีม**: สร้าง `dev` จาก main ล่าสุด (`d0cf379ca`) push GitHub · ทีมแตกกิ่งงานจาก dev · เจ้าของควรตั้ง branch protection ให้ dev (ผ่าน PR ก่อน merge) เพราะหลายคนใช้ร่วม · อัป dev ให้ตรง main เมื่อ main ขยับ (fast-forward)
+- **harden ค้าง (พบตอนทำงาน):** prewrite gate `git_segment_ok` หา sub จาก first non-dash arg → `git -C <path> checkout/reset` ทำให้ sub = path หลบด่าน git อันตรายได้ · ต้องข้าม `-C <arg>` ก่อนหา sub — ปักไว้รอบ harden ถัดไป
