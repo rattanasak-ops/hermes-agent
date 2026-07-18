@@ -26,7 +26,7 @@ This skill loads standard reusable prompts from HermesAgent. The v2 prompt files
 | `Use Flow Guardian` | `use-flow-guardian`, `Flow Guardian`, `Safe Flow`, `New Chat Gate`, `ใช้ Flow Guardian`, `ใช้ Safe Flow`, `เปิด Flow Guardian`, `ตรวจ worktree`, `กัน AI แก้งานทับกัน` | `references/use-flow-guardian.md` |
 | `Use New Chat` | `use-new-chat`, `Start New Chat`, `New Chat Startup`, `Initialize Hermes Agent chat`, `เริ่ม New Chat`, `เปิด New Chat`, `เริ่มแชทใหม่`, `เปิดแชทใหม่` | `references/use-new-chat.md` |
 | `Use Migrate Web` | `use-migrate-web`, `Migrate Web`, `migrate-web`, `ใช้ Migrate Web`, `ย้ายเว็บตาม Flow`, `ทำเว็บ 13 ขั้น`, `Flow ย้ายเว็บ` | `references/use-migrate-web.md` |
-| `Use Migrate 0` … `Use Migrate 13` (ชุดรายเฟส) | `use-migrate-0` … `use-migrate-13` — เลข N ใดก็ตามเปิดไฟล์ `references/use-migrate-<N>.md` ตรงตัว และต้องอ่าน `references/use-migrate-phase-contract.md` ก่อนเสมอ | `references/use-migrate-0.md` ถึง `references/use-migrate-13.md` |
+| `Use Migrate 0` … `Use Migrate 13` | `use-migrate-0` … `use-migrate-13`, `ใช้ Migrate <เลข>` | `references/use-migrate-<เลข>.md` + `references/use-migrate-phase-contract.md` |
 | `Use Close Chat` | `use-close-chat`, `Close Chat`, `close-chat`, `ใช้ Close Chat`, `ปิดแชท`, `ปิดงานแชท`, `จบแชท` | `references/use-close-chat.md` |
 | `Use Save Git` | `use-save-git`, `Save Git`, `save-git`, `Save Grid`, `save-grid`, `Use Save Grid`, `ใช้ Save Git`, `เซฟ Git`, `ก่อน push`, `ก่อน merge`, `ก่อน deploy`, `Git Safe Flow`, `GitLab Deploy Safe Flow`, `Use GitLab Deploy Safe Flow`, `Use Ship Gate` | `references/use-save-git.md` |
 | `Use Merge to Production` | `use-merge-to-production`, `Merge to Production`, `merge-to-production`, `ใช้ Merge to Production`, `ขึ้น production`, `deploy production`, `Ship to Production` | `references/use-merge-to-production.md` |
@@ -50,21 +50,22 @@ This skill loads standard reusable prompts from HermesAgent. The v2 prompt files
 
 When the user invokes a shortcut:
 
-1. Read `references/worktree-lifecycle-contract.md` first, then read the mapped prompt file in full.
+1. Read `references/work-execution-policy.md` first, then read the mapped prompt file in full. Read `references/worktree-lifecycle-contract.md` only when the owner explicitly asks to create, hand off, close, inspect, or clean up a Worktree.
 2. Apply the prompt to the user's current task or the task text that follows the shortcut.
 3. If the shortcut is invoked without a target task, ask what task the user wants to apply it to.
-4. Follow any safety or approval constraints inside the loaded prompt exactly. If an older prompt says to share one folder or forbids managed task worktrees, the Worktree Lifecycle Contract v1 takes precedence.
+4. Follow any safety or approval constraints inside the loaded prompt exactly. If an older prompt creates/switches a branch or Worktree, requires `NEW_CHAT_READY`/`WTL_READY`, or forces AI Relay, Work Execution Policy v2 takes precedence.
 
-## Worktree Lifecycle Gate (WTL v1)
+## Current Workspace Gate
 
-ทุก Shortcut ใช้สัญญา `references/worktree-lifecycle-contract.md` รุ่นเดียวกัน:
+ทุก Shortcut ใช้โหมด `CURRENT_WORKSPACE_ONLY` จาก `references/work-execution-policy.md` รุ่นเดียวกัน:
 
-- ก่อนเขียน: ต้องระบุ `project_id + task_id + staff_id + machine_id` และให้ `hermes worktree status` คืน `WTL_READY` สำหรับ task worktree ที่ตรงทะเบียน
-- หนึ่ง task มีผู้เขียนได้ครั้งละหนึ่งเครื่อง; ผู้ตรวจอ่านอย่างเดียว; การย้าย Notebook↔VPS ต้องผ่าน `handoff` และ `accept`
-- Shortcut ที่สร้าง/แก้ไฟล์ห้ามสร้าง worktree เอง ให้เรียก Worktree Manager; Shortcut ที่อ่านอย่างเดียวต้องรายงาน path/branch/SHA ที่ตรวจ
-- การปิดงานใช้ `close`; การลบใช้ `cleanup` เท่านั้น และต้องผ่าน 6/6 + dry-run + กักพัก 72 ชั่วโมง
-- worktree root เป็นพื้นที่ห้ามย้าย/ลบโดย `Use Move Folder`; การสำรวจของเดิมใช้ `hermes worktree scan` ซึ่งไม่เปลี่ยน Git
-- Decision token กลางคือ `WTL_READY`, `WTL_READ_ONLY`, `WTL_BLOCKED`, `WTL_HANDOFF_READY`, `WTL_CLEANUP_PROPOSED`, `WTL_CLEANUP_READY`, `WTL_ARCHIVED`
+- Shortcut ใช้เฉพาะ Git root และกิ่งที่แอปเปิดอยู่
+- Shortcut ห้ามสร้าง ลบ ย้าย หรือสลับ Worktree/กิ่ง และห้ามเรียก `hermes-new-chat open` หรือ `hermes worktree open`
+- ก่อนเขียนต้องตรวจ path/branch/SHA/dirty และต้องไม่ใช่กิ่งร่วม กิ่งใช้งานจริง หรือ detached HEAD
+- AI ในแอปปัจจุบันเขียนตรงได้; AI Relay เป็นทางเลือกเมื่อเจ้าของเรียกเท่านั้น
+- `.env`, `.hermes`, `.grok`, secret, การเขียนข้าม Git root และคำสั่งอันตรายยังถูกขวาง
+- Decision token กลางคือ `CURRENT_WORKSPACE_READY`, `CURRENT_WORKSPACE_READ_ONLY`, `CURRENT_WORKSPACE_BLOCKED`
+- Worktree Lifecycle v1 เป็นส่วนเสริมแบบสั่งตรงสำหรับ Worktree ที่มีอยู่หรือเมื่อเจ้าของสั่งจัดการ Worktree โดยชัดเจนเท่านั้น
 
 ## Important Behavior
 
@@ -77,9 +78,9 @@ For `Use Summary`, summarize and analyze user-provided links plus content, prese
 For `Use Scan Feature`, scan the real repository phase by phase, refuse to claim any feature without reading evidence, label every capability as real/partial/mock/planned/blocked/unknown, stop at every required gate, and produce only a Thai feature/capability extraction document. Do not create marketing, SWOT, pricing, GTM, or roadmap output under this shortcut.
 
 
-For `Use AI Pair`, default to the 3-AI pilot when context is sufficient: Claude plans/final-reviews, Codex writes, and Qwen reviews read-only. Do not stop by asking whether to create a brief or whether to proceed when the next safe step is obvious; create the coder brief, reviewer packet, and handoff immediately when file writes are allowed, or print them in chat when they are not. Ask only when the target repo/task/branch is unknowable, a risky write/deploy lacks approval, or a required secret/account/runtime is unavailable. Keep the reviewer read-only by default, route review through controlled diff/brief/evidence, and use GitLab Merge Request/CI as the final gate.
+For `Use AI Pair`, treat it as a compatibility alias for an explicitly requested multi-AI review. The AI in the current app may write directly in the current workspace when it is ready; AI Relay is optional and must not be introduced unless the owner requested another AI. Keep every reviewer read-only and use real tests/CI as the final evidence. No paired AI may create or switch a branch/Worktree.
 
-For `Use AI Relay`, load `references/use-ai-relay.md` and `references/ai-relay-catalog.md`. Honor the owner's mode from Use New Chat without asking twice: mode 1 assigns separate AIs to study/plan, production, and review; mode 2 uses a primary AI to produce the study/analysis output and a second AI to review it before acceptance. If no mode was supplied, use mode 1 and report that default instead of stopping for another confirmation. Every code call also requires a fresh task-scoped Write Permit from Use New Chat; never reuse one for a new request or expanded path set. The coder must run in the `WTL_READY` task worktree; reviewers stay read-only against the same path/SHA. Relay must never create, discard, or switch a worktree itself. Fable/Faber/Fiber 5 is removed from the active path. Use `relay-call --role review` for AI reviews so Codex is read-only, silence alone does not stop it, one compact retry stays under the same issue, retry suffixes cannot reset counters, and concurrent duplicate work returns `already_running`. The same reviewer plus review method may fail at most twice per root issue; after that split the findings and switch to deterministic gates or a different-vendor reviewer, never a third identical review. Use `gate-run` for real verification; never treat an AI claim or partial timeout output as verified without a gate row.
+For `Use AI Relay`, load `references/use-ai-relay.md` and `references/ai-relay-catalog.md`. Honor the owner's mode from Use New Chat without asking twice: mode 1 assigns separate AIs to study/plan, production, and review; mode 2 uses a primary AI to produce the study/analysis output and a second AI to review it before acceptance. If no mode was supplied, use mode 1 and report that default instead of stopping for another confirmation. Every code call is confined to the current Git root, current branch, and owner-approved path scope. Reviewers stay read-only against the same path/SHA. Relay must never create, discard, move, or switch a branch/Worktree, and it must not require a New Chat session. Fable/Faber/Fiber 5 is removed from the active path. Use `relay-call --role review` for AI reviews so Codex is read-only, silence alone does not stop it, one compact retry stays under the same issue, retry suffixes cannot reset counters, and concurrent duplicate work returns `already_running`. The same reviewer plus review method may fail at most twice per root issue; after that split the findings and switch to deterministic gates or a different-vendor reviewer, never a third identical review. Use `gate-run` for real verification; never treat an AI claim or partial timeout output as verified without a gate row.
 
 For `Use Business Plan`, review the owner's raw business/marketing/pitch/tender/website question before execution, choose the right business modules and expert roles, build phase and issue checklists, ask for missing inputs first, and do not create files or durable writes until approved.
 
@@ -95,9 +96,11 @@ For `Use Blog Auto`, extract useful work knowledge into a One Man Fleet blog rou
 
 For `Use WOW Resource`, read the mapped prompt, route through WOW System and Web Design Intelligence, select resources based on the project goal, reject mismatched/generic options, and transform the selected patterns into project-specific layout/design/script direction. Do not copy scripts or visual patterns directly.
 
-For `Use Flow Guardian`, apply Home OS Agent safe workflow before project work: resolve and report task, machine, registered worktree, branch, writer lease, runtime namespace, and dirty status. New writable work must go through Worktree Manager; do not create a branch/worktree directly. Require no-write audit, approval gates, verification, tracking, and handoff when applicable.
+For `Use Flow Guardian`, inspect and report the current folder, Git root, branch, SHA, dirty state, target paths, secret-path safety, and overlap risk. Return a current-workspace decision without creating, switching, moving, or deleting a branch/Worktree. Require no-write audit, approval gates, verification, tracking, and handoff when applicable.
 
-For `Use New Chat`, run the startup checklist plus AI Relay Startup and `hermes-hook-doctor` from a single invocation before any readiness response. The doctor must prove all four gates, including the New Chat/Relay pre-write gate. For new writable work, the Shortcut itself authorizes `hermes-new-chat open` to create the registered task worktree, branch, writer lease, permit, and Relay state without another confirmation; existing work uses `hermes-new-chat status`. Inspect task/machine/writer, branch, dirty status, local/remote/VPS equality, runtime, and Relay readiness from real commands. If no Relay mode was supplied, use mode 1 and report it. Re-check live WTL state before writes. Return a New Chat Startup Report with `NEW_CHAT_READY + WTL_READY + RELAY_REQUIRED`, not only "ready for commands".
+For `Use New Chat`, inspect only the workspace and branch already open in the app. Read project memory, branch, SHA, dirty state, target paths, and hook health, then return `CURRENT_WORKSPACE_READY`, `CURRENT_WORKSPACE_READ_ONLY`, or `CURRENT_WORKSPACE_BLOCKED`. It must never call `hermes-new-chat open`, create/switch a branch/Worktree, or treat the shortcut invocation as permission to do so. Report AI Relay as optional unless the owner invoked it explicitly.
+
+For `Use Migrate 0` through `Use Migrate 13`, read `references/use-migrate-phase-contract.md` and the exact numbered phase file. The owner advances phases by number. These phases still obey `CURRENT_WORKSPACE_ONLY`; they may lock a menu inside the current branch but may not create or switch a branch/Worktree.
 
 For `Use Close Chat`, run preview then close/write. Reuse a matching Save Git receipt instead of repeating heavy gates, but always run fresh Git status. Return CLOSED_CLEAN, CLOSED_WITH_PENDING, or NEED_OWNER_ACTION_BEFORE_CLOSE; it does not push, merge, or deploy.
 
@@ -105,7 +108,7 @@ For `Use Save Git` (including `Save Grid`), run the Git/GitLab/VPS gate only bef
 
 For `Use Merge to Production`, treat it as a merger-only production path. Confirm the caller and target are allowed, run the Save Git merge gate and ship gate, deploy only from the approved remote/branch, and stop on any unknown state.
 
-For `Use Continue`, continue autonomously through phases under one Phase Write Permit, make best-judgment choices when selection is needed, require each phase to reach verified 100%, and provide a final phase percentage table for review. Split work into `ZONE_A` (safe, reversible, inside the approved task/worktree scope; continue without per-issue approval) and `ZONE_B` (risky, scope-expanding, external, destructive, shipping, or identity-uncertain; gather into one phase-level approval request after Zone A). Treat `Go to Sleep` and sleep-related names only as legacy aliases for this same behavior.
+For `Use Continue`, continue autonomously through phases in the current workspace only, make best-judgment choices when selection is needed, require each phase to reach verified 100%, and provide a final phase percentage table for review. Split work into `ZONE_A` (safe, reversible, inside the approved current workspace and path scope; continue without per-issue approval) and `ZONE_B` (risky, scope-expanding, external, destructive, shipping, or identity-uncertain; gather into one phase-level approval request after Zone A). It must not create or switch a branch/Worktree. Treat `Go to Sleep` and sleep-related names only as legacy aliases for this same behavior.
 
 For `Use Move Folder`, load `references/use-move-folder.md`, then read the live VPS registry under `/home/linux-nat/.codex/use-move-folder/project-registry` before doing any cleanup, folder move, retention review, or disk-space work. Do not claim the shortcut is missing just because it is stored in Codex runtime state. Do not scan protected/no-touch roots or mutate anything unless the owner gives exact approval.
 
@@ -125,7 +128,7 @@ For `Use Hermes Structure`, route the owner to the Hermes standard workflow and 
 
 For `Use Create Content`, convert the current chat or source material into a privacy-reviewed Content Master draft, then hand off to Blog Auto or the content factory without publishing.
 
-For `Use QA QC` (or `Use QC QA`), open a two-axis quality-scan menu (project progress 25/50/75/100% × 16 check categories Q01-Q16, multi-select, Scan All last behind a confirm gate), run a cross-vendor scan pipeline (primary scanner + counter-scanner from a different vendor, fixer = third AI, reviewer ≠ fixer, verified = gate-run rows only), produce a severity table, then write `.project/qaqc-scan.md` before any fixes.
+For `Use QA QC` (or `Use QC QA`), open a two-axis quality-scan menu (project progress 25/50/75/100% × 16 check categories Q01-Q16, multi-select, Scan All last behind a confirm gate), run real project checks first, keep reviewer different from fixer when a reviewer is used, and never block direct fixes solely because AI Relay or another AI is unavailable. Only tool evidence counts as verified. Produce a severity table, then write `.project/qaqc-scan.md` before any fixes.
 
 For `Use SonarQube`, analyze an existing project with the owner's already-installed SonarQube instance. Read the project rules, detect its build system, verify server status and credentials without revealing secrets, run the matching scanner, confirm the server-side analysis through the API, and return a Thai report. Never install or upgrade the SonarQube server through this shortcut, and never change source code without separate owner approval.
 
@@ -140,6 +143,7 @@ For `Use SonarQube`, analyze an existing project with the owner's already-instal
 - `references/use-ai-pair.md`: full prompt for `Use AI Pair`.
 - `references/use-ai-relay.md`: full prompt for `Use AI Relay`.
 - `references/ai-relay-catalog.md`: AI Relay catalog and routing rules.
+- `references/work-execution-policy.md`: shared direct-write, optional-Relay, safety, and app-wiring policy.
 - `references/use-business-plan.md`: full prompt for `Use Business Plan`.
 - `references/use-saas-opus-master-prompt.md`: full prompt for `Use SaaS Opus Master Prompt`.
 - `references/use-viber-structure.md`: full prompt for `Use Viber Structure`.

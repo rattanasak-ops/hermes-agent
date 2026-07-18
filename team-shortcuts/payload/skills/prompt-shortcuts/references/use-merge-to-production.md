@@ -148,7 +148,7 @@ Owner action: deploy ได้ / ห้าม deploy เพราะ...
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · หลังยืนยัน merge SHA ให้ `hermes worktree close --merged --merge-sha ...`; จากนั้นสถานะมีสิทธิ์เข้า cleanup review แต่ยังห้ามลบจนผ่าน 6/6 + dry-run + quarantine
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ตรวจ Git root/branch/SHA ปัจจุบันก่อน merge · หลัง merge ให้รายงานหลักฐาน แต่ห้ามปิด ลบ หรือเก็บกวาด Worktree/กิ่งอัตโนมัติ
 
 ## Changelog
 

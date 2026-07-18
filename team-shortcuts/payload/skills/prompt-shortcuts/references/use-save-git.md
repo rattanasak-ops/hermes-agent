@@ -320,7 +320,7 @@ Owner action: ตัด local ได้
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · ก่อน commit/push ตรวจ `hermes worktree status` ว่า task/path/branch/writer ตรงทะเบียน และตรวจ unpushed/permit จริง · `WTL_BLOCKED` = ห้ามส่ง Git
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ก่อน commit/push ตรวจ Git root/branch/SHA/dirty/ขอบเขตจริง · `CURRENT_WORKSPACE_BLOCKED` = ห้ามส่ง Git · Shortcut ห้ามสร้างหรือสลับ Worktree/กิ่ง
 
 ## Changelog
 

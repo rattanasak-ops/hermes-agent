@@ -46,7 +46,8 @@ updated: 2026-07-17
 | `.project/spec/<plan_id>.md` (+ `_TEMPLATE.md`) | repo `.project/spec/` | **Act-As** (ร่าง draft) · Close (Spec Sync §1d) | New, Comply, Continue/Relay (plan-anchor ผนวกเข้าใบสั่งงาน) | **สเปคกลาง** (optional · capability-based §1d): โจทย์ WHAT/WHY + ขอบเขต + เกณฑ์ผ่าน + ตารางแม่ N/M ก่อนเขียนโค้ด · ไม่มีไฟล์ที่จับคู่แผน = ระบบเดินแบบเดิม |
 | session log | `$ROOT/projects/<project>/session-logs/YYYY-MM-DD-<staff>-<branch>.md` | Close | New | บันทึกเต็มรอบนั้น (รวม ledger จาก Continue) |
 | `latest-close.md` | `$ROOT/projects/<project>/` | Close | New | pointer ต่อ staff (§6) |
-| `.hermes/ai-relay/` + `.hermes/ledger/` | repo `.hermes/` | โค้ด (relay-call/gate-run) + Continue | relay-report, Close (ยก ledger เข้า session log) | ไฟล์เครื่องจักรล้วน: ตั้งค่าสายพาน · ledger · briefs |
+| `~/.hermes/ai-relay-tools/` | นอก repo | เครื่องมือ relay-call/gate-run | relay-report | การตั้งค่าและบัญชีเครื่องจักรอยู่นอกโปรเจกต์ · AI ห้ามเขียน `.hermes` ใน repo |
+| `.project/ledger/<branch>.md` | repo `.project/` | Continue | Close | หลักฐานคำสั่งที่ปิดบังข้อมูลลับและตามเข้า Git ได้ |
 | `AGENTS.md` / runbook | repo | คน/AI | New | บริบทถาวร |
 
 `$ROOT` = `$HERMES_OBSIDIAN_ROOT`: local `/Users/rattanasak/ObsidianVault/HermesAgent` · VPS `/home/linux-nat/ObsidianVault/HermesAgent`
@@ -176,7 +177,7 @@ Comply ใช้ 6 สถานะ · เวลา Close/New สรุปคว�
 | `ZONE_B` | dependency/config กว้าง/ข้าม ownership/push/tag/staging/API sandbox | รวมรายการและขอครั้งเดียวต่อ approval_phase · ยังต้องผ่านด่านจริง |
 | `ZONE_B` ขั้นวิกฤต | merge→main/deploy production/migration production/เงิน/ส่งข้อความภายนอก/secret/ลบถาวร | ขอคนเสมอ แยก Phase ชัดเจน |
 
-Phase Write Permit บังคับมี: `task_id / approval_phase / branch / base_sha / allowed_paths / owner_approval / claim_status`
+Current Workspace Permit บังคับมี: `approval_phase / git_root / branch / base_sha / allowed_paths / owner_approval / claim_status`
 
 - สิทธิ์หนึ่งชุดครอบทุก issue ใน Phase เดิม · ห้ามถามอนุมัติซ้ำราย issue
 - path/branch/SHA/ผลภายนอกเปลี่ยน = สิทธิ์หมดอายุและต้องจัด Phase ใหม่
@@ -187,7 +188,7 @@ Phase Write Permit บังคับมี: `task_id / approval_phase / branch 
 
 ## 13. Ledger (ใหม่ · กันงาน auto หายตอนปิด)
 
-- Continue เขียน append-only: `.hermes/ledger/<branch>.md` (เวลา/คำสั่ง/ด่าน/exit code/SHA/ผล · redact §7)
+- Continue เขียนต่อท้าย: `.project/ledger/<branch>.md` (เวลา/คำสั่ง/ด่าน/exit code/SHA/ผล · ปิดบังข้อมูลลับ §7)
 - ตอน Close: ยก ledger รอบนี้เข้า session log → ความจำเห็นว่า AI ทำอะไรเองไปบ้าง
 - ไม่มี ledger ทั้งที่มีการกระทำชั้น 3A = ถือว่างานนั้น **claimed** (ไม่มีหลักฐาน)
 

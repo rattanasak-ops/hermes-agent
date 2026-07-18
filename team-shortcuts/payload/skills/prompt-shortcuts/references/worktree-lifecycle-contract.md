@@ -11,21 +11,29 @@ tags:
   - team-workflow
   - notebook
   - vps
-status: draft-owner-approved
-version: "1.0.0"
-updated: 2026-07-14
+status: owner-approved
+version: "1.2.0"
+updated: 2026-07-18
 plan_id: WTL
 ---
 
-# Hermes Worktree Lifecycle Contract v1.0
+# Hermes Worktree Lifecycle Contract v1.2
 
-> สัญญากลางสำหรับทุก Shortcut และเครื่องมือที่สร้าง อ่าน เขียน ส่งต่อ ปิด หรือเก็บกวาด Git worktree บน Notebook และ VPS
+> สัญญาส่วนเสริมสำหรับคำสั่งที่เจ้าของใช้จัดการ Git worktree โดยตรงบน Notebook และ VPS
 >
-> หลักสูงสุด: หนึ่งโครงการมีพื้นที่หลักหนึ่งแห่ง · หนึ่งงานเขียนมี task worktree ของตัวเอง · หนึ่ง task มีเครื่องถือสิทธิ์เขียนได้ครั้งละหนึ่งเครื่อง
+> หลักสูงสุด: Shortcut ปกติใช้ `CURRENT_WORKSPACE_ONLY` ตาม `work-execution-policy.md` และห้ามสร้าง/สลับ Worktree/กิ่ง · สัญญานี้เริ่มทำงานเมื่อเจ้าของสั่งจัดการ Worktree โดยชัดเจนเท่านั้น
+
+## 0. เงื่อนไขการเรียกใช้
+
+- `Use New Chat`, `Use Continue`, `Use Flow Guardian` และ Shortcut อื่นไม่เรียกสัญญานี้โดยอัตโนมัติ
+- การเรียก Shortcut เพียงอย่างเดียวไม่ใช่สิทธิ์ให้ `open`, `handoff`, `close` หรือ `cleanup`
+- AI โหลดสัญญานี้เพิ่มเมื่อเจ้าของระบุคำว่า Worktree และสั่งสร้าง ตรวจ ส่งต่อ ปิด หรือเก็บกวาดโดยตรง
+- Worktree ที่มีอยู่แล้วและถูกเปิดเป็นพื้นที่ปัจจุบัน ใช้กฎ `CURRENT_WORKSPACE_ONLY` สำหรับงานทั่วไป
+- เมื่อเจ้าของสั่งจัดการ Worktree โดยตรง จึงใช้หลักเดิมว่า หนึ่งโครงการมีพื้นที่หลักหนึ่งแห่ง · หนึ่งงานเขียนมี task worktree ของตัวเอง · หนึ่ง task มีเครื่องถือสิทธิ์เขียนได้ครั้งละหนึ่งเครื่อง
 
 ## 1. ขอบเขตและแหล่งจริง
 
-สัญญานี้คุม:
+เมื่อถูกเรียกแบบสั่งตรง สัญญานี้คุม:
 
 - การตั้งชื่อและตำแหน่ง Worktree
 - การสร้าง branch และ Worktree ต่อ task
@@ -34,7 +42,7 @@ plan_id: WTL
 - พอร์ต คอนเทนเนอร์ ฐานข้อมูลทดสอบ ไฟล์ชั่วคราว และแฟ้มสะสม
 - การพัก ปิด รวมงาน กักพัก และเก็บกวาด
 - การวัดพื้นที่และ PDCA
-- Shortcut ทุกตัวที่อาจนำไปสู่การเขียนไฟล์
+- คำสั่ง Worktree ที่เจ้าของระบุโดยตรง
 
 ลำดับแหล่งจริง:
 
@@ -255,7 +263,7 @@ Worktree แยกไฟล์อย่างเดียวไม่พอ ง�
 | 85–89% | หยุดสร้าง Worktree ใหม่ เปิดได้เฉพาะ close/cleanup |
 | 90% ขึ้นไป | โหมดกู้พื้นที่ ห้ามเริ่มงานเขียนใหม่ |
 
-ค่าตั้งต้น: หนึ่งคนเปิด ACTIVE/PAUSED ได้ไม่เกิน 3 Worktree ต่อโครงการ เกินต้องมีเหตุผลและการอนุมัติในทะเบียน
+ค่าตั้งต้น: หนึ่งคนมีงาน `ACTIVE` ที่ถือ writer lease และยังไม่หมดอายุได้ไม่เกิน 3 งานต่อโครงการ เกินต้องมีเหตุผลและการอนุมัติในทะเบียน · `PAUSED`, `BLOCKED`, `IN_REVIEW`, `CLOSED`, `MERGED`, `QUARANTINED` และ `ARCHIVED` ไม่กินเพดานงานที่กำลังเขียน แม้โฟลเดอร์ Worktree ยังอยู่
 
 ## 11. Cleanup gate 6/6
 
@@ -329,9 +337,11 @@ hermes worktree doctor
 
 ## 14. การเชื่อม Shortcut
 
-### แก้พฤติกรรมหลัก
+ทุก Shortcut อ่าน `work-execution-policy.md` เป็นกฎหลัก ส่วนสัญญา Worktree นี้เป็นส่วนเสริมแบบสั่งตรงเท่านั้น AI ในแอปปัจจุบันเขียนตรงในพื้นที่ที่เปิดอยู่เมื่อ `CURRENT_WORKSPACE_READY` และ AI Relay เป็นทางเลือก
 
-Use New Chat, Use Flow Guardian, Use AI Relay, Use Continue, Use Close Chat, Review Chat, Use Save Git, Use Merge to Production, Use Move Folder, Use AI Pair
+### Shortcut ที่อาจรายงาน Worktree ที่เปิดอยู่
+
+Use New Chat, Use Flow Guardian, Use AI Relay, Use Continue, Use Close Chat, Review Chat, Use Save Git, Use Merge to Production, Use Move Folder, Use AI Pair, Use Migrate Web, Use Migrate 0 … Use Migrate 13
 
 ### เพิ่มจุดเชื่อม
 
@@ -341,11 +351,11 @@ Use Act-As, Use Comply, Use OverviewProgress, Use QA QC, Use SonarQube, Use Herm
 
 Use Summary, Use Scan Feature, Use Impeccable, Use Blog Auto, Use WOW Resource, Use Business Plan, Use SaaS Opus Master Prompt, Use BusinessPlan, Use FeatureSpec, Use DesignSystem, Use Create Design System, Use Create Content
 
-กฎกลางใน Prompt Shortcuts Skill: ถ้า Shortcut ใดกำลังจะเขียนไฟล์ ให้ตรวจ WTL ก่อน แม้ prompt ย่อยไม่ได้กล่าวถึง Worktree
+กฎกลางใน Prompt Shortcuts Skill: Shortcut ทั้งหมดห้ามสร้างหรือสลับ Worktree/กิ่ง งานทั่วไปตรวจพื้นที่ปัจจุบัน ไม่ตรวจ WTL เป็นเงื่อนไขบังคับ
 
 ### การเดินงาน 2 โซน
 
-เพื่อไม่ให้เจ้าของต้องกดอนุมัติซ้ำทุกขั้น งานที่มีแผนอนุมัติและ `WTL_READY` แล้วต้องถูกแบ่งเป็นสองโซน:
+เพื่อไม่ให้เจ้าของต้องกดอนุมัติซ้ำทุกขั้น งานที่มีแผนอนุมัติและ `CURRENT_WORKSPACE_READY` แล้วต้องถูกแบ่งเป็นสองโซน:
 
 **โซน A — AI ทำต่อเองจนจบเฟส**
 
@@ -357,7 +367,7 @@ Use Summary, Use Scan Feature, Use Impeccable, Use Blog Auto, Use WOW Resource, 
 
 **โซน B — รวบขออนุมัติระดับ Phase ครั้งเดียว**
 
-- เปิด task/Worktree ใหม่ หรือขยาย allowed paths/ownership จากที่อนุมัติ
+- จัดการ Worktree แบบสั่งตรง หรือขยาย allowed paths/ownership จากที่อนุมัติ
 - commit, push, tag, merge, deploy, production migration หรือเปิด scheduler/service จริง
 - ติดตั้ง dependency, เปลี่ยนสิทธิ์, ใช้เงิน, ติดต่อบุคคลภายนอก หรือแตะ secret
 - ย้าย ลบ กักพัก หรือเก็บกวาด Worktree/branch/cache ที่อาจเป็นงานของคนอื่น
@@ -368,10 +378,10 @@ Use Summary, Use Scan Feature, Use Impeccable, Use Blog Auto, Use WOW Resource, 
 ## 15. PDCA
 
 Plan:
-- สร้าง task id, path, branch, owner, machine, budget, cleanup criteria
+- ถ้าเจ้าของสั่งจัดการ Worktree ให้ระบุ task id, path, branch, owner, machine, budget, cleanup criteria
 
 Do:
-- เขียนใน task worktree และ runtime namespace ที่ได้รับเท่านั้น
+- จัดการเฉพาะ Worktree และ runtime namespace ที่เจ้าของระบุ
 
 Check:
 - ก่อนเขียนทุกครั้ง
@@ -399,7 +409,7 @@ Act:
 8. ลบด้วย `rm -rf`
 9. remote/registry ใช้ไม่ได้แต่พยายามสร้างหรือโอนงาน
 10. พื้นที่เครื่องถึง 85% แล้วยังเปิด Worktree ใหม่
-11. Shortcut เขียนไฟล์โดยไม่มี task/worktree/permit
+11. Shortcut สร้างหรือสลับ Worktree/กิ่งโดยไม่มีคำสั่งตรงจากเจ้าของ
 12. AI อ้างผ่านโดยไม่มีผลตัวตรวจ
 
 ## 17. เกณฑ์ประกาศใช้
@@ -408,7 +418,7 @@ Act:
 
 - ตัวตรวจสัญญาปฏิเสธเหตุการณ์เสีย 12/12
 - Worktree Manager ผ่านเหตุการณ์ทดสอบ WTL-P5 12/12
-- Shortcut visibility เห็นกฎ WTL 30/30
+- Shortcut visibility เห็นกฎ `CURRENT_WORKSPACE_ONLY` ครบ และไม่มี Shortcut สร้าง/สลับ Worktree/กิ่ง
 - Pilot Hermes Agent และโครงการไม่ใช้งานจริงลูกค้าผ่าน
 - Notebook และ VPS มีหลักฐาน route/registry/disk จริง
 - cleanup dry-run ไม่ลบไฟล์และแสดงผลกระทบครบ
@@ -436,3 +446,4 @@ Act:
 - [[skills/prompt-shortcuts/references/use-ai-relay|Use AI Relay]]
 - [[skills/prompt-shortcuts/references/use-close-chat|Use Close Chat]]
 - [[skills/prompt-shortcuts/references/use-save-git|Use Save Git]]
+- [[skills/prompt-shortcuts/references/work-execution-policy|Work Execution Policy]]

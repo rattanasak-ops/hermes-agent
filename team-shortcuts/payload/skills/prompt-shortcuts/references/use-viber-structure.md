@@ -245,7 +245,7 @@ Done = ?       : ต้องเห็นผลอะไรถึงนับว
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · โครง Viber ต้องมี registered roots, task worktree naming, lifecycle, single-writer handoff, runtime isolation, cleanup 6/6, tracking และ PDCA ตั้งแต่เริ่มโครงการ
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · โครง Viber ต้องประกาศพื้นที่และกิ่งที่เจ้าของเปิด, ขอบเขตไฟล์, ด่าน secret/คำสั่งอันตราย, tracking และ PDCA · ห้าม Shortcut สร้าง/สลับ Worktree/กิ่ง
 
 ## Graph Links
 

@@ -107,7 +107,7 @@ handoff.md ที่ root) → ทำ Migration ตาม Schema §1b (ยุบ
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · OverviewProgress ต้องเก็บ task/machine/worktree/branch/lifecycle/writer/cleanup และอ่านไฟล์แผน tracking ก่อนเสมอ เพื่อให้แชทถัดไปกลับพื้นที่เดิมได้
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · OverviewProgress เก็บ project/git root/branch/SHA/dirty/allowed paths และอ่านไฟล์แผนก่อนเสมอ เพื่อให้แชทถัดไปรู้ว่าต้องเปิดพื้นที่ใด โดย Shortcut ห้ามเปิดหรือสลับให้เอง
 
 ## Changelog
 

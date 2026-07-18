@@ -22,10 +22,10 @@ class ShortcutVisibilityTests(unittest.TestCase):
     def test_real_source_and_payload_pass(self):
         result = self.run_check(VAULT, PAYLOAD)
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertIn('"shortcut_visibility": "30/30"', result.stdout)
+        self.assertIn('"shortcut_visibility": "32/32"', result.stdout)
         self.assertIn('"direct_integrations": "18/18"', result.stdout)
 
-    def test_active_shared_folder_rule_is_blocked(self):
+    def test_shortcut_auto_open_rule_is_blocked(self):
         with tempfile.TemporaryDirectory() as folder:
             fake = Path(folder) / "vault"
             (fake / "skills" / "prompt-shortcuts" / "references").mkdir(parents=True)
@@ -37,7 +37,9 @@ class ShortcutVisibilityTests(unittest.TestCase):
             target = fake / "skills" / "prompt-shortcuts" / "references" / "use-new-chat.md"
             target.write_text(
                 target.read_text(encoding="utf-8").replace(
-                    "## Worktree Lifecycle v1", "หลาย Cursor/AI ใช้โฟลเดอร์เดียวกันได้\n\n## Worktree Lifecycle v1", 1,
+                    "## Worktree แบบสั่งตรงเท่านั้น",
+                    "งานเขียนใหม่ต้องเรียก `hermes-new-chat open`\n\n## Worktree แบบสั่งตรงเท่านั้น",
+                    1,
                 ),
                 encoding="utf-8",
             )

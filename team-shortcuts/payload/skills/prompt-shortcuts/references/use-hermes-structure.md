@@ -61,7 +61,7 @@ Use Hermes Structure
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · การติดตั้ง/อัปเดตมาตรฐาน Hermes ต้องติดตั้ง contract, Manager route, registry path, tracking และคำสั่งตรวจ Notebook/VPS รุ่นเดียวกัน
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · การติดตั้ง/อัปเดตมาตรฐาน Hermes ต้องใช้ `CURRENT_WORKSPACE_ONLY` และด่าน branch/path/secret/คำสั่งอันตรายรุ่นเดียวกันทุกแอป · Worktree Manager เป็นเครื่องมือสั่งตรง ไม่ใช่ด่านบังคับของ Shortcut
 
 ## Changelog
 

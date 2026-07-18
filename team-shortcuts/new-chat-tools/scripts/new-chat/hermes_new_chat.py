@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Open or resume a writable task with Worktree + permit + Relay state."""
+"""Explicit owner command for a managed Worktree; shortcuts never call it."""
 
 from __future__ import annotations
 
@@ -66,6 +66,8 @@ def open_task(args: argparse.Namespace) -> dict:
         command += ["--machine-id", args.machine_id]
     if args.registry:
         command += ["--registry", args.registry]
+    if args.allow_over_limit:
+        command += ["--allow-over-limit"]
     opened = run_json(command, env)
     task = opened["task"]
     worktree = Path(task["worktree_path"]).resolve()
@@ -80,7 +82,8 @@ def open_task(args: argparse.Namespace) -> dict:
     permit_data = run_json(permit, env)
     state = {
         "schema": "hermes-new-chat-v1", "status": "NEW_CHAT_READY", "wtl": "WTL_READY",
-        "relay": "RELAY_REQUIRED", "task_id": args.task_id, "project": args.project,
+        "direct_write": "DIRECT_WRITE_READY", "relay": "OPTIONAL",
+        "task_id": args.task_id, "project": args.project,
         "staff_id": args.staff_id, "machine_id": task.get("machine_id"),
         "canonical_repo": str(Path(args.repo).expanduser().resolve()), "worktree": str(worktree),
         "branch": task["branch"], "base_sha": base_sha, "allowed_paths": sorted(set(args.allowed_path)),
@@ -106,6 +109,8 @@ def status_task(args: argparse.Namespace) -> dict:
     live = run_json(command, env)
     state["wtl"] = live["decision"]
     state["status"] = "NEW_CHAT_READY" if live["decision"] == "WTL_READY" else "NEW_CHAT_BLOCKED"
+    state["direct_write"] = "DIRECT_WRITE_READY" if live["decision"] == "WTL_READY" else "DIRECT_WRITE_BLOCKED"
+    state["relay"] = "OPTIONAL"
     return state
 
 
@@ -120,6 +125,7 @@ def main() -> int:
     opened.add_argument("--machine-id")
     opened.add_argument("--base-branch", default="main")
     opened.add_argument("--lease-hours", type=int, default=12)
+    opened.add_argument("--allow-over-limit", action="store_true")
     opened.add_argument("--allowed-path", action="append", default=[])
     status = subs.add_parser("status")
     status.add_argument("--task-id", required=True)

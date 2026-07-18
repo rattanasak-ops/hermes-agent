@@ -164,7 +164,7 @@ Use SonarQube กับโปรเจกต์นี้
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · ผูกผล SonarQube กับ `task_id + worktree path + branch + commit SHA`; scan เป็น read-only ส่วนการแก้ finding ต้องเปิด/ใช้ task worktree ที่ `WTL_READY`
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ผูกผล SonarQube กับ `git root + branch + commit SHA`; scan เป็น read-only ส่วนการแก้ finding ใช้พื้นที่ปัจจุบันเมื่อ `CURRENT_WORKSPACE_READY` · ห้ามสร้าง/สลับ Worktree/กิ่ง
 
 ## กรณีที่ต้องหยุด
 

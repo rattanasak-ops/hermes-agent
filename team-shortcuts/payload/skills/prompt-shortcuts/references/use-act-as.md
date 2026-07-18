@@ -70,7 +70,7 @@ Use Act-As กับงานนี้
 4. แบ่งงานตามถนัด — ไม่ให้ทุก role ทำทุกอย่าง / ระบุคนตรวจงาน role อื่น / ระบุคนตัดสินใจขั้นสุดท้าย
 
 5. ทำแผนเป็นเฟส (2-5 เฟส · ใช้ id ร่วม) — แต่ละเฟสมี `phase_id` (P1,P2…) / เป้าหมาย / role / งานย่อย / output / จุดที่ต้องรีวิว / ความเสี่ยง
-   - [ใหม่] วางแผน branch/worktree: ฟีเจอร์ใหม่ → ระบุว่าต้องสร้าง `worktree/<staff>/<slug>` ของใคร (ผูก New Feature Branch Gate ของ New Chat) · งานต่อเดิม → อ้าง branch/PR เดิมพร้อมหลักฐาน
+   - [พื้นที่ทำงาน] อ้าง Git root/branch/SHA ที่เจ้าของเปิดอยู่พร้อมหลักฐาน · ถ้าพื้นที่ไม่ตรงให้บล็อกและรายงาน ห้ามสร้างหรือสลับ Worktree/กิ่ง
    - [ใหม่] จุด verify ของแต่ละเฟสต้องอิงบันไดหลักฐาน Schema §4 (เช่น "เฟสนี้ verified เมื่อ: test เขียว + commit SHA") ไม่ใช่ "ทำเสร็จ" ลอย ๆ
 
 6. ก่อนลงมือจริง
@@ -100,7 +100,7 @@ Use Act-As กับงานนี้
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · แผนที่มีการเขียนต้องประกาศ `project/task/staff/machine/worktree` และแบ่งบทบาท writer หนึ่งตัว + reviewer read-only; ยังไม่เปิด Worktree จนเจ้าของอนุมัติแผน
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · แผนที่มีการเขียนต้องประกาศ `project/git_root/branch/base_sha/allowed_paths` และแบ่งบทบาทผู้เขียนหนึ่งตัว + ผู้ตรวจอ่านอย่างเดียว · ห้ามสร้างหรือสลับ Worktree/กิ่ง
 
 ## Changelog
 
