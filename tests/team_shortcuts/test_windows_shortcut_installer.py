@@ -19,6 +19,15 @@ def test_windows_powershell_installer_is_shipped_with_the_payload():
     assert 'Copy-Item -LiteralPath $VersionFile' in text
     assert 'Join-Path $PayloadRoot "skills\\agent-center"' in text
     assert 'Join-Path $ScriptRoot "..\\plugins\\agent_center"' in text
+    assert '$HermesAgentSkillDestination = Join-Path $HermesHome "skills\\agent-center"' in text
+    assert 'Copy-Item -LiteralPath $AgentSkillSource -Destination $HermesAgentSkillDestination' in text
+    assert 'Assert-File (Join-Path $HermesAgentSkillDestination "SKILL.md")' in text
+    assert "[switch]$Force" in text
+    assert "Add-NewerTreeConflicts $AgentSkillSource $CodexAgentPointer" in text
+    assert "พบไฟล์ปลายทางใหม่กว่าชุดติดตั้ง" in text
+    assert "มีเฉพาะปลายทาง" in text
+    assert "Get-ChildItem -LiteralPath $Destination -File -Recurse" in text
+    assert 'Copy-BackupDirectory $CodexAgentPointer (Join-Path $backupRoot "codex-skills\\agent-center")' in text
 
 
 def test_windows_installer_connects_codex_app_and_cursor_with_windows_pointers():
