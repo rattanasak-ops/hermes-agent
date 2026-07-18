@@ -14,7 +14,7 @@ tags:
   - lifecycle
 status: active
 version: "1.2"
-updated: 2026-07-05
+updated: 2026-07-17
 ---
 
 # Memory Schema v1.2 (สัญญากลางของทั้งระบบ · 2026-07-05)
@@ -43,6 +43,7 @@ updated: 2026-07-05
 | `.project/OverviewProgress.md` | repo `.project/` | Close | New, Act-As, Comply, Continue | ภาพรวม + สถานะล่าสุด + งานกำลังทำ/ค้าง + ส่งต่อ (ยุบ `handoff.md` + `active.md` เดิมเข้าไฟล์นี้ไฟล์เดียว) + pointer ไป session log |
 | `.project/plan.md` | repo `.project/` | **Act-As** | **Comply, Continue**, New | แผนเฟส+id ที่อนุมัติแล้ว (§9–§10) |
 | `.project/decisions.md` | repo `.project/` | Close (**append**) | New, **Act-As**, Continue | log การตัดสินใจสะสม |
+| `.project/spec/<plan_id>.md` (+ `_TEMPLATE.md`) | repo `.project/spec/` | **Act-As** (ร่าง draft) · Close (Spec Sync §1d) | New, Comply, Continue/Relay (plan-anchor ผนวกเข้าใบสั่งงาน) | **สเปคกลาง** (optional · capability-based §1d): โจทย์ WHAT/WHY + ขอบเขต + เกณฑ์ผ่าน + ตารางแม่ N/M ก่อนเขียนโค้ด · ไม่มีไฟล์ที่จับคู่แผน = ระบบเดินแบบเดิม |
 | session log | `$ROOT/projects/<project>/session-logs/YYYY-MM-DD-<staff>-<branch>.md` | Close | New | บันทึกเต็มรอบนั้น (รวม ledger จาก Continue) |
 | `latest-close.md` | `$ROOT/projects/<project>/` | Close | New | pointer ต่อ staff (§6) |
 | `.hermes/ai-relay/` + `.hermes/ledger/` | repo `.hermes/` | โค้ด (relay-call/gate-run) + Continue | relay-report, Close (ยก ledger เข้า session log) | ไฟล์เครื่องจักรล้วน: ตั้งค่าสายพาน · ledger · briefs |
@@ -75,6 +76,15 @@ updated: 2026-07-05
 (ถัดลงไปเป็นภาพรวมโปรเจกต์ + ประวัติ — ยาวได้ไม่จำกัด)
 
 > Close ต้องอัปเดต 4 หัวข้อบนนี้ **ทุกครั้ง** ก่อนเขียนอย่างอื่น · ไฟล์นี้คือแหล่งจริงของสถานะ — session log ฝั่ง vault เป็นสำเนาละเอียด ไม่ใช่แหล่งจริง (ถ้าขัดกัน เชื่อ `.project/` + git)
+
+### 1d. สเปคกลาง `.project/spec/` (spec addendum 2026-07-17 · optional · capability-based)
+
+กติกากลางด่านเดียว — ทุก shortcut ที่แตะสเปคใช้กฎชุดนี้ ห้ามตีความเอง:
+
+- **จับคู่สเปคกับแผนด้วยชื่อไฟล์เท่านั้น**: สเปคของแผน = `.project/spec/<plan_id>.md` · ไม่มีไฟล์ที่จับคู่แผน active = ใช้ระบบเดิมทุกอย่าง (มีแค่โฟลเดอร์ `spec/` เฉย ๆ ไม่นับ — กันบล็อกผิดกับโปรเจกต์เก่า 30-40 ตัว)
+- **สถานะคุมงานโค้ด**: `draft` = ห้ามเริ่มงานโค้ดใต้แผนนั้น · `approved` / `building` = ทำและรวมโค้ดได้ · `done` = รวมได้เฉพาะงานที่ไม่เพิ่มพฤติกรรมใหม่ — งานพฤติกรรมใหม่หลัง `done` ต้องให้เจ้าของสั่งเปิดสเปคกลับ `building` หรือออกสเปคใหม่ก่อน
+- **`owner_approved: true` เปลี่ยนได้เมื่อเจ้าของพิมพ์อนุมัติสเปคเองเท่านั้น** (คนละเรื่องกับอนุมัติแผน — อนุมัติแผนไม่ทำให้สเปค approved อัตโนมัติ) · ต้องจดหลักฐานลงไฟล์สเปค: วันเวลา + ข้อความอนุมัติที่เจ้าของพิมพ์จริง · AI ติ๊กเอง = ละเมิด `DEC-040`
+- **ตารางแม่ G#** ติ๊กได้เฉพาะแถวที่ verified ตามบันได §4 (มีหลักฐาน/แถว gate-run) · สถานะ `done` ใช้ได้ต่อเมื่อตารางแม่ครบ N/N เท่านั้น
 
 ## 2. Decision Token (Close เขียน → ทุกตัวอ่านก่อนทำงาน)
 
@@ -183,6 +193,7 @@ Phase Write Permit บังคับมี: `task_id / approval_phase / branch 
 
 ## Changelog
 
+- v1.2 spec addendum (2026-07-17): เพิ่มสเปคกลาง SPEC-CENTRAL แบบ optional/capability-based — แถว `.project/spec/<plan_id>.md` ใน §1 + กติกากลาง §1d (จับคู่สเปคกับแผนด้วยชื่อไฟล์ · draft ห้ามโค้ด · approved/building ทำได้ · done ห้ามพฤติกรรมใหม่ · owner_approved เจ้าของพิมพ์เองเท่านั้น + จดหลักฐาน · ตารางแม่ติ๊กเฉพาะ verified) · ไม่กระทบ version lock §8 เพราะโปรเจกต์ไม่มีสเปคทำงานเหมือนเดิม 100% · ผ่านตรวจข้ามค่าย GPT (fix-then-proceed → แก้ครบ 3 จุด: กัน AI ติ๊กอนุมัติเอง / จับคู่ด้วยชื่อไฟล์กัน false-block / done แคบลง)
 - v1.2 autonomy addendum (2026-07-14): เปลี่ยนการขอสิทธิ์ราย issue เป็น Two-Zone + Phase Write Permit · Zone A ทำต่อเองทั้ง Phase · Zone B ขอครั้งเดียวต่อ Phase · production/เงิน/secret/ลบถาวรยังขอคนเสมอ
 - v1.2 (2026-07-05): **ย้ายความจำที่ใช้ทำงานต่อไป `.project/` ที่เดียว** ตามคำสั่งเจ้าของ (ปฐมเหตุ: AI อ่านไม่ครบ 2 โฟลเดอร์แล้วทำงานมั่วซ้ำหลาย project · เคสหนักสุด: สร้าง UI ใหม่ทับ wireframe ที่ล็อกแล้วใน EA Farm) · `.project/plan.md` (เดิม `.hermes/plan.md`) · `.project/OverviewProgress.md` ยุบ handoff+active + โครงบังคับ 4 หัวข้อบนสุด + ป้ายเวอร์ชันบรรทัดแรก (§1c) · `.project/decisions.md` (เดิม `.hermes/decisions.md`) · กติกาย้ายของเก่า "อ่านได้สองที่ เขียนที่ใหม่เท่านั้น + stub ห้ามลบ" (§1b) · schema ไม่ตรง = ห้ามเขียนความจำ (§8) · ผ่านตรวจข้ามค่าย Grok+Codex 2026-07-05
 - v1.1 (2026-06-26): ขยายจากคุม New/Close เป็นคุมทั้ง 6 ตัว · เพิ่มไฟล์ `.hermes/plan.md` (Act-As เขียน) · §9 Lifecycle · §10 Shared ID · §11 Status Mapping · §12 Autonomy Policy (ค่าตั้งต้นปิด auto prod) · §13 Ledger · ขยาย version lock เป็น 6 ตัว
