@@ -342,7 +342,7 @@
 - S1 (SPEC-P6) เป็น security enforcement gate ที่คุมการเขียนทั้งหมด → ห้ามรีบ · ต้องเทสทุกช่องเขียน + adversarial ก่อนประกาศใช้ (บทเรียนจากด่าน prewrite เดิม)
 - ไฟล์คลัง Obsidian นอก repo นี้ (เจ้าของ push เอง)
 
-+# Plan — UAG · ศูนย์รวมทีม AI ประจำบริษัท "Use Agent" (Agent Center) — เฟส 1
+# Plan — UAG · ศูนย์รวมทีม AI ประจำบริษัท "Use Agent" (Agent Center) — เฟส 1
 
 > memory-schema: v1.2 · **plan_id: UAG** · เจ้าของอนุมัติ **ทิศทาง + แผนที่ Agent v0.1** แล้ว · สเปคเทคนิค (`.project/spec/UAG.md`) **approved เมื่อ 2026-07-18 — เจ้าของเคาะแยกแล้ว → เริ่ม UAG-P2 ได้**
 > ทีมออกแบบ: Codex เสนอสถาปัตยกรรม · Opus ตรวจข้าม (ได้ `partial-agree` + 3 กันชน) — บันทึกไว้ใน spec ข้อ overlap
@@ -390,10 +390,9 @@
   - จุดที่ปรับจาก pilot: ชื่อหัวหน้าสายวิศวกรรมจริงคือ `application-engineering-lead`; เพิ่มการทดสอบล็อกชื่อนี้แล้วเพื่อกันการเดาจากความจำ
   - หลักฐานด่าน: `UAG-P4-I1` คืน exit 0 และชุด UAG ผ่าน 125/125
 
-## UAG-P5 — ปิดงาน · สถานะ: **งานในเครื่องผ่าน 4/5 · commit 1/1 · push/PR BLOCKED 0/2**
+## UAG-P5 — ปิดงาน · สถานะ: **งานในเครื่องผ่าน 4/5 · เจ้าของอนุมัติ Git แล้ว · กำลังทำ 1/5**
 - รีวิวขอบเขต UAG · ด่าน UAG ผ่าน 125/125 · ชุดซ่อมด่านผ่าน 83/83 · Skill valid 1/1 · Ruff ผ่าน · `git diff --check` ผ่าน
 - เจ้าของอนุมัติ Git เมื่อ 2026-07-18 · ให้เลือกเฉพาะไฟล์ UAG-P1..P4 กับตัวด่าน และกันไฟล์ UAG-P0 ออก 2/2 ไฟล์
-- commit เนื้องานสำเร็จที่ `be72f338f` · `save-git --stage local --json` คืน `BLOCKED_DO_NOT_MERGE`: worktree ค้าง UAG-P0 2 ไฟล์ และคำสั่งตรวจ `relay-call.py` ล้มบน Python 3.9.6 · จึงยังไม่ push/เปิด PR
 - **push/merge = เจ้าของอนุมัติชัดเจนเท่านั้น**
 
 ## งานคน (เจ้าของ)
