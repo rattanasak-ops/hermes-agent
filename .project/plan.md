@@ -52,16 +52,16 @@
 ## BRM-P5 — ส่งเข้า main และจัดคิวเก็บสาขา · สถานะ: P5-I1 + P5-I2 เสร็จ · P5-I3 รอกัก 72 ชั่วโมง
 
 - **BRM-P5-I1** เสร็จ · `git diff --check` ผ่าน · worktree สะอาด · ชุดทดสอบเฉพาะงานผ่าน **146/146** หลังรวมฐานล่าสุด · ตรวจขอบเขตไม่รวม `cd8e8a622` และไม่แตะ secret
-- **BRM-P5-I2** เสร็จ · รวมฐาน `origin/main` ผ่าน conflict resolution ใน `c076984d0` แล้วเลื่อน local `main` แบบ fast-forward ไปยัง SHA เดียวกัน · ไม่ push ขึ้นเครือข่าย
+- **BRM-P5-I2** เสร็จ · รวมฐาน `origin/main` ผ่าน conflict resolution ใน `c076984d0` แล้วเลื่อน `main` แบบเดินหน้าอย่างเดียว · push สาขางานและ `main` ขึ้น `origin` สำเร็จที่ SHA `0bd4b03d1`
 - **BRM-P5-I3** เริ่มแล้ว · เก็บ branch/worktree ไว้ก่อนตามกฎ WTL · ทำ dry-run รายการ cleanup แล้ว และเริ่มช่วงกัก 72 ชั่วโมงก่อนค่อยลบ
 - zone: B · external_effect: push/merge/cleanup · verify: SHA ตรง origin + closeout ผ่าน + cleanup 6/6
 
 ### BRM-P5 closeout evidence · 2026-07-18
 
-- `main` และ BRM worktree ชี้ SHA เดียวกัน: `c076984d0b63262c5eb13f43914ea3962df7dc31`
+- `main`, BRM worktree และ `origin/main` ชี้ SHA เดียวกัน: `0bd4b03d146a6f3f9055b7f48fc30125a5743100`
 - สาขางานนำ `origin/main` ปัจจุบัน 12 commit (รวม merge commit) และไม่มีไฟล์ค้าง
 - ทดสอบหลังรวมฐาน: `146 passed in 3.27s`
-- ด่าน Save Git อัตโนมัติไม่รับรอบนี้เพราะเพดานเดิม 5 commit/30 ไฟล์และคำสั่งทดสอบเต็มใช้ `-n` ที่เครื่องนี้ไม่รองรับ; จึงใช้ผลทดสอบตามขอบเขตและ Git จริงตาม owner execution override
+- ด่าน Save Git อัตโนมัติบล็อกรอบแรกเพราะเพดานเดิม 5 commit/30 ไฟล์และคำสั่งทดสอบเต็มใช้ `-n` ที่เครื่องนี้ไม่รองรับ; หลังตรวจผลทดสอบตามขอบเขตและ Git จริงแล้ว เจ้าของสั่ง commit/push/merge จึงส่งด้วย `--no-verify`
 
 ## ข้อห้ามเฉพาะ BRM
 

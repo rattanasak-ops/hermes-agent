@@ -6,7 +6,7 @@
 
 ## สถานะล่าสุด
 - **2026-07-18 (BRM-P5): รวมงานสาขาที่ตรวจแล้วกลับ `main` สำเร็จ** [fact]
-  - ฐานล่าสุด `origin/main` ถูกผนวกใน commit `c076984d0` และ local `main` เลื่อนแบบ fast-forward ไป SHA เดียวกัน · ไม่ push ขึ้นเครือข่าย
+  - ฐานล่าสุด `origin/main` ถูกผนวกใน commit `c076984d0` และ `main` เลื่อนแบบเดินหน้าอย่างเดียว · push สาขางานและ `main` ขึ้น `origin` สำเร็จที่ SHA `0bd4b03d1`
   - ชุดทดสอบเฉพาะงานหลังรวมฐานผ่าน **146/146** · `git diff --check` ผ่าน · worktree สะอาด
   - branch/worktree ยังเก็บไว้ในช่วงกัก 72 ชั่วโมงตามกฎ WTL; ยังไม่ลบสิ่งใด
 - **2026-07-18 (BRM · ตรวจสาขา Fable/NCR): ล็อกกฎปัจจุบันว่า AI ทุกตัวผ่าน AI Portal; ไม่รวม commit ความจำ Fable local-only และไม่ย้าย local fallback จาก NCR** [fact · `DEC-AIR-001` · รายละเอียด `session-log-2026-07-18-ai-portal-routing.md`]
