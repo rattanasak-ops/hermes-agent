@@ -138,6 +138,10 @@ def test_secret_and_control_paths_are_blocked(workspace, target):
         "git checkout -b task/nat/new",
         "git worktree add /tmp/new -b task/nat/new",
         "git worktree remove /tmp/new",
+        "hermes-new-chat open --project hermes-agent --staff-id nat --task-id T --slug t --repo /tmp --approval ok",
+        "hermes-worktree open --project-id hermes-agent --staff-id nat --task-id T --slug t --repo /tmp --apply",
+        "hermes worktree open --project-id hermes-agent --staff-id nat --task-id T --slug t --repo /tmp --apply",
+        "hermes-worktree close --task-id T --merged --merge-sha abc123 --json",
         "git reset --hard HEAD~1",
         "git clean -fd",
         "git stash clear",
@@ -304,6 +308,11 @@ def test_owner_cannot_authorize_protected_branch_name(workspace):
 
 def test_git_worktree_list_is_read_only_and_allowed(workspace):
     assert GATE.run(payload(workspace, "Bash", {"command": "git worktree list --porcelain"})) == 0
+
+
+def test_read_only_hermes_workspace_status_commands_are_allowed(workspace):
+    assert GATE.run(payload(workspace, "Bash", {"command": "hermes-new-chat status --task-id T"})) == 0
+    assert GATE.run(payload(workspace, "Bash", {"command": "hermes-worktree status --task-id T --json"})) == 0
 
 
 def test_reading_hook_is_allowed_but_writing_hook_is_blocked(workspace):
