@@ -1,6 +1,6 @@
 ---
 name: prompt-shortcuts
-description: Use this skill when the user invokes any reusable prompt shortcut from HermesAgent, including "Use Act-As", "Use Comply", "Use Summary", "Use Scan Feature", "Use AI Relay", "Use Viber Structure", "Use Viber Audit", "Use Impeccable", "Use Blog Auto", "Use WOW Resource", "Use Flow Guardian", "Use New Chat", "Use Migrate Web", "Use Close Chat", "Use Save Git", "Use Merge to Production", "Use Continue", "Use Move Folder", "Review Chat", "Use AI Pair", "Use Business Plan", "Use SaaS Opus Master Prompt", "Use BusinessPlan", "Use OverviewProgress", "Use FeatureSpec", "Use DesignSystem", "Use Create Design System", "Use Hermes Structure", "Use Create Content", "Use SonarQube", or Thai/alias variants such as "ใช้ AI Relay", "ปิดแชท", "เซฟ Git", "ทำต่อ", "รีวิวแชท", "สร้างคอนเทนต์จากแชท", "สร้างไฟล์ภาพรวมงาน", and "สแกน SonarQube".
+description: Use this skill when the user invokes any reusable prompt shortcut from HermesAgent, including "Use Act-As", "Use Comply", "Use Summary", "Use Scan Feature", "Use AI Relay", "Use Agent", "Use Viber Structure", "Use Viber Audit", "Use Impeccable", "Use Blog Auto", "Use WOW Resource", "Use Flow Guardian", "Use New Chat", "Use Migrate Web", "Use Close Chat", "Use Save Git", "Use Merge to Production", "Use Continue", "Use Move Folder", "Review Chat", "Use AI Pair", "Use Business Plan", "Use SaaS Opus Master Prompt", "Use BusinessPlan", "Use OverviewProgress", "Use FeatureSpec", "Use DesignSystem", "Use Create Design System", "Use Hermes Structure", "Use Create Content", "Use SonarQube", or Thai/alias variants such as "ใช้ AI Relay", "จัดทีม AI", "ปิดแชท", "เซฟ Git", "ทำต่อ", "รีวิวแชท", "สร้างคอนเทนต์จากแชท", "สร้างไฟล์ภาพรวมงาน", and "สแกน SonarQube".
 metadata:
   short-description: Reusable prompt shortcut loader
 ---
@@ -18,6 +18,7 @@ This skill loads standard reusable prompts from HermesAgent. The v2 prompt files
 | `Use Summary` | `use-summary`, `Summary`, `summary`, `ใช้ Summary`, `สรุป`, `สรุปลิงก์`, `วิเคราะห์บทความ`, `สรุปข้อมูล` | `references/use-summary.md` |
 | `Use Scan Feature` | `use-scan-feature`, `Scan Feature`, `scan-feature`, `สแกนฟีเจอร์`, `ตรวจฟีเจอร์`, `บัญชีฟีเจอร์` | `references/use-scan-feature.md` |
 | `Use AI Relay` | `use-ai-relay`, `AI Relay`, `ai-relay`, `ใช้ AI Relay`, `สายพาน AI`, `สายพานส่งต่องาน AI`, `Claude วางแผน Grok โค้ด`, `ให้ AI ตัวอื่นโค้ดแล้ว Claude ตรวจ` | `references/use-ai-relay.md` |
+| `Use Agent` | `use-agent`, `ใช้ Agent`, `จัดทีม AI`, `เลือกทีม AI` | `references/use-agent.md` |
 | `Use Viber Structure` | `use-viber-structure`, `Viber Structure`, `viber-structure`, `ใช้ Viber Structure`, `โครงสร้าง Viber`, `วางโครงสร้าง Viber Code`, `วางแผน Viber Code`, `Vibe Code Enterprise` | `references/use-viber-structure.md` |
 | `Use Viber Audit` | `use-viber-audit`, `Viber Audit`, `viber-audit`, `Use Viber Standard Audit`, `Use Viber Compliance`, `ใช้ Viber Audit`, `ตรวจ Viber Standard`, `ตรวจ Viber Enterprise`, `ตรวจมาตรฐาน Viber`, `Viber Enterprise Standard` | `references/use-viber-audit.md` |
 | `Use Impeccable` | `use-impeccable`, `Impeccable`, `ใช้ Impeccable`, `ตรวจ UI Slop`, `แก้ AI Slop` | `references/use-impeccable.md` |
@@ -83,6 +84,8 @@ For `Use AI Pair`, treat it as a compatibility alias for an explicitly requested
 
 For `Use AI Relay`, load `references/use-ai-relay.md` and `references/ai-relay-catalog.md`. Honor the owner's mode from Use New Chat without asking twice: mode 1 assigns separate AIs to study/plan, production, and review; mode 2 uses a primary AI to produce the study/analysis output and a second AI to review it before acceptance. If no mode was supplied, use mode 1 and report that default instead of stopping for another confirmation. Every code call is confined to the current Git root, current branch, and owner-approved path scope. Reviewers stay read-only against the same path/SHA. Relay must never create, discard, move, or switch a branch/Worktree, and it must not require a New Chat session. Fable/Faber/Fiber 5 is removed from the active path. Use `relay-call --role review` for AI reviews so Codex is read-only, silence alone does not stop it, one compact retry stays under the same issue, retry suffixes cannot reset counters, and concurrent duplicate work returns `already_running`. The same reviewer plus review method may fail at most twice per root issue; after that split the findings and switch to deterministic gates or a different-vendor reviewer, never a third identical review. Use `gate-run` for real verification; never treat an AI claim or partial timeout output as verified without a gate row.
 
+For `Use Agent`, load `references/use-agent.md` and the in-repo `skills/agent-center/SKILL.md` when available. Diagnose the task, validate the catalog, and use the Agent Center route tool to return a Team Manifest plus Work Packet. Keep the four-seat policies intact, keep durable knowledge pending owner review, work only in the current workspace, and use AI Relay only when the owner explicitly requests it.
+
 For `Use Business Plan`, review the owner's raw business/marketing/pitch/tender/website question before execution, choose the right business modules and expert roles, build phase and issue checklists, ask for missing inputs first, and do not create files or durable writes until approved.
 
 For `Use SaaS Opus Master Prompt`, send the owner-approved detailed one-file Opus 4.8 master prompt for SaaS business, product, marketing, pricing, pitch, WOW proof, and portfolio decision work. Do not replace it with a short summary.
@@ -143,6 +146,7 @@ For `Use SonarQube`, analyze an existing project with the owner's already-instal
 - `references/use-scan-feature.md`: full prompt for `Use Scan Feature`.
 - `references/use-ai-pair.md`: full prompt for `Use AI Pair`.
 - `references/use-ai-relay.md`: full prompt for `Use AI Relay`.
+- `references/use-agent.md`: full prompt for `Use Agent` and Agent Center routing.
 - `references/ai-relay-catalog.md`: AI Relay catalog and routing rules.
 - `references/work-execution-policy.md`: shared direct-write, optional-Relay, safety, and app-wiring policy.
 - `references/use-business-plan.md`: full prompt for `Use Business Plan`.

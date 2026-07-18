@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+import plugins.agent_center as agent_center
 from plugins.agent_center import catalog, policies, routing, tools
 
 
@@ -910,7 +911,137 @@ def test_agent_center_skill_frontmatter_and_tools():
 
 def test_agent_center_skill_is_fail_closed_and_review_before_write():
     skill = (REPO_ROOT / "skills" / "agent-center" / "SKILL.md").read_text()
-    assert "blocked: true" in skill
-    assert "must never be guessed" in skill
-    assert "Never write or promote a training candidate automatically" in skill
+    assert "CURRENT_WORKSPACE_BLOCKED" in skill
+    assert "Do not replace catalog results with a team invented from memory." in skill
+    assert "Do not write it or promote it automatically." in skill
     assert "owner approval" in skill
+    assert "Treat `Use AI Relay` as optional." in skill
+
+
+def test_plugin_registers_exactly_six_agent_center_tools():
+    registered = []
+
+    class Context:
+        def register_tool(self, **entry):
+            registered.append(entry)
+
+    agent_center.register(Context())
+
+    assert [entry["name"] for entry in registered] == [
+        "agent_center_list_agents",
+        "agent_center_get_agent",
+        "agent_center_list_skills",
+        "agent_center_route",
+        "agent_center_prepare_training_candidate",
+        "agent_center_validate",
+    ]
+    assert all(entry["toolset"] == "agent_center" for entry in registered)
+    assert all(callable(entry["handler"]) for entry in registered)
+
+
+def test_use_agent_creative_web_design_pilot():
+    diagnosis = {
+        "project_id": "sample-web",
+        "goal": "design a new public service page",
+        "phase": "design",
+        "domains": ["creative-brand", "ux", "ui-web-design"],
+        "risk_tags": ["brand-drift"],
+        "signals": ["public-site"],
+        "project_context_refs": [".project/plan.md"],
+        "allowed_paths": ["apps/web/**"],
+        "forbidden_actions": ["deploy production"],
+        "deliverables": ["team manifest", "work packet"],
+        "evidence_gates": ["visual review"],
+    }
+    out = _tool(
+        tools.agent_center_route,
+        diagnosis=diagnosis,
+        seats=_full_pool(),
+        current_provider_id="opus-primary",
+        current_session_id="sess-opus",
+    )
+
+    assert out["ok"] is True
+    assert out["code"] == "route_ready"
+    lead_ids = {lead["id"] for lead in out["team"]["leads"]}
+    assert {"experience-design-lead", "creative-brand-lead"} <= lead_ids
+    packet = out["packet_report"]["packet"]
+    assert packet["packet_id"].startswith("packet_")
+    assert routing.validate_work_packet(packet)["ok"] is True
+    receipt = {
+        "packet_id": packet["packet_id"],
+        "seats": packet["seats"],
+        "skills_used": [skill["name"] for skill in out["team"]["skills"]],
+        "gate_results": ["visual review required before a UI completion claim"],
+        "candidate_links": [],
+        "created_at": "2026-07-18",
+        "version": "1.0",
+    }
+    assert policies.validate_work_receipt(receipt)["code"] == "receipt_valid"
+
+
+def test_use_agent_web_engine_pilot_selects_web_engine_as_core_team():
+    diagnosis = {
+        "project_id": "enterprise-web-engine",
+        "goal": "extend a large multi-tenant web engine with reusable page modules",
+        "phase": "build",
+        "domains": ["web-engine", "engineering"],
+        "risk_tags": ["tenant-isolation", "shared-module-regression"],
+        "signals": ["multi-tenant", "page-builder", "large-application"],
+        "project_context_refs": [".project/spec/UAG.md"],
+        "allowed_paths": ["plugins/agent_center/**"],
+        "forbidden_actions": ["change provider adapters", "deploy production"],
+        "deliverables": ["team manifest", "work packet"],
+        "evidence_gates": ["targeted tests", "catalog validation"],
+    }
+    out = _tool(
+        tools.agent_center_route,
+        diagnosis=diagnosis,
+        seats=_full_pool(),
+        current_provider_id="opus-primary",
+        current_session_id="sess-opus",
+    )
+
+    assert out["ok"] is True
+    assert out["code"] == "route_ready"
+    lead_ids = [lead["id"] for lead in out["team"]["leads"]]
+    assert lead_ids[0] == "web-engine-lead"
+    assert "application-engineering-lead" in lead_ids
+    specialist_ids = {specialist["id"] for specialist in out["team"]["specialists"]}
+    assert "web-engine-architect" in specialist_ids
+    selected_skills = {skill["name"] for skill in out["team"]["skills"]}
+    assert {"multi-tenant-web", "page-builder", "reusable-module-design"} <= selected_skills
+    packet = out["packet_report"]["packet"]
+    assert packet["domains"] == ["web-engine", "engineering"]
+    assert routing.validate_work_packet(packet)["code"] == "packet_valid"
+    receipt = {
+        "packet_id": packet["packet_id"],
+        "seats": packet["seats"],
+        "skills_used": sorted(selected_skills),
+        "gate_results": ["targeted tests", "catalog validation"],
+        "candidate_links": [],
+        "created_at": "2026-07-18",
+        "version": "1.0",
+    }
+    assert policies.validate_work_receipt(receipt)["code"] == "receipt_valid"
+
+
+def test_use_agent_shortcut_and_skill_are_connected():
+    skill = (REPO_ROOT / "skills/agent-center/SKILL.md").read_text(encoding="utf-8")
+    prompt_root = REPO_ROOT / "team-shortcuts/payload/skills/prompt-shortcuts"
+    prompt = (prompt_root / "references/use-agent.md").read_text(encoding="utf-8")
+    shortcut_skill = (prompt_root / "SKILL.md").read_text(encoding="utf-8")
+    shortcut_index = (prompt_root / "Prompt Shortcuts.md").read_text(encoding="utf-8")
+    registry = (
+        REPO_ROOT / "team-shortcuts/payload/ai-context/prompt-shortcut-registry.md"
+    ).read_text(encoding="utf-8")
+
+    assert "TODO" not in skill
+    assert skill.startswith("---\nname: agent-center\n")
+    assert "Use Agent" in skill
+    assert "`Use AI Relay` as optional" in skill
+    assert "Use AI Relay เฉพาะเมื่อเจ้าของเรียกชัดเจน" in prompt
+    assert shortcut_skill.count("Use Agent") >= 3
+    assert shortcut_skill.count("| `Use Agent` |") == 1
+    assert shortcut_index.count("| `Use Agent` |") == 1
+    assert registry.count("| `Use Agent` |") == 1

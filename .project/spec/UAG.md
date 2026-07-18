@@ -1,7 +1,7 @@
 ---
 memory-schema: v1.2
 spec_id: UAG
-status: approved         # draft | approved | building | done
+status: building         # draft | approved | building | done
 linked_plan: UAG
 owner_approved: true     # เจ้าของพิมพ์อนุมัติสเปคเทคนิคนี้เมื่อ 2026-07-18
 updated: 2026-07-18
@@ -14,7 +14,7 @@ updated: 2026-07-18
 > คำแปลไทย (ใช้ครั้งแรก): `Agent Center` = ศูนย์รวมทีม AI · `Consultor` = ที่ปรึกษาวินิจฉัยหน้าด่านแรก (ไม่ผูกยี่ห้อ AI) · `catalog` = สมุดรายชื่อ · `plugin` = ปลั๊กอินเสริมที่แถมมากับ Hermes · `Work Packet` = ซองสั่งงาน · `Team Manifest` = ใบรายชื่อทีมที่เลือก · `provider` = ยี่ห้อ AI (Opus/Codex/Grok) · `routing` = การจัดเส้นทางงานไปหาทีมที่เหมาะ · `promote` = เลื่อนขั้นความรู้ให้เป็นของถาวร
 
 ## 1. จะทำอะไร · ทำไม (WHAT / WHY — ห้ามพูดวิธี/เทคโนโลยี)
-- ทำอะไร: ทำ **ประตูเดียว "Use Agent"** ที่มีที่ปรึกษาวินิจฉัยงาน (โปรเจกต์/ปัญหา/ช่วงงาน/ความเสี่ยง/ผลที่อยากได้) แล้วเลือก "ทีม AI + ทักษะ" ที่เหมาะ ก่อนส่งลงมือทำผ่านทางเดิม `Use AI Relay`  [fact]
+- ทำอะไร: ทำ **ประตูเดียว "Use Agent"** ที่มีที่ปรึกษาวินิจฉัยงาน (โปรเจกต์/ปัญหา/ช่วงงาน/ความเสี่ยง/ผลที่อยากได้) แล้วเลือก "ทีม AI + ทักษะ" ที่เหมาะ ก่อนให้ AI ในแอปปัจจุบันลงมือในพื้นที่ที่อนุมัติ · `Use AI Relay` เป็นทางเลือกเมื่อเจ้าของเรียกชัดเจน  [fact]
 - ทำไม / ใครได้ประโยชน์: เจ้าของ/ทีมมีที่เดียวจบสำหรับสั่งงาน AI ทั้งบริษัท · ความรู้เรื่องทีม/ทักษะเป็นของ Hermes กลาง ไม่ผูกยี่ห้อ AI ตัวใดตัวหนึ่ง · เน้นงานสาย Creative/Brand/กราฟิก/UX-UI/ออกแบบเว็บ/เว็บแอป โดยเฉพาะงาน Web Engine ใหญ่  [fact]
 
 ## 2. จุดต้องเคลียร์ก่อนเขียนโค้ด (ด่านกันเดา · DEC-040)
@@ -44,7 +44,7 @@ updated: 2026-07-18
 | ของเดิม | บทบาทในระบบใหม่ |
 |---|---|
 | `~/.claude/agents/orchestra/conductor.md` (Claude) | **วัตถุดิบอ้างอิงเท่านั้น** · แทนที่ด้วยความหมาย Consultor ที่ไม่ผูกยี่ห้อ |
-| `Use AI Relay` | ตัวรับส่งงาน/รีวิว (transport) **คงเดิม** · Agent Center เรียกใช้ ไม่เขียนทับ |
+| `Use AI Relay` | ตัวรับส่งงาน/รีวิวแบบเลือกใช้ **คงเดิม** · Agent Center ไม่บังคับเรียกและไม่เขียนทับ |
 | โปรไฟล์ Hermes (รันจริง) | รูปแบบตอนรัน **ทีหลัง** · เฟส 1 ยังไม่ติดตั้ง |
 | `obsidian_safe_bridge` / `obsidian_safe_write_review` | ทางเขียนที่อนุมัติ **ทางเดียว** เข้า `95-Inbox-Lab/review/` |
 
@@ -62,21 +62,21 @@ updated: 2026-07-18
 ## 5. ตารางแม่กันหาย (นับ N/M · แบบ scripts/mw-spec-check.py)
 | รหัส | สิ่งที่ต้องมี | จุดพิสูจน์ path:line | สถานะ |
 |---|---|---|:---:|
-| U1 | ปลั๊กอินแถม + สมุดรายชื่อมีเลขรุ่น | `plugins/agent_center/` (ยังไม่สร้าง) | ☐ |
-| U2 | เครื่องมือ 6/6 | `plugins/agent_center/tools/*` | ☐ 0/6 |
-| U3 | skill `Use Agent` | `skills/agent-center/SKILL.md` | ☐ |
-| U4 | payload shortcut ทีม | team-shortcuts payload (ยังไม่สร้าง) | ☐ |
-| U5 | นโยบาย THINK_PAIR (คิดคู่ · 2 ยี่ห้อต่างกัน) | ปลั๊กอิน policy (ยังไม่สร้าง) | ☐ |
-| U6 | นโยบาย BUILD_REVIEW (ทำ-รีวิวแยกยี่ห้อ) | ปลั๊กอิน policy (ยังไม่สร้าง) | ☐ |
-| U7 | ซองสั่งงาน 4 ที่นั่ง (planner_primary/planner_challenger/worker/reviewer) | ปลั๊กอิน schema (ยังไม่สร้าง) | ☐ |
-| U8 | สายเทรนทักษะ (หลักฐาน→ซอง→รีวิวอิสระ→เจ้าของอนุมัติ→ออกรุ่น→pilot→เลื่อนขั้น) | สเปค §7 + เครื่องมือเตรียมซอง | ☐ |
-| U9 | สมุดรายชื่อ 9 หัวหน้าทีม (lead · รายการตรรกะ) | catalog records (ยังไม่สร้าง) | ☐ 0/9 |
-| U10 | สมุดรายชื่อผู้เชี่ยวชาญ 37 บทบาท (specialist · รายการตรรกะ) | catalog records (ยังไม่สร้าง) | ☐ 0/37 |
-| U11 | ตระกูลทักษะ 12 ตระกูล | skill catalog (ยังไม่สร้าง) | ☐ 0/12 |
-| U12 | ทักษะเริ่มต้น (seed skill) 52 ตัว | skill catalog (ยังไม่สร้าง) | ☐ 0/52 |
-| U13 | ช่องนิยาม Agent ขั้นต่ำ 19 ช่อง + Skill ขั้นต่ำ 13 ช่อง | catalog schema (ยังไม่สร้าง) | ☐ |
-| U14 | ใบเสร็จงาน (Work Receipt) เฟส 1 นิยาม schema · pilot กรอกจริง | plugin schema (ยังไม่สร้าง) | ☐ |
-| U15 | เทสต์คลุมสมุด/จัดเส้นทาง/2 นโยบาย/4 ที่นั่ง | `tests/...` (ยังไม่สร้าง) | ☐ |
+| U1 | ปลั๊กอินแถม + สมุดรายชื่อมีเลขรุ่น | `plugins/agent_center/plugin.yaml` + `data/*.json` | ☑ |
+| U2 | เครื่องมือ 6/6 | `plugins/agent_center/__init__.py` + `tools.py` | ☑ 6/6 |
+| U3 | skill `Use Agent` | `skills/agent-center/SKILL.md` | ☑ |
+| U4 | payload shortcut ทีม | `team-shortcuts/payload/` | ☑ 4/4 |
+| U5 | นโยบาย THINK_PAIR (คิดคู่ · 2 ยี่ห้อต่างกัน) | `plugins/agent_center/policies.py` | ☑ |
+| U6 | นโยบาย BUILD_REVIEW (ทำ-รีวิวแยกยี่ห้อ) | `plugins/agent_center/policies.py` | ☑ |
+| U7 | ซองสั่งงาน 4 ที่นั่ง (planner_primary/planner_challenger/worker/reviewer) | `plugins/agent_center/routing.py` | ☑ 4/4 |
+| U8 | สายเทรนทักษะ (หลักฐาน→ซอง→รีวิวอิสระ→เจ้าของอนุมัติ→ออกรุ่น→pilot→เลื่อนขั้น) | `routing.py` + `use-agent.md` | ☑ |
+| U9 | สมุดรายชื่อ 9 หัวหน้าทีม (lead · รายการตรรกะ) | `data/agents.json` | ☑ 9/9 |
+| U10 | สมุดรายชื่อผู้เชี่ยวชาญ 37 บทบาท (specialist · รายการตรรกะ) | `data/agents.json` | ☑ 37/37 |
+| U11 | ตระกูลทักษะ 12 ตระกูล | `data/skills.json` | ☑ 12/12 |
+| U12 | ทักษะเริ่มต้น (seed skill) 52 ตัว | `data/skills.json` | ☑ 52/52 |
+| U13 | ช่องนิยาม Agent ขั้นต่ำ 19 ช่อง + Skill ขั้นต่ำ 13 ช่อง | `plugins/agent_center/catalog.py` | ☑ 19/19 + 13/13 |
+| U14 | ใบเสร็จงาน (Work Receipt) เฟส 1 นิยาม schema · pilot กรอกจริง | `plugins/agent_center/policies.py` | ☑ 2/2 pilot receipt valid |
+| U15 | เทสต์คลุมสมุด/จัดเส้นทาง/2 นโยบาย/4 ที่นั่ง | `tests/plugins/test_agent_center.py` | ☑ 109/109 |
 
 ### รายการ 9 หัวหน้าทีม (lead · เก็บเป็นรายการตรรกะเท่านั้น · ยังไม่ติดตั้งรันจริง · N/M = 9/9)
 1. consultor — ที่ปรึกษาวินิจฉัยหน้าด่านแรก
@@ -174,7 +174,7 @@ updated: 2026-07-18
 | Consultor (ที่ปรึกษา) | ใช้การคิดของ AI แปลงภาษาคนเป็น "ใบวินิจฉัยงาน" มีโครง (โดเมน/ช่วงงาน/ความเสี่ยง/ผลที่อยากได้) | ไม่ตัดสินคะแนน/ไม่เลือกทีมเอง · ไม่ผูกยี่ห้อ AI |
 | plugin (ปลั๊กอิน) | รับใบวินิจฉัย แล้ว **ตรวจ+ให้คะแนนแบบผลลัพธ์แน่นอน** (โค้ดตายตัว รันซ้ำได้ผลเดิม) | ไม่ใช้การเดาของ AI · ไม่แก้แกน Hermes |
 | `route` (จัดเส้นทาง) | คืน **ใบรายชื่อทีม (Team Manifest) + ซองสั่งงาน (Work Packet)** | ไม่ลงมือทำงานเอง · ไม่ส่งเข้า Relay เอง |
-| skill `Use Agent` | ส่งซองสั่งงานเข้า **ช่องบรีฟ/พรอมป์ของ Relay เดิม** | เฟส 1 **ไม่แก้แกน Relay** · แค่เรียกใช้ทางเดิม |
+| skill `Use Agent` | ส่งซองสั่งงานให้ AI ในแอปปัจจุบัน หรือ Relay เมื่อเจ้าของเรียกชัดเจน | เฟส 1 **ไม่แก้แกน Relay** และไม่บังคับใช้ Relay |
 | `Use AI Relay` | รับส่งงาน/รีวิว (transport) ตามเดิม | คงเดิม · Agent Center ไม่เขียนทับ |
 
 ### ใบเสร็จงาน (Work Receipt · เพิ่มเข้าผลงานที่วางแผน)
@@ -205,10 +205,11 @@ planner_primary · planner_challenger · worker · reviewer — **ทั้ง 4
 ### สายเทรนทักษะ (§7)
 feedback/หลักฐาน → ซองสมัคร → รีวิวโดยคนอิสระ → เจ้าของอนุมัติ → ออกรุ่น → pilot → เลื่อนขั้น · **feedback ซ้ำ ๆ = หลักฐาน ไม่ใช่สิทธิ์อัตโนมัติ** · เนื้อซองส่งผ่าน `obsidian_safe_write_review` · Agent Center ไม่เขียนความรู้ถาวรลงคลังเอง
 
-## 6. ส่งต่อ AI Relay
-- ห้ามเริ่มเขียนโค้ดถ้า status ≠ approved (ตอนนี้ approved เมื่อ 2026-07-18 → เริ่ม UAG-P2 ได้)
+## 6. ส่งต่องาน
+- ห้ามเริ่มเขียนโค้ดถ้า status ไม่ใช่ approved/building (ตอนนี้ building เมื่อ 2026-07-18)
 - verified = แถว gate-run เท่านั้น (สืบทอด Schema §3–§4) · งานเอกสารรอบนี้ = `manual_verified`
 - เฟส 1 ไม่มีหน้าจอ/ไม่แตะ core/ไม่แก้ provider/ไม่เลื่อนขั้นความรู้ถาวรอัตโนมัติ
+- ให้ AI ในแอปปัจจุบันลงมือในพื้นที่ที่เจ้าของเปิด · เรียก `Use AI Relay` เฉพาะเมื่อเจ้าของสั่งตรง
 
 <!-- จุดเชื่อม lifecycle (ทาง A · capability-based · ไม่แตะ schema core)
 New Chat 0a: อ่าน .project/spec/ ถ้ามี · Act-As: เขียน spec ก่อน/คู่ plan.md
