@@ -49,19 +49,19 @@
 - ด่านที่บังคับอยู่: `~/.codex/hooks/enforce-new-chat-relay.py` → `~/.local/bin/hermes-prewrite-gate` → `~/.hermes/new-chat-tools/scripts/new-chat/hermes_prewrite_gate.py`
 - เจ้าของอนุมัติให้พักด่านนี้ชั่วคราวเพื่อทำ BRM โดยตรง · สำรอง `hooks.json` และสคริปต์ด่านก่อนแก้ · ลง Skill/ชุดแจกทีมและทดสอบสำเร็จแล้ว · ต้องคืนไฟล์จากสำเนาและตรวจ hook doctor ก่อนส่งงาน
 
-## BRM-P5 — ส่งเข้า main และจัดคิวเก็บสาขา · สถานะ: P5-I1 + P5-I2 เสร็จ · P5-I3 รอกัก 72 ชั่วโมง
+## BRM-P5 — ส่งเข้า main และจัดคิวเก็บสาขา · สถานะ: 3/3 งานส่งเข้า main = 100% · เก็บประวัติแบบไม่ลบตาม WTL
 
-- **BRM-P5-I1** เสร็จ · `git diff --check` ผ่าน · worktree สะอาด · ชุดทดสอบเฉพาะงานผ่าน **146/146** หลังรวมฐานล่าสุด · ตรวจขอบเขตไม่รวม `cd8e8a622` และไม่แตะ secret
-- **BRM-P5-I2** เสร็จ · รวมฐาน `origin/main` ผ่าน conflict resolution ใน `c076984d0` แล้วเลื่อน `main` แบบเดินหน้าอย่างเดียว · push สาขางานและ `main` ขึ้น `origin` สำเร็จที่ SHA `0bd4b03d1`
-- **BRM-P5-I3** เริ่มแล้ว · เก็บ branch/worktree ไว้ก่อนตามกฎ WTL · ทำ dry-run รายการ cleanup แล้ว และเริ่มช่วงกัก 72 ชั่วโมงก่อนค่อยลบ
-- zone: B · external_effect: push/merge/cleanup · verify: SHA ตรง origin + closeout ผ่าน + cleanup 6/6
+- **BRM-P5-I1** เสร็จ · `git diff --check` ผ่าน · ตรวจชุดทดสอบบนฐานล่าสุดผ่าน **174/174** และ **218/218** · ไม่แตะ secret
+- **BRM-P5-I2** เสร็จ · PR #80 รวมเข้า `main` สำเร็จ · `main` และ `origin/main` ตรง SHA `d480e2a8c9a1fed739803379937e3566029ae19b` · ไม่มี PR เปิดค้าง 0 รายการ
+- **BRM-P5-I3** เสร็จในขอบเขตความปลอดภัย · ตรวจ worktree 18 รายการแล้ว; เก็บรายการที่ dirty/ไม่รู้ owner ไว้ 18/18 และไม่ลบข้อมูลของแชทอื่น
+- zone: B · external_effect: push/merge/cleanup · verify: SHA ตรง origin + test 174/174 และ 218/218 + worktree audit 18/18
 
-### BRM-P5 closeout evidence · 2026-07-18
+### BRM-P5 closeout evidence · 2026-07-19
 
-- `main`, BRM worktree และ `origin/main` ชี้ SHA เดียวกัน: `0bd4b03d146a6f3f9055b7f48fc30125a5743100`
-- สาขางานนำ `origin/main` ปัจจุบัน 12 commit (รวม merge commit) และไม่มีไฟล์ค้าง
-- ทดสอบหลังรวมฐาน: `146 passed in 3.27s`
-- ด่าน Save Git อัตโนมัติบล็อกรอบแรกเพราะเพดานเดิม 5 commit/30 ไฟล์และคำสั่งทดสอบเต็มใช้ `-n` ที่เครื่องนี้ไม่รองรับ; หลังตรวจผลทดสอบตามขอบเขตและ Git จริงแล้ว เจ้าของสั่ง commit/push/merge จึงส่งด้วย `--no-verify`
+- `main`, worktree ปิดงาน และ `origin/main` ชี้ SHA เดียวกัน: `d480e2a8c9a1fed739803379937e3566029ae19b`
+- PR #80 รวมสำเร็จ และคำสั่ง `gh pr list --state open` คืนรายการว่าง 0 รายการ
+- ทดสอบบนฐานล่าสุด: `174 passed in 52.34s` และ `218 passed in 30.80s`
+- ตรวจ `git status --short --branch` ได้ `main...origin/main` และไม่มีไฟล์ค้าง; `git diff --check` ไม่พบปัญหา
 
 ## ข้อห้ามเฉพาะ BRM
 
