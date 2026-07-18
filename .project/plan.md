@@ -10,7 +10,7 @@
 - **BRM-P1-I1** นับและจำแนก local/origin/VPS branches, worktrees, dirty files และงานที่ main มีแล้ว
 - verify: ตารางตรวจสาขา + หลักฐาน commit/patch-equivalence + รายการงานใหม่จริงและรายการห้ามย้าย
 
-## BRM-P2 — เตรียมพื้นที่รวมงานจาก main ล่าสุด · สถานะ: กำลังทำ
+## BRM-P2 — เตรียมพื้นที่รวมงานจาก main ล่าสุด · สถานะ: เสร็จ 2/2
 
 - **BRM-P2-I1** เปิด registered worktree + writer lease + write permit จาก `origin/main`
 - **BRM-P2-I2** บันทึกขอบเขตและข้อห้ามของเฟสให้แชทถัดไปอ่านต่อได้
@@ -18,16 +18,16 @@
 
 ## BRM-P3 — ย้ายงานใหม่จริงและตรวจรายกลุ่ม
 
-- **BRM-P3-I1** STD-I2: ย้าย project-dir และ owner rules รุ่นใหม่ โดยไม่เอางานเก่าที่ main มีแล้ว
-- **BRM-P3-I2** BWT V2: จบ badword command center และแก้ด่านทดสอบที่ขาด pytest-xdist
-- **BRM-P3-I3** UAG: จบ Agent Center แบบ plugin-only; ตัด diff ที่ถอดเพดาน worktree ออก
-- **BRM-P3-I4** NCR: จบ New Chat/relay enforcement จากไฟล์ค้าง โดยไม่เขียนทับชุดเครื่องมือที่ติดตั้งนอก repo
-- **BRM-P3-I5** Fable memory: สร้างเฉพาะ decision/session log ที่ยังไม่มีบน main
+- **BRM-P3-I1** STD-I2: ลงงานแล้ว · ย้าย project-dir และ owner rules รุ่นใหม่ โดยไม่เอางานเก่าที่ main มีแล้ว · scoped test 2/2 · ค้างด่านทางการเพราะ Python ของ worktree ไม่มี pytest-xdist
+- **BRM-P3-I2** BWT V2: ลงงานแล้ว · badword command center + executable hook · scoped test 39/39 · ค้างด่านทางการด้วยสาเหตุ environment เดียวกัน
+- **BRM-P3-I3** UAG: ทำแล้วบางส่วน · plugin-only + catalog + data + 6 tools · scoped test รวม 173/173 · ค้าง Skill/shortcut ทีมเพราะ AI Relay เชื่อมทุกสายไม่ได้
+- **BRM-P3-I4** NCR: ตรวจคัดแล้ว · commit เดิมมีใน main แบบเนื้อหาเท่ากัน 2/2 · เตรียมใบงานเฉพาะ lease/permit/หลักฐาน Relay/cleanup ที่ไม่ขัด Portal-only · รอ AI Relay
+- **BRM-P3-I5** Fable memory: เสร็จ · ไม่ย้าย commit local-only ที่ล้าสมัย; เพิ่ม `DEC-AIR-001` + session log ปัจจุบันใน commit `eda5faf51`
 - zone: A · verify: `scripts/run_tests.sh` ตามขอบเขต + gate-run รายกลุ่ม + review diff เทียบ `origin/main`
 
 ## BRM-P4 — ประเมิน upstream v0.17.0 แยกเฟส
 
-- **BRM-P4-I1** ประเมินความต่าง 3,519 ไฟล์และ custom fixes 2 commit แยกจากงาน BRM-P3
+- **BRM-P4-I1** ประเมินแล้ว · ต่าง 3,519 ไฟล์ (+639,352/-78,235) · upstream เดินหน้า 3,215 commit แต่ขาด custom main 164 commit · ห้ามรวมทั้งก้อนรอบนี้ · custom dashboard fix แยกได้และ test บนสาขาต้นทางผ่าน 4/4; เตรียมใบพอร์ตลงฐาน main แล้ว
 - **BRM-P4-I2** รวมเฉพาะเมื่อ test/build/ภาพจริง (ถ้ามี UI) ผ่านบนสาขาอัปเกรดเฉพาะ
 - zone: B · external_effect: เปลี่ยนฐาน upstream ขนาดใหญ่ · ต้องยืนยันขอบเขตอีกครั้งถ้าผลประเมินต่างจากแผนที่อนุมัติ
 
