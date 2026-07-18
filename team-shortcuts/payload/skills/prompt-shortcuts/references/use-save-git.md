@@ -28,12 +28,12 @@ tags:
   - vps
   - safety-gate
 status: active
-version: 2.2
-updated: 2026-07-14
+version: 2.3
+updated: 2026-07-17
 supersedes: v1.3 (retired 2026-06-08 · do not use old action-based flow)
 ---
 
-# Use Save Git (v2.2)
+# Use Save Git (v2.3)
 
 ## Shortcut
 
@@ -149,6 +149,17 @@ gate อ่าน `.savegit.json` ก่อน (ถ้าไม่มีจะ�
   }
 }
 ```
+
+## Spec Gate (capability-based · SPEC-CENTRAL · Schema §1d)
+
+ทำก่อนออกใบผ่านด่าน merge ทุกครั้ง — เป็นด่านระดับ Prompt (AI ตรวจเอง) จนกว่าตัวบังคับระดับโค้ดจะมากับงาน S1/S2:
+
+- มีสเปคที่จับคู่แผน active (`.project/spec/<plan_id>.md` — จับคู่ด้วยชื่อไฟล์เท่านั้น มีแค่โฟลเดอร์ไม่นับ) → เช็กก่อนออก `SAFE_TO_MERGE`:
+  - `status = approved` หรือ `building` → ผ่านได้
+  - `status = draft` แต่ MR มีงานโค้ดใต้แผนนั้น → `OWNER_DECISION_REQUIRED` (บอกเจ้าของชัดว่าสเปคยังไม่อนุมัติ)
+  - `status = done` → ผ่านได้เฉพาะ MR ที่ไม่เพิ่มพฤติกรรมใหม่ (แก้บั๊ก/เอกสาร/จัดระเบียบ) · มีพฤติกรรมใหม่ = `OWNER_DECISION_REQUIRED` ให้เจ้าของสั่งเปิดสเปคกลับ `building` หรือออกสเปคใหม่
+- ไม่มีสเปคที่จับคู่แผน = ข้ามด่านนี้ (skip-ok · ระบบเดิม ไม่บล็อกโปรเจกต์เก่า)
+- `.savegit.json` รองรับ field ประกาศล่วงหน้า: `"spec_gate": { "enabled": true, "dir": ".project/spec" }` — gate รุ่นปัจจุบันยังไม่อ่าน field นี้ (ตัวบังคับโค้ดจริงมากับ S1/S2 · ระหว่างนี้ AI ต้องตรวจเองตามข้อบน ห้ามอ้างว่าเครื่องตรวจแล้ว)
 
 ## Decision Token (ตอบได้แค่ค่าในรายการนี้)
 
@@ -313,6 +324,7 @@ Owner action: ตัด local ได้
 
 ## Changelog
 
+- v2.3 (2026-07-17 · SPEC-CENTRAL): เพิ่ม Spec Gate ระดับ Prompt ก่อนออกใบผ่าน merge (Schema §1d — draft = OWNER_DECISION_REQUIRED · approved/building ผ่าน · done ห้ามพฤติกรรมใหม่) · จับคู่สเปคกับแผนด้วยชื่อไฟล์กัน false-block โปรเจกต์เก่า · ประกาศ field `spec_gate` ใน `.savegit.json` ตรงไปตรงมาว่า gate โค้ดยังไม่อ่าน (ตัวบังคับจริงมากับ S1/S2)
 - v2.2 (2026-07-14): เพิ่ม alias `Save Grid` + Entry Gate ไม่รัน 5 ด่านในแชทที่ไม่มี Git action + evidence receipt ให้ Close/New ใช้ผลเดิมโดยตรวจ project/task/branch/SHA ก่อน
 - v2.1 (2026-06-24): ผ่านตรวจ 2 AI (Claude+Codex) · แยก skip เป็น skip-ok/skip-risk (skip-risk ห้ามออก SAFE) + field ขั้นต่ำต่อ stage (ขาด = OWNER_DECISION/BLOCKED ไม่ใช่ skip เงียบ) + โหมด --audit ให้โปรเจกต์เก่า · เพิ่ม machine JSON output (schema_version/exit_code/fail-closed) คู่ Grid · path สคริปต์เป็น $HERMES_OBSIDIAN_ROOT (พกพา) · กัน commitSha หลอก (3-way SHA + build provenance + no-store/freshness + เช็ก dirty/unpushed/detached ก่อนเทียบ)
 - v2.0 (2026-06-08): เขียนใหม่เป็นด่านรันได้จริง 5 ชั้น + decision token + Grid (เลิก v1.3)
