@@ -64,6 +64,8 @@ PACKAGE_WRITE_ACTIONS = {
     "add", "install", "i", "remove", "rm", "uninstall", "update", "upgrade", "publish",
     "link", "unlink", "import", "patch", "deploy", "exec", "dlx", "create", "init",
 }
+SPEC_INTERVIEW_OWNER_ACTIONS = {"record-answer", "approve"}
+SPEC_INTERVIEW_TOOL = Path(__file__).resolve().parents[1] / "spec-interview" / "spec_interview.py"
 MAX_OWNER_PROMPT_CHARS = 500
 BRANCH_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 OWNER_BRANCH_NEGATION = re.compile(
@@ -110,6 +112,7 @@ def protected_paths() -> list[Path]:
         hermes / "new-chat",
         hermes / "new-chat-tools",
         hermes / "owner-intents",
+        hermes / "spec-evidence",
         home / ".claude" / "hooks",
         home / ".claude" / "settings.json",
         home / ".claude" / "settings.local.json",
@@ -454,6 +457,98 @@ def bash_invokes_owner_intent(command: str) -> bool:
     )
 
 
+def bash_invokes_spec_owner_record(command: str) -> bool:
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        return True
+    for index, token in enumerate(tokens):
+        if Path(token).name in {"spec-interview", "spec_interview.py"}:
+            return any(item in SPEC_INTERVIEW_OWNER_ACTIONS for item in tokens[index + 1 :])
+    return False
+
+
+def project_plan_id(root: Path) -> str:
+    plan = root / ".project" / "plan.md"
+    try:
+        text = plan.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return ""
+    match = re.search(r"(?im)^\s*>?\s*plan_id\s*:\s*([A-Za-z0-9_-]+)\b", text)
+    return match.group(1) if match else ""
+
+
+def spec_path_for(root: Path, plan_id: str) -> Path:
+    return root / ".project" / "spec" / f"{plan_id}.md"
+
+
+def spec_lifecycle(root: Path) -> tuple[str, Path | None]:
+    if root is None:
+        return "", None
+    plan_id = project_plan_id(root)
+    if not plan_id:
+        return "", None
+    spec = spec_path_for(root, plan_id)
+    return (plan_id, spec) if spec.exists() else ("", None)
+
+
+def spec_write_allowed_before_approval(target: Path, root: Path) -> bool:
+    resolved = resolve_loose(target)
+    allowed = [
+        root / ".project" / "plan.md",
+        root / ".project" / "spec",
+        root / ".project" / "scratchpad.md",
+        root / ".project" / "scratchpad",
+    ]
+    for base in allowed:
+        base_resolved = resolve_loose(base)
+        if resolved == base_resolved or base_resolved in resolved.parents:
+            return True
+    return False
+
+
+def spec_approved(root: Path, plan_id: str, spec: Path) -> bool:
+    if not SPEC_INTERVIEW_TOOL.exists():
+        return False
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(SPEC_INTERVIEW_TOOL),
+            "verify",
+            "--repo",
+            str(root),
+            "--plan-id",
+            plan_id,
+            "--spec",
+            str(spec),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return False
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return False
+    return bool(data.get("ok") and data.get("approved_manifest_match"))
+
+
+def spec_gate_allows_targets(root: Path | None, targets: list[Path]) -> tuple[bool, str]:
+    if root is None:
+        return True, ""
+    plan_id, spec = spec_lifecycle(root)
+    if not plan_id or spec is None:
+        return True, ""
+    if spec_approved(root, plan_id, spec):
+        return True, ""
+    blocked = [target for target in targets if not spec_write_allowed_before_approval(target, root)]
+    if blocked:
+        return False, f"สเปค {plan_id} ยังไม่อนุมัติ; เขียนได้เฉพาะ .project/spec, .project/plan.md หรือ scratchpad"
+    return True, ""
+
+
 def extract_targets(tool: str, tool_input: dict, cwd: Path) -> list[Path]:
     values: list[str] = []
     value = tool_input.get("file_path") or tool_input.get("path")
@@ -488,6 +583,8 @@ def run(payload: dict) -> int:
         command = str(tool_input.get("command") or tool_input.get("cmd") or "")
         if bash_invokes_owner_intent(command):
             return block("ห้าม AI สร้างใบอนุญาตกิ่งแทนข้อความจากเจ้าของ")
+        if bash_invokes_spec_owner_record(command):
+            return block("ห้าม AI บันทึกคำตอบหรืออนุมัติสเปคแทนเจ้าของ")
         if bash_hits_protected(command) and not bash_allowed(command, branch, payload):
             return block("คำสั่งพยายามแก้พื้นที่ Hook/Settings/เครื่องมือ Hermes")
         if not bash_allowed(command, branch, payload):
@@ -508,6 +605,9 @@ def run(payload: dict) -> int:
             return block("ไฟล์เป้าหมายอยู่นอกพื้นที่ปัจจุบัน; ห้ามเขียนข้าม Git root")
         if secret_target(target, workspace):
             return block("ไฟล์เป้าหมายเป็นไฟล์ลับหรือพื้นที่ควบคุมที่ห้ามแก้")
+    ok, reason = spec_gate_allows_targets(root, targets)
+    if not ok:
+        return block(reason)
     return 0
 
 
