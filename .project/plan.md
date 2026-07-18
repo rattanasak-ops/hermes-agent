@@ -21,7 +21,7 @@
 - **BRM-P3-I1** STD-I2: ลงงานแล้ว · ย้าย project-dir และ owner rules รุ่นใหม่ โดยไม่เอางานเก่าที่ main มีแล้ว · scoped test 2/2 · ค้างด่านทางการเพราะ Python ของ worktree ไม่มี pytest-xdist
 - **BRM-P3-I2** BWT V2: ลงงานแล้ว · badword command center + executable hook · scoped test 39/39 · ค้างด่านทางการด้วยสาเหตุ environment เดียวกัน
 - **BRM-P3-I3** UAG: ทำแล้วบางส่วน · plugin-only + catalog + data + 6 tools · scoped test รวม 173/173 · ค้าง Skill/shortcut ทีมเพราะ AI Relay เชื่อมทุกสายไม่ได้
-- **BRM-P3-I4** NCR: ตรวจคัดแล้ว · commit เดิมมีใน main แบบเนื้อหาเท่ากัน 2/2 · เตรียมใบงานเฉพาะ lease/permit/หลักฐาน Relay/cleanup ที่ไม่ขัด Portal-only · รอ AI Relay
+- **BRM-P3-I4** NCR: ตรวจคัดแล้ว · commit เดิมมีใน main แบบเนื้อหาเท่ากัน 2/2 · เตรียมใบงานเฉพาะ lease/permit/หลักฐาน Relay/cleanup ที่ไม่ขัด Portal-only · Relay ใช้ 2/3 รอบและเขียนไฟล์ 0 ไฟล์; เก็บรอบสุดท้ายไว้หลัง Portal พร้อม
 - **BRM-P3-I5** Fable memory: เสร็จ · ไม่ย้าย commit local-only ที่ล้าสมัย; เพิ่ม `DEC-AIR-001` + session log ปัจจุบันใน commit `eda5faf51`
 - zone: A · verify: `scripts/run_tests.sh` ตามขอบเขต + gate-run รายกลุ่ม + review diff เทียบ `origin/main`
 
@@ -33,10 +33,12 @@
 
 ### หลักฐานต่อเนื่องหลัง Codex App restart รอบล่าสุด
 
-- Git: branch รวมงานยังนำ `origin/main` 8 commit · worktree สะอาด 0 ไฟล์ · `git diff --check` ผ่าน
+- Git: branch รวมงานยังนำ `origin/main` 9 commit · worktree สะอาด 0 ไฟล์ · `git diff --check` ผ่าน
 - ทดสอบซ้ำด้วย Python กลางที่มี pytest-xdist: UAG + plugin discovery 173/173 และ STD + BWT 41/41 รวม 214/214
 - ตรวจรูปแบบกุญแจที่พบบ่อยใน diff ใหม่ 4 กลุ่ม: พบ 0 รายการ
 - Relay: `BRM-P4-I1` รอบ 2/3 จบเองภายในประมาณ 53 วินาทีและลองครบ 4 สาย · ห้ามใช้รอบ 3 จนกว่า AI Portal token/สิทธิ์เชื่อมต่อจะพร้อมจริง
+- Full suite วินิจฉัย: ผ่าน 24,815 · ล้ม 648 · ข้าม 139 · setup error 25 จาก 25,627 รายการ; กลุ่มล้มตัวอย่างอยู่ในไฟล์ฐาน `main` ที่ BRM ไม่ได้แก้ และมี prompt เลือก model แทรกระหว่างเทสต์ จึงยังใช้เป็น closeout gate ไม่ได้
+- NCR recovery: รอบ 1 ถูกยุติหลัง Gemini/Ollama ค้างเพื่อกัน Codex App ดูเหมือนหยุดตอบสนอง และเผย bug ว่า Ctrl-C ทิ้ง `now.json`; รอบ 2 จบตามปกติ ล้าง `now.json` แล้ว แต่ Codex/Grok ขาด Portal token, Gemini timeout และ Ollama ไม่เปลี่ยน workspace
 
 ## BRM-P5 — ส่งเข้า main และจัดคิวเก็บสาขา
 
