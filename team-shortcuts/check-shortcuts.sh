@@ -38,6 +38,7 @@ resolve_hermes_runtime_home() {
 }
 
 HERMES_RUNTIME_HOME="$(resolve_hermes_runtime_home)"
+HERMES_AGENT_SKILL="$HERMES_RUNTIME_HOME/skills/agent-center/SKILL.md"
 AGENT_PLUGIN="$HERMES_RUNTIME_HOME/plugins/agent-center/plugin.yaml"
 HERMES_CONFIG="$HERMES_RUNTIME_HOME/config.yaml"
 
@@ -95,6 +96,19 @@ exists_check() {
   fi
 }
 
+same_tree_check() {
+  local label="$1"
+  local expected="$2"
+  local actual="$3"
+  if [ -d "$expected" ] && [ -d "$actual" ] \
+    && diff -qr "$expected" "$actual" >/dev/null 2>&1; then
+    printf 'PASS %-28s %s\n' "$label" "$actual"
+  else
+    printf 'FAIL %-28s %s\n' "$label" "เนื้อหาไม่ตรงกับ $expected"
+    pass=false
+  fi
+}
+
 echo "══ ตรวจ Prompt Shortcut บนเครื่องนี้ ══"
 exists_check "registry_exists" "$REGISTRY"
 exists_check "skill_exists" "$SKILL"
@@ -102,7 +116,10 @@ exists_check "index_exists" "$INDEX"
 exists_check "codex_link_exists" "$CODEX"
 exists_check "agent_center_skill_exists" "$AGENT_SKILL"
 exists_check "codex_agent_link_exists" "$CODEX_AGENT"
+exists_check "hermes_agent_skill_exists" "$HERMES_AGENT_SKILL"
 exists_check "agent_center_plugin_exists" "$AGENT_PLUGIN"
+same_tree_check "agent_center_codex_match" "$(dirname "$AGENT_SKILL")" "$CODEX_AGENT"
+same_tree_check "agent_center_hermes_match" "$(dirname "$AGENT_SKILL")" "$(dirname "$HERMES_AGENT_SKILL")"
 exists_check "hook_doctor_exists" "$HOOK_DOCTOR"
 exists_check "write_permit_exists" "$WRITE_PERMIT"
 exists_check "installed_version_exists" "$INSTALLED_VERSION"

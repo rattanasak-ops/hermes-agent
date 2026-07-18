@@ -1,6 +1,6 @@
 name: agent-center
-version: 0.1.0
-description: "Deterministic, standard-library-only Agent Center: read-only catalog of lead/specialist agents and skills, structured-diagnosis routing to Team Manifests and Work Packets, provider/session seat policy, Work Receipt validation, and owner-review training candidates. Never writes files, touches the network, or persists anything."
+version: 0.2.0
+description: "Deterministic, standard-library-only Agent Center: read-only catalog of lead/specialist agents and skills, mode-aware thinking/build routing to Team Manifests and Work Packets, provider/session seat policy, Work Receipt validation, and owner-review training candidates. Never writes files, touches the network, or persists anything."
 author: "Hermes Agent"
 kind: standalone
 provides_tools:

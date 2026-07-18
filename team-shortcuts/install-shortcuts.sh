@@ -66,6 +66,9 @@ resolve_hermes_runtime_home() {
 
 HERMES_RUNTIME_HOME="$(resolve_hermes_runtime_home)"
 AGENT_PLUGIN_DEST="$HERMES_RUNTIME_HOME/plugins/agent-center"
+HERMES_AGENT_SKILL_DEST="$HERMES_RUNTIME_HOME/skills/agent-center"
+CODEX_LINK="$HOME/.codex/skills/prompt-shortcuts"
+CODEX_AGENT_LINK="$HOME/.codex/skills/agent-center"
 
 # --- ที่อยู่เดิมที่ไฟล์ตัวเชื่อมทุกตัวในโปรเจกต์ชี้ถึง (ใช้ทำทางลัดชดเชยให้ Cursor) ---
 OWNER_PATH="/Users/rattanasak/ObsidianVault/HermesAgent"
@@ -104,6 +107,27 @@ add_conflict_if_newer() {
   fi
 }
 
+is_generated_runtime_file() {
+  case "$1" in
+    */__pycache__/*|*.pyc|*.pyo|*/.DS_Store|.DS_Store) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+add_destination_only_conflicts() {
+  local src_root="$1"
+  local dest_root="$2"
+  local label="$3"
+
+  [ -d "$dest_root" ] || return 0
+  while IFS= read -r -d '' dest; do
+    local rel="${dest#"$dest_root"/}"
+    if [ ! -e "$src_root/$rel" ] && ! is_generated_runtime_file "$rel"; then
+      CONFLICTS+=("$label/$rel (มีเฉพาะปลายทาง)")
+    fi
+  done < <(find "$dest_root" \( -type f -o -type l \) -print0)
+}
+
 detect_newer_destination_conflicts() {
   CONFLICTS=()
 
@@ -116,11 +140,59 @@ detect_newer_destination_conflicts() {
     local rel="${src#"$PAYLOAD"/}"
     add_conflict_if_newer "$src" "$DEST_ROOT/$rel" "$rel"
   done < <(find "$PAYLOAD/skills/prompt-shortcuts" -type f -print0)
+  add_destination_only_conflicts \
+    "$PAYLOAD/skills/prompt-shortcuts" \
+    "$SKILL_SRC" \
+    "skills/prompt-shortcuts"
 
   while IFS= read -r -d '' src; do
     local rel="${src#"$PAYLOAD"/}"
     add_conflict_if_newer "$src" "$DEST_ROOT/$rel" "$rel"
   done < <(find "$AGENT_SKILL_PAYLOAD" -type f -print0)
+  add_destination_only_conflicts \
+    "$AGENT_SKILL_PAYLOAD" \
+    "$AGENT_SKILL_SRC" \
+    "skills/agent-center"
+
+  if [ -d "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ]; then
+    while IFS= read -r -d '' src; do
+      local rel="${src#"$PAYLOAD/skills/prompt-shortcuts"/}"
+      add_conflict_if_newer \
+        "$src" \
+        "$CODEX_LINK/$rel" \
+        "Codex skill/prompt-shortcuts/$rel"
+    done < <(find "$PAYLOAD/skills/prompt-shortcuts" -type f -print0)
+    add_destination_only_conflicts \
+      "$PAYLOAD/skills/prompt-shortcuts" \
+      "$CODEX_LINK" \
+      "Codex skill/prompt-shortcuts"
+  fi
+
+  if [ -d "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ]; then
+    while IFS= read -r -d '' src; do
+      local rel="${src#"$AGENT_SKILL_PAYLOAD"/}"
+      add_conflict_if_newer \
+        "$src" \
+        "$CODEX_AGENT_LINK/$rel" \
+        "Codex skill/agent-center/$rel"
+    done < <(find "$AGENT_SKILL_PAYLOAD" -type f -print0)
+    add_destination_only_conflicts \
+      "$AGENT_SKILL_PAYLOAD" \
+      "$CODEX_AGENT_LINK" \
+      "Codex skill/agent-center"
+  fi
+
+  while IFS= read -r -d '' src; do
+    local rel="${src#"$AGENT_SKILL_PAYLOAD"/}"
+    add_conflict_if_newer \
+      "$src" \
+      "$HERMES_AGENT_SKILL_DEST/$rel" \
+      "Hermes runtime skill/agent-center/$rel"
+  done < <(find "$AGENT_SKILL_PAYLOAD" -type f -print0)
+  add_destination_only_conflicts \
+    "$AGENT_SKILL_PAYLOAD" \
+    "$HERMES_AGENT_SKILL_DEST" \
+    "Hermes runtime skill/agent-center"
 
   while IFS= read -r -d '' src; do
     local rel="${src#"$AGENT_PLUGIN_SRC"/}"
@@ -129,6 +201,10 @@ detect_newer_destination_conflicts() {
       "$AGENT_PLUGIN_DEST/$rel" \
       "Hermes runtime plugin/agent-center/$rel"
   done < <(find "$AGENT_PLUGIN_SRC" -type f -print0)
+  add_destination_only_conflicts \
+    "$AGENT_PLUGIN_SRC" \
+    "$AGENT_PLUGIN_DEST" \
+    "Hermes runtime plugin/agent-center"
 }
 
 shortcuts_payload_differs() {
@@ -141,6 +217,20 @@ shortcuts_payload_differs() {
   fi
 
   if ! diff -qr "$AGENT_SKILL_PAYLOAD" "$AGENT_SKILL_SRC" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! diff -qr "$AGENT_SKILL_PAYLOAD" "$HERMES_AGENT_SKILL_DEST" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [ -d "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ] \
+    && ! diff -qr "$AGENT_SKILL_PAYLOAD" "$CODEX_AGENT_LINK" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [ -d "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ] \
+    && ! diff -qr "$PAYLOAD/skills/prompt-shortcuts" "$CODEX_LINK" >/dev/null 2>&1; then
     return 0
   fi
 
@@ -171,7 +261,10 @@ prune_old_shortcuts_backups() {
 }
 
 backup_existing_shortcuts_if_needed() {
-  if [ ! -d "$SKILL_SRC" ] && [ ! -d "$AGENT_SKILL_SRC" ] && [ ! -d "$AGENT_PLUGIN_DEST" ]; then
+  if [ ! -d "$SKILL_SRC" ] && [ ! -d "$AGENT_SKILL_SRC" ] \
+    && [ ! -d "$HERMES_AGENT_SKILL_DEST" ] && [ ! -d "$AGENT_PLUGIN_DEST" ] \
+    && { [ ! -d "$CODEX_LINK" ] || [ -L "$CODEX_LINK" ]; } \
+    && { [ ! -d "$CODEX_AGENT_LINK" ] || [ -L "$CODEX_AGENT_LINK" ]; }; then
     return 0
   fi
 
@@ -197,6 +290,15 @@ backup_existing_shortcuts_if_needed() {
   fi
   if [ -d "$AGENT_SKILL_SRC" ]; then
     rsync -a "$AGENT_SKILL_SRC/" "$backup_dir/skills/agent-center/"
+  fi
+  if [ -d "$HERMES_AGENT_SKILL_DEST" ]; then
+    rsync -a "$HERMES_AGENT_SKILL_DEST/" "$backup_dir/runtime-skills/agent-center/"
+  fi
+  if [ -d "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ]; then
+    rsync -a "$CODEX_AGENT_LINK/" "$backup_dir/codex-skills/agent-center/"
+  fi
+  if [ -d "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ]; then
+    rsync -a "$CODEX_LINK/" "$backup_dir/codex-skills/prompt-shortcuts/"
   fi
   if [ -d "$AGENT_PLUGIN_DEST" ]; then
     rsync -a "$AGENT_PLUGIN_DEST/" "$backup_dir/runtime-plugins/agent-center/"
@@ -251,8 +353,9 @@ mkdir -p "$DEST_ROOT/ai-context" "$DEST_ROOT/skills"
 cp "$PAYLOAD/ai-context/prompt-shortcut-registry.md" "$DEST_ROOT/ai-context/"
 mkdir -p "$SKILL_SRC"
 rsync -a --delete "$PAYLOAD/skills/prompt-shortcuts/" "$SKILL_SRC/"
-mkdir -p "$AGENT_SKILL_SRC" "$AGENT_PLUGIN_DEST"
+mkdir -p "$AGENT_SKILL_SRC" "$HERMES_AGENT_SKILL_DEST" "$AGENT_PLUGIN_DEST"
 rsync -a --delete "$AGENT_SKILL_PAYLOAD/" "$AGENT_SKILL_SRC/"
+rsync -a --delete "$AGENT_SKILL_PAYLOAD/" "$HERMES_AGENT_SKILL_DEST/"
 rsync -a --delete --exclude='__pycache__/' "$AGENT_PLUGIN_SRC/" "$AGENT_PLUGIN_DEST/"
 cp "$VERSION_FILE" "$INSTALLED_VERSION"
 REF_COUNT="$(ls -1 "$SKILL_SRC/references/"*.md 2>/dev/null | wc -l | tr -d ' ')"
@@ -327,11 +430,9 @@ say "      สำเร็จ: เพิ่มตัวชี้ทะเบี�
 # --- 3) ต่อ Codex (ทางลัด skill) ---
 say "[3/4] ต่อ Codex ผ่าน ~/.codex/skills/prompt-shortcuts"
 mkdir -p "$HOME/.codex/skills"
-CODEX_LINK="$HOME/.codex/skills/prompt-shortcuts"
 if [ -L "$CODEX_LINK" ] || [ -f "$CODEX_LINK" ]; then
   rm -f "$CODEX_LINK"
 fi
-CODEX_AGENT_LINK="$HOME/.codex/skills/agent-center"
 if [ -L "$CODEX_AGENT_LINK" ] || [ -f "$CODEX_AGENT_LINK" ]; then
   rm -f "$CODEX_AGENT_LINK"
 fi

@@ -71,9 +71,10 @@ def register(ctx) -> None:
         ),
         (
             "agent_center_validate",
-            "Validate a Work Packet or a Work Receipt (supply exactly one; "
-            "supplying both is rejected), or validate the bundled catalog and "
-            "report totals and versions when neither is supplied (no persistence).",
+            "Validate a Work Packet before execution; validate a Work Receipt "
+            "together with its original packet so mode and seat identities are "
+            "bound; or validate the bundled catalog when neither is supplied. "
+            "A receipt alone is rejected (no persistence).",
             tools.agent_center_validate,
             {
                 "packet": {"type": "object"},

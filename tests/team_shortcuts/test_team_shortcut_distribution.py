@@ -48,7 +48,7 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     installer = (TEAM / "install-shortcuts.sh").read_text(encoding="utf-8")
     checker = (TEAM / "check-shortcuts.sh").read_text(encoding="utf-8")
 
-    assert version == "2026.07.19-1"
+    assert version == "2026.07.19-2"
     assert "INSTALLED_VERSION" in installer
     assert "ไม่พบตัวตรวจสุขภาพ Hook" in installer
     assert installer.index('bash "$NEW_CHAT_INSTALLER"') < installer.index(
@@ -56,9 +56,13 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     ) < installer.index('if ! "$HOOK_DOCTOR_BIN"')
     assert "ผ่าน 4/4" in installer
     assert 'AGENT_SKILL_SRC="$DEST_ROOT/skills/agent-center"' in installer
+    assert 'HERMES_AGENT_SKILL_DEST="$HERMES_RUNTIME_HOME/skills/agent-center"' in installer
     assert 'AGENT_PLUGIN_SRC="$SCRIPT_DIR/../plugins/agent_center"' in installer
     assert 'hermes plugins enable agent-center' in installer
     assert "registry_vs_skill" in checker
+    assert "hermes_agent_skill_exists" in checker
+    assert "agent_center_codex_match" in checker
+    assert "agent_center_hermes_match" in checker
     assert '"29"' not in checker
     assert '"33"' not in checker
 
@@ -229,7 +233,7 @@ def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     home = tmp_path / "home"
     root = home / "ObsidianVault/HermesAgent"
     shutil.copytree(TEAM / "payload", root)
-    (root / ".shortcut-version").write_text("2026.07.19-1\n", encoding="utf-8")
+    (root / ".shortcut-version").write_text("2026.07.19-2\n", encoding="utf-8")
 
     # แยกการทดสอบไฟล์ Migrate ออกจากจำนวนรายการ Shortcut อื่นใน payload
     (root / "ai-context/prompt-shortcut-registry.md").write_text("| `fixture` |\n", encoding="utf-8")
@@ -247,6 +251,8 @@ def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     codex_agent.symlink_to(root / "skills/agent-center")
 
     hermes_home = home / ".hermes"
+    hermes_skill_root = hermes_home / "skills/agent-center"
+    shutil.copytree(root / "skills/agent-center", hermes_skill_root)
     plugin = hermes_home / "plugins/agent-center/plugin.yaml"
     plugin.parent.mkdir(parents=True)
     plugin.write_text("name: agent-center\nversion: 0.1.0\n", encoding="utf-8")
@@ -267,7 +273,7 @@ def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
 
     env = os.environ.copy()
     env["HOME"] = str(home)
-    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.19-1"
+    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.19-2"
     env["HERMES_HOME"] = str(hermes_home)
     return root, env
 
@@ -296,6 +302,7 @@ def test_checker_accepts_all_14_migrate_phases_and_shared_contract(tmp_path):
     ("relative_path", "expected_label"),
     [
         ("skills/agent-center/SKILL.md", "agent_center_skill_exists"),
+        ("runtime-skills/agent-center/SKILL.md", "hermes_agent_skill_exists"),
         ("plugins/agent-center/plugin.yaml", "agent_center_plugin_exists"),
     ],
 )
@@ -303,7 +310,9 @@ def test_checker_fails_when_agent_center_installation_is_incomplete(
     tmp_path, relative_path, expected_label
 ):
     root, env = _installed_shortcut_home(tmp_path)
-    if relative_path.startswith("plugins/"):
+    if relative_path.startswith("runtime-skills/"):
+        target = Path(env["HERMES_HOME"]) / relative_path.removeprefix("runtime-")
+    elif relative_path.startswith("plugins/"):
         target = Path(env["HERMES_HOME"]) / relative_path
     else:
         target = root / relative_path
@@ -326,6 +335,30 @@ def test_checker_fails_when_agent_center_is_not_enabled(tmp_path):
     assert result.returncode != 0
     assert "RESULT: FAIL" in result.stdout
     assert "agent_center_enabled" in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("target_name", "expected_label"),
+    [
+        ("codex", "agent_center_codex_match"),
+        ("hermes", "agent_center_hermes_match"),
+    ],
+)
+def test_checker_fails_when_agent_center_copy_is_stale(tmp_path, target_name, expected_label):
+    root, env = _installed_shortcut_home(tmp_path)
+    if target_name == "codex":
+        target = Path(env["HOME"]) / ".codex/skills/agent-center"
+        target.unlink()
+        shutil.copytree(root / "skills/agent-center", target)
+    else:
+        target = Path(env["HERMES_HOME"]) / "skills/agent-center"
+    (target / "SKILL.md").write_text("stale skill\n", encoding="utf-8")
+
+    result = _run_shortcut_check(env)
+
+    assert result.returncode != 0
+    assert "RESULT: FAIL" in result.stdout
+    assert expected_label in result.stdout
 
 
 @pytest.mark.parametrize(
