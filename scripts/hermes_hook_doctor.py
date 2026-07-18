@@ -127,6 +127,17 @@ def main() -> int:
                 "hermes_dir_block": gate_call(gate, feature, "Write", {"file_path": ".hermes/state.json"}).returncode == 2,
                 "dangerous_block": gate_call(gate, feature, "Bash", {"command": "git reset --hard HEAD~1"}).returncode == 2,
                 "branch_switch_block": gate_call(gate, feature, "Bash", {"command": "git switch -c task/doctor/new"}).returncode == 2,
+                "new_chat_open_block": gate_call(
+                    gate,
+                    feature,
+                    "Bash",
+                    {
+                        "command": (
+                            "hermes-new-chat open --project hermes-agent --staff-id nat "
+                            "--task-id T --slug t --repo /tmp --approval ok"
+                        )
+                    },
+                ).returncode == 2,
             }
             wiring = wiring_checks(feature)
     results.append({

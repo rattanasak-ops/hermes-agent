@@ -135,7 +135,7 @@ def test_fresh_home_installs_new_chat_tools_and_fail_closed_gate(tmp_path):
     assert len(health["gates"]) == 4
     current = next(row for row in health["gates"] if row["gate"] == "current_workspace_prewrite")
     assert current["ok"] is True
-    assert current["checks"] == "12/12"
+    assert current["checks"] == "13/13"
     assert current["wiring"] == {"claude": True, "codex": True, "cursor": True, "hermes": True}
 
 

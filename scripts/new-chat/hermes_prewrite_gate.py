@@ -60,6 +60,9 @@ PACKAGE_WRITE_ACTIONS = {
     "add", "install", "i", "remove", "rm", "uninstall", "update", "upgrade", "publish",
     "link", "unlink", "import", "patch", "deploy", "exec", "dlx", "create", "init",
 }
+HERMES_WORKSPACE_MUTATIONS = {
+    "accept", "abandon", "archive", "cleanup", "close", "handoff", "open", "remove",
+}
 
 
 def block(reason: str) -> int:
@@ -173,6 +176,18 @@ def git_segment_ok(tokens: list[str], branch: str) -> bool:
     return True
 
 
+def hermes_workspace_segment_ok(tokens: list[str]) -> bool:
+    first = Path(tokens[0]).name
+    args = tokens[1:]
+    if first == "hermes-new-chat":
+        return not args or args[0] != "open"
+    if first == "hermes-worktree":
+        return not args or args[0] not in HERMES_WORKSPACE_MUTATIONS
+    if first == "hermes" and len(args) >= 2 and args[0] == "worktree":
+        return args[1] not in HERMES_WORKSPACE_MUTATIONS
+    return True
+
+
 def package_segment_ok(tokens: list[str]) -> bool:
     args = [item for item in tokens[1:] if not item.startswith("-")]
     if not args:
@@ -205,6 +220,8 @@ def segment_ok(segment: str, branch: str) -> bool:
         return False
     if first in NEUTRAL_BINS:
         return True
+    if first in {"hermes", "hermes-new-chat", "hermes-worktree"}:
+        return hermes_workspace_segment_ok(tokens)
     if first == "git":
         return git_segment_ok(tokens, branch)
     if first in {"pnpm", "npm", "yarn", "bun"}:
