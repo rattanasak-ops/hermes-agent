@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
+"""UserPromptSubmit hook: count curse hits + record into Badword Tracker DB.
+
+Safety: never calls shell, git, relay, or edits product code. Tracker writes
+are status/queue only (events/issues/ai_jobs in local SQLite).
+"""
 import datetime
+import importlib.util
 import json
 import os
 import sys
+from pathlib import Path
 
 
 DEFAULT_STATS_DIR = os.path.expanduser("~/.claude/ai-fail-stats")
@@ -241,16 +248,149 @@ def write_hits(hits, cwd, stats_dir=None):
     return counts, host
 
 
-def build_response(counts, host):
+def _load_badword_core(stats_dir):
+    """Load tracker module from live stats dir first, then hermes-standard/bin."""
+    candidates = [
+        os.path.join(stats_dir, "badword_tracker.py"),
+        os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "bin", "badword_tracker.py")
+        ),
+    ]
+    for path in candidates:
+        if not os.path.isfile(path):
+            continue
+        try:
+            name = "hermes_badword_tracker_%s" % abs(hash(path))
+            spec = importlib.util.spec_from_file_location(name, path)
+            module = importlib.util.module_from_spec(spec)
+            # dataclasses need module registered before exec on Python 3.14+
+            sys.modules[name] = module
+            assert spec.loader is not None
+            spec.loader.exec_module(module)
+            return module
+        except Exception:
+            continue
+    return None
+
+
+def _load_dashboard(stats_dir):
+    candidates = [
+        os.path.join(stats_dir, "badword_dashboard.py"),
+        os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "bin", "badword_dashboard.py")
+        ),
+    ]
+    for path in candidates:
+        if not os.path.isfile(path):
+            continue
+        try:
+            name = "hermes_badword_dashboard_%s" % abs(hash(path))
+            spec = importlib.util.spec_from_file_location(name, path)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[name] = module
+            assert spec.loader is not None
+            spec.loader.exec_module(module)
+            return module
+        except Exception:
+            continue
+    return None
+
+
+def refresh_dashboard(stats_dir=None):
+    """Rewrite static HTML export if dashboard module is available (optional)."""
+    output_dir = os.path.expanduser(stats_dir or get_stats_dir())
+    dashboard = _load_dashboard(output_dir)
+    if dashboard is None or not hasattr(dashboard, "render"):
+        return None
+    html_path = Path(
+        os.path.expanduser(
+            os.environ.get("BADWORD_DASHBOARD_HTML", "~/.hermes/badword-tracker/index.html")
+        )
+    )
+    html_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path = Path(output_dir) / "tracker.db"
+    log_path = Path(output_dir) / "log.jsonl"
+    try:
+        html_path.write_text(dashboard.render(db_path, log_path), encoding="utf-8")
+    except TypeError:
+        # older dashboard.render(db_path) signature
+        html_path.write_text(dashboard.render(db_path), encoding="utf-8")
+    return html_path
+
+
+def record_receipt(prompt, cwd, hit, stats_dir=None, host=None):
+    """Record into tracker.db. Queue/status only — no shell/git/relay/code edit."""
+    output_dir = os.path.expanduser(stats_dir or get_stats_dir())
+    core = _load_badword_core(output_dir)
+    if core is None or not hasattr(core, "record_event"):
+        return None
+    project = os.path.basename(os.path.normpath(cwd or "")) or "unknown"
+    target = str(hit.get("target") or "").strip()
+    if target == "-":
+        target = None
+    return core.record_event(
+        Path(output_dir) / "tracker.db",
+        prompt,
+        staff_id=os.environ.get("HERMES_STAFF_ID", "owner"),
+        device_id=os.environ.get("HERMES_DEVICE_ID", host or _host_name()),
+        host=host or _host_name(),
+        project_id=project,
+        cwd=cwd or "",
+        channel="claude-hook",
+        ai_target=target,
+        trigger_phrase=str(hit.get("phrase") or "").strip(),
+        source_version="hermes-standard-v3-bwt-p5-p8",
+    )
+
+
+def _host_alias(host):
+    """Stable display alias — never echo the real machine name in hook output."""
+    raw = str(host or "unknown").strip() or "unknown"
+    try:
+        import hashlib
+
+        digest = hashlib.sha256(f"host|{raw}".encode("utf-8")).hexdigest()[:4].upper()
+        return "เครื่อง-%s" % digest
+    except Exception:
+        return "เครื่องนี้"
+
+
+def build_response(counts, host, receipt=None):
     total = _total_counts(counts)
     count_text = _format_counts(counts)
+    # Never put raw hostnames into messages that may leave the machine
+    host_label = _host_alias(host)
+    if receipt is not None:
+        system_message = receipt.text()
+        context = (
+            "[Badword Tracker] บันทึกเหตุการณ์ %s แล้ว · หมวด %s · เรื่อง %s · %s · ปัญหา %s · ครั้งที่ %s · สถานะ %s · ตัวจับเดิม %s"
+            % (
+                receipt.event_id,
+                receipt.category,
+                receipt.subject,
+                receipt.duplicate,
+                receipt.issue_id or "รอจัดหมวด",
+                receipt.count,
+                receipt.status,
+                count_text,
+            )
+        )
+    else:
+        system_message = "📊 บันทึกแล้ว (%s) · สะสมเครื่องนี้ %s ครั้ง — %s" % (
+            host_label,
+            total,
+            count_text,
+        )
+        context = (
+            "[สถิติ AI พลาด] เจ้าของเพิ่งตำหนิเรื่องเดิม (%s สะสม %s ครั้ง: %s). "
+            "อย่าทำผิดซ้ำ — โดยเฉพาะต้องพูดภาษาคน แปลศัพท์เทคนิคทันที"
+            % (host_label, total, count_text)
+        )
     return {
-        "systemMessage": "📊 บันทึกแล้ว (%s) · สะสมเครื่องนี้ %s ครั้ง — %s"
-        % (host, total, count_text),
+        "systemMessage": system_message,
         "hookSpecificOutput": {
             "hookEventName": "UserPromptSubmit",
-            "additionalContext": "[สถิติ AI พลาด] เจ้าของเพิ่งตำหนิเรื่องเดิม (เครื่อง %s สะสม %s ครั้ง: %s). อย่าทำผิดซ้ำ — โดยเฉพาะต้องพูดภาษาคน แปลศัพท์เทคนิคทันที"
-            % (host, total, count_text),
+            "additionalContext": context,
         },
     }
 
@@ -269,8 +409,15 @@ def main():
         return 0
 
     try:
-        counts, host = write_hits(hits, data.get("cwd") or "")
-        print(json.dumps(build_response(counts, host), ensure_ascii=False))
+        cwd = data.get("cwd") or ""
+        counts, host = write_hits(hits, cwd)
+        receipt = record_receipt(data.get("prompt") or "", cwd, hits[0], host=host)
+        if receipt is not None:
+            try:
+                refresh_dashboard()
+            except Exception:
+                pass
+        print(json.dumps(build_response(counts, host, receipt), ensure_ascii=False))
     except Exception:
         return 0
     return 0
