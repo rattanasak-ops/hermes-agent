@@ -16,13 +16,13 @@ tags:
   - session-memory
   - context-management
 status: active
-version: 2.4
-updated: 2026-07-14
+version: 2.5
+updated: 2026-07-17
 schema: memory-schema-v1.2
 pairs_with: use-new-chat >= 1.8
 ---
 
-# Use Close Chat (v2.4 · 2026-07-14)
+# Use Close Chat (v2.5 · 2026-07-17)
 
 คู่กับ Use New Chat ≥ v1.8 · อ้าง Memory Schema v1.2 · เช็ก schema version ตอนเริ่ม · ไม่ตรง = เตือน + ห้ามเขียนไฟล์ความจำจนกว่าจะอ่าน schema ล่าสุด
 
@@ -111,6 +111,12 @@ QA/QC Scan Sync (capability-based — ทำเฉพาะเมื่อมี
 - ไม่มี → ระบุใน Output ว่า "QA/QC: รอบนี้ไม่มีการสแกน/แก้"
 - มี → อัปเดต `.project/qaqc-scan.md`: สถานะรายหมวด + ตารางปัญหาคงค้าง (ตัดเฉพาะข้อที่ verified มีแถว gate-run) + ประวัติรอบ (append ใหม่บนสุด) · สถานะ "verified" ใน qaqc-scan.md ใช้บันไดหลักฐานเดียวกับข้อ 4 ห้ามหย่อนกว่า
 
+Spec Sync (capability-based — ทำเฉพาะเมื่อมีสเปคที่จับคู่แผน `.project/spec/<plan_id>.md` · Schema §1d):
+ถามตัวเอง: รอบนี้มีร่าง/แก้สเปค · เจ้าของพิมพ์อนุมัติสเปค · หรืองานปิดแถวตารางแม่ของสเปคไหม
+- ไม่มี → ระบุใน Output ว่า "Spec: รอบนี้ไม่มีการเปลี่ยนสเปค"
+- มี → อัปเดตไฟล์สเปค: `status` (ตามกติกา §1d — draft/approved/building/done) + `updated` + ติ๊กตารางแม่เฉพาะแถวที่ verified จริง (มีหลักฐานตามบันได §4/แถว gate-run — ห้ามติ๊กจากความรู้สึก)
+- `owner_approved`/`status: approved` แตะได้เฉพาะเมื่อเจ้าของพิมพ์อนุมัติสเปคในแชทนี้จริง + จดหลักฐาน (วันเวลา + ข้อความ) ลงไฟล์สเปค · `done` ใช้ได้เมื่อตารางแม่ครบ N/N เท่านั้น
+
 Decision Token ปิด (ตาม Schema §2):
 - `CLOSED_CLEAN` — commit ครบ ไม่มีค้าง gate เขียว (CI เขียวถ้ามี deploy)
 - `CLOSED_WITH_PENDING` — ปิดได้แต่มีงานค้าง/claimed · ระบุชัดว่าค้างอะไร
@@ -126,6 +132,7 @@ Deploy: merge SHA / CI status / live SHA   (หรือ N/A ถ้ายัง�
 Memory written: session log path / OverviewProgress(4 หัวข้อบน) / decisions.md(+N บรรทัด) / migration(ถ้าย้ายไฟล์เก่า)
 Business Plan: <อัปอะไรใน .project/BusinessPlan(.md/-Full.md) หรือ "ไม่มีการเปลี่ยนด้านธุรกิจ" หรือ N/A ถ้าไม่มีไฟล์>
 QA/QC: <อัปอะไรใน .project/qaqc-scan.md หรือ "รอบนี้ไม่มีการสแกน/แก้" หรือ N/A ถ้าไม่มีไฟล์>
+Spec: <อัปอะไรในไฟล์สเปค (status/ตารางแม่ N-M) หรือ "รอบนี้ไม่มีการเปลี่ยนสเปค" หรือ N/A ถ้าไม่มีสเปคจับคู่แผน>
 Decision Token: <token> + เหตุผล
 งานค้าง: <รายการ> + เจ้าของถัดไป
 ข้อความเปิดแชทหน้า: <ก๊อปวางได้>
@@ -139,10 +146,11 @@ Evidence: timestamp / host / cwd / commands ที่รันจริง
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · ปิดสิทธิ์ด้วย `hermes worktree close`; ถ้า merged จึงประเมิน `cleanup` 6/6 แบบ dry-run · ห้ามลบทันที และต้องรายงาน quarantine/cleanup state ใน Close Chat Report
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ปิดแชทด้วยการบันทึก Git root/branch/SHA/dirty และงานค้าง · ห้าม close/cleanup/delete Worktree หรือสลับกิ่ง เว้นแต่เจ้าของสั่งจัดการ Worktree โดยตรงแยกต่างหาก
 
 ## Changelog
 
+- v2.5 (2026-07-17 · SPEC-CENTRAL): เพิ่มขั้น Spec Sync (capability-based — เฉพาะเมื่อมีสเปคจับคู่แผน · Schema §1d) ตามแบบ Business Plan/QA-QC Sync · อัป status/ตารางแม่เฉพาะแถว verified มีหลักฐาน · owner_approved แตะได้เมื่อเจ้าของพิมพ์อนุมัติจริง + จดหลักฐาน · เพิ่มบรรทัด `Spec:` ใน Output
 - v2.4 (2026-07-14): ยุบ Review Chat เป็นโหมด PREVIEW ของ Close Chat · เพิ่ม Save Git Evidence Receipt เพื่อลดการตรวจซ้ำ โดยยังบังคับ git status สดและตรวจค่า project/task/branch/SHA ก่อนรับหลักฐาน
 - v2.3 (2026-07-10): เพิ่มขั้น QA/QC Scan Sync (capability-based — เฉพาะโปรเจกต์ที่มี `.project/qaqc-scan.md`) + บรรทัด QA/QC ใน Output · คู่กับ Use QA QC v1.0 (แผน QAQC-P4-I2) · verified ใน qaqc-scan.md ใช้บันไดหลักฐานเดิม ไม่หย่อน
 - v2.2 (2026-07-05): เกาะ Memory Schema v1.2 — เลิกเขียน `handoff.md`/`.hermes/active.md`/`.hermes/decisions.md` · แหล่งจริงของสถานะ = `.project/OverviewProgress.md` (4 หัวข้อบนสุด อัปเดตทุกครั้งก่อนอย่างอื่น) + `.project/decisions.md` (append) · เพิ่มขั้นย้ายไฟล์เก่าเป็น stub ตอนปิด · schema ไม่ตรง = ห้ามเขียนความจำ (คำสั่งเจ้าของ 2026-07-05 · ตรวจข้ามค่าย Grok+Codex)

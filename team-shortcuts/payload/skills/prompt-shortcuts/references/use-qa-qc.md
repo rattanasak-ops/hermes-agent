@@ -166,7 +166,7 @@ Z Scan All — สแกนทุกหมวดทุกช่วง · ใช�
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · scan-only อ่าน repo/path/SHA แบบไม่ขอ writer; งานแก้ต้องใช้ task worktree แยกที่ `WTL_READY` และบันทึกผลตรวจกลับ Issue เดิม
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · scan-only อ่าน repo/path/SHA ได้; งานแก้ใช้พื้นที่และกิ่งปัจจุบันเมื่อ `CURRENT_WORKSPACE_READY` และบันทึกผลกลับ Issue เดิม · ห้ามสร้าง/สลับ Worktree/กิ่งหรือบังคับ AI Relay
 
 ## Changelog
 

@@ -30,7 +30,7 @@ class WorktreeLifecycleContractCheckTests(unittest.TestCase):
     def test_owner_approved_contract_passes(self):
         result = self.run_check(CONTRACT)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn('"shortcut_count": 30', result.stdout)
+        self.assertIn('"shortcut_count": 32', result.stdout)
 
     def test_shared_folder_rule_is_blocked(self):
         text = CONTRACT.read_text(encoding="utf-8")

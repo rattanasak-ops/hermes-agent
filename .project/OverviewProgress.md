@@ -2,9 +2,22 @@
 > อ่านตามลำดับ: plan-wtl.md (plan_id: WTL — active · Worktree Lifecycle) → plan.md (plan_id: QAQC/MW) → plan-grd.md (แผน GRD จบแล้ว + คิว GRD-P5..P9) → decisions.md → hermes-standard/REQUIREMENTS.md (บัญชีความต้องการ 66 ข้อ)
 
 # Overview & Progress — Hermes Agent
-อัปเดตล่าสุด: 2026-07-16 (ชุด `Use Migrate 0-13` v1.0 active ทุกเครื่อง + กติกาโควตาเมนู + VPS ซิงก์แล้ว + **station gate PR #51 merged**) · branch งานถัดไป: แตกใหม่จาก `main` ผ่าน `hermes-new-chat open` · ป้าย: [fact] เว้นแต่ระบุ
+อัปเดตล่าสุด: 2026-07-18 (BRM รวมงานใหม่เข้า `main` แล้ว · closeout 146/146) · branch งานปัจจุบัน: `task/codex/BRM-P1-I1-branch-remediation-main-integration` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
+- **2026-07-18 (BRM-P5): รวมงานสาขาที่ตรวจแล้วกลับ `main` สำเร็จ** [fact]
+  - ฐานล่าสุด `origin/main` ถูกผนวกใน commit `c076984d0` และ `main` เลื่อนแบบเดินหน้าอย่างเดียว · push สาขางานและ `main` ขึ้น `origin` สำเร็จที่ SHA `0bd4b03d1`
+  - ชุดทดสอบเฉพาะงานหลังรวมฐานผ่าน **146/146** · `git diff --check` ผ่าน · worktree สะอาด
+  - branch/worktree ยังเก็บไว้ในช่วงกัก 72 ชั่วโมงตามกฎ WTL; ยังไม่ลบสิ่งใด
+- **2026-07-18 (BRM · ตรวจสาขา Fable/NCR): ล็อกกฎปัจจุบันว่า AI ทุกตัวผ่าน AI Portal; ไม่รวม commit ความจำ Fable local-only และไม่ย้าย local fallback จาก NCR** [fact · `DEC-AIR-001` · รายละเอียด `session-log-2026-07-18-ai-portal-routing.md`]
+  - งานใหม่จริงจาก NCR ที่รอเขียน: ต่ออายุ lease อย่างตรวจตัวตนครบ · status กัน permit หมดอายุ · Relay ต้องเห็นไฟล์เปลี่ยนและคำตัดสินรีวิว · cleanup ตอนยกเลิก
+  - ตัวกั้นปัจจุบัน: Codex DNS ล้ม · Grok ไหลไป CLI ผิดตัว · Gemini รอ login · Ollama exit 1 → UAG Skill ยังไม่ถูกเขียนและห้ามนับว่าจบ
+- **2026-07-17 (แชท Opus · SPEC-CENTRAL P5): สเปคกลางต่อสายเข้าคำสั่งกลาง 6 ตัว — branch `task/nat/SPEC-P5-I1-central-prompts-sync` push แล้ว · Save Git = SAFE_TO_MERGE · รอเจ้าของกด merge** [fact]
+  - **ทำอะไร**: PR #57 (สเปคกลางพื้นฐาน `_TEMPLATE.md` + `plan-anchor read_spec`) เจ้าของ merge แล้ว → ต่อด้วยแก้คำสั่งกลาง 6 ตัว + ทะเบียน ให้รู้จักสเปคแบบ **capability-based** (โปรเจกต์ไม่มีสเปค = เดินเหมือนเดิม 100% · ไม่พัง version lock)
+  - **ไฟล์ (2 สำเนา ตรงกันทุกไบต์ · diff 7/7 สะอาด)**: memory-schema §1d (กติกากลาง: จับคู่สเปคด้วยชื่อไฟล์ · draft ห้ามโค้ด · approved/building ทำได้ · done ห้ามพฤติกรรมใหม่ · **owner_approved เจ้าของพิมพ์เองเท่านั้น + จดหลักฐาน**) · Act-As v3.2 · New Chat v2.9 · Comply v3.3 · Close Chat v2.5 · Save Git v2.3
+  - **คุณภาพ**: รีวิวต่างค่าย GPT ก่อนลงมือ (fix-then-proceed → ปิด 3/3: กัน AI ติ๊กอนุมัติเอง/จับคู่ชื่อไฟล์กัน false-block/done แคบ) · coder=grok ผ่าน relay (codex rotate) โหมด 2 · pytest payload 8 เขียว
+  - **⚠️ ยังไม่ทำ (สำคัญ)**: **S1 (SPEC-P6) = ตัวบังคับจริงระดับโค้ด ยังไม่เริ่ม** — ตอนนี้สเปคเป็นแค่ด่านระดับคำสั่ง AI (อ่านแล้วทำตาม) ยังปลอมได้ · แผน S1/S2 ยึดใน `plan.md` (SPEC-P6/P7) แล้ว
+  - **เทส payload 2 ตัวแดง = ค้างก่อนงานนี้** (base use-new-chat 2.8 vs pin 2.7 · registry/SKILL count 32≠31) พิสูจน์แล้วไม่ใช่ของ SPEC → spawn task แยก
 - **2026-07-17 (แชท Opus · DSU-P4): shortcut `Use Create Design System` อัปเป็น v3.1 — ปิดข้อบกพร่อง 3/5 ที่การนำร่อง Root Admin ตรวจพบ · PR #58 merged (`af3aa41db`)** [fact]
   - บัญชีข้อบกพร่องจากการนำร่อง = `.project/dsu-pilot-findings.md` (สิ่งส่งมอบหลักตาม Goal Lock `DEC-DSU-002`): F-01 ด่านตรวจสำเนามาตรฐาน · F-02 กฎกันกลืนเป้าหมายแม่ (`caller_goal` + บรรทัดประกาศสถานี + โหมด pilot) · F-03 ด่านสีจำแนกสีเดิม 3 แบบ — ปิดครบทั้งคลัง (commit `e133f00` · ผู้ตรวจ GPT-5 แก้ตาม 3/3) + payload ตรงคลัง 100% (แฮชตรง 2/2) · F-04 relay ตีผลผิดเมื่อ coder commit = ปักธง task chip (เจอซ้ำ 2 เคสจริง) · F-05 ด่านเครื่องบล็อก ds-gate = รอเจ้าของเคาะ
   - สนามนำร่อง Root Admin (newwebengine2026 · worktree `DSU-P4-I1`): ชั้นแบรนด์ H/U/F ผ่าน `ds-gate` 20/20 exit 0 + สำเนามาตรฐานในโปรเจกต์อัปเป็น v3.1 (commit `c669a7a4`) · ค้าง: เดิน PHASE 3-5 ด้วย prompt รุ่นใหม่ (DSU-P4-I3) + `DesignSystem.md` ของโปรเจกต์นั้นยังไม่เข้า git
@@ -83,6 +96,7 @@
 - สาย JARVIS v2: รอเจ้าของทดสอบเสียง P0 แล้วเปิดแชตใหม่ส่ง Use AI Relay [fact]
 
 ## งานถัดไป
+0. **SPEC-CENTRAL ต่อ**: (ก) เจ้าของกด merge PR `SPEC-P5-I1` (SAFE_TO_MERGE แล้ว) + push คลัง Obsidian 7 ไฟล์ขึ้น GitLab · (ข) เปิดแชทใหม่ทำ **S1 (SPEC-P6-I1..I4)** = ตัวบังคับจริงระดับโค้ด (spec-interview + hook default-deny + เทสโจมตี 13 เคส ปิด C1-C5) — งาน security ห้ามรีบ · (ค) S2 + กระจาย 30-40 โปรเจกต์ (SPEC-P7)
 1. **เริ่มใช้จริง RSF**: เจ้าของเปิดแชทที่ NewWebEngine2026 → `Use Migrate 0` (ชุดพร้อมเคาะอยู่ session log 2026-07-16) → เคาะ 2 ข้อ + `quota: nat=3` → 3 แชทจองคนละเมนู · เฟสโค้ด 8-9 ทีละเมนูเสมอ
 1b. ประกาศทีม: รัน `curl .../install-from-github.sh | bash` ซ้ำเพื่อรับ `Use Migrate 0-13` (PR #50 merged แล้ว) + กุญแจ relay รายคน
 2. **merge งานเซสชันอื่นที่เก็บกันหายไว้**: `feature/spec-central` (curse tracker + กฎ shortcut + spec ทดลอง) + `control_webengine_flow` (badword WIP + snapshot content) — รวม PR ให้เจ้าของกด
@@ -100,6 +114,7 @@
 - **กระจกคลัง Obsidian บน VPS = พื้นที่ทีมใช้ร่วม (มีไฟล์พนักงานจริง เช่น session log ของ peter)** — ห้าม mv/rsync ทั้งโฟลเดอร์เด็ดขาด · ซิงก์ได้เฉพาะโฟลเดอร์กลาง `ai-context/` + `skills/prompt-shortcuts/` จากเครื่องเจ้าของ · เจองานแปลกบนนั้น = กู้ขึ้นกิ่ง rescue ใน GitLab ก่อนเสมอ (2026-07-16)
 
 ## งานค้าง/ส่งต่อ
+- **ใหม่ 2026-07-17 (SPEC-CENTRAL P5)**: (ก) รอเจ้าของกด **merge PR `task/nat/SPEC-P5-I1-central-prompts-sync`** (Save Git = SAFE_TO_MERGE) · (ข) รอเจ้าของ **push คลัง Obsidian 7 ไฟล์** (memory-schema + use-act-as/new-chat/comply/close-chat/save-git + registry) ขึ้น GitLab — AI push ตรงไม่ได้ · (ค) **S1 (SPEC-P6) ยังไม่เริ่ม** = ตัวบังคับจริง (ตอนนี้สเปคเป็นด่านระดับคำสั่ง AI ยังปลอมได้) · (ง) เทส payload 2 ตัวแดง-ค้างก่อนงานนี้ (spawn task แยก · ไม่ใช่ของ SPEC) · **next_owner: เจ้าของ (merge+push) → แชทใหม่ (S1)**
 - **ใหม่ 2026-07-16 (ซ่อมยาม prewrite gate — อัปเดตสถานะ)**: prewrite gate v2.2 **ซ่อมเสร็จ + เสียบปลั๊กกลับแล้ว บังคับใช้จริง** (แก้ธง "ไม่บังคับใช้" ของ station gate ด้านล่าง) · เหลือ: (ก) **push commit `4599eaca0`** ติดเพราะ 29 ไฟล์ dirty ของเซสชัน NCR ก่อนหน้า → เจ้าของงาน NCR เคลียร์ก่อน หรือเจ้าของสั่ง cherry-pick ขึ้น branch สะอาด (ตอนนี้ทำเองไม่ได้ gate บล็อก checkout/switch) (ข) prewrite gate v2 ยังไม่เข้า PR/main (โค้ด local + ติดตั้งบนเครื่องแล้ว) (ค) ซ่อมสายพาน relay เต็มระบบ = งานเจ้าของ (ง) harden รอบหน้า: git plumbing chain + false-block quoted metachar
 - **2026-07-16 (station gate · แก้แล้วบางส่วน)**: ~~prewrite-gate ไม่บังคับใช้อยู่~~ **เสียบกลับแล้ว 2026-07-16 (ยาม v2.2)** · (ก) **prewrite-gate ไม่บังคับใช้อยู่** — `~/.claude/hooks/enforce-new-chat-relay.py` มีไฟล์ (+.bak) แต่ไม่ผูกใน `settings.json`/`settings.local.json` (ถูก neutralize ระหว่างทำ PR #51 เพราะ deadlock) · เจ้าของเลือก: แก้ scope แล้วผูกกลับ หรือถอดถาวร · (ข) relay/codex crash ทั้งระบบบนเครื่องนี้ (station gate ต้องให้ Claude เขียนเอง) — งานซ่อมแยก ยังไม่ตรวจซ้ำ · (ค) station gate v2: ผูก approval รายเมนู/รายรอบ = งานปรับปรุงรอบหน้า · (ง) canonical repo จอดที่ `fix/mw-flow-station-gate` (merged · clean) สลับกลับ main ได้
 - **ใหม่ 2026-07-16**: (ก) เจ้าของ: เริ่ม RSF `Use Migrate 0` + แชท Root Admin เรื่องรวมทางอัปโหลด (ใบสั่งงานใน session log) · (ข) ตัดสินใจค้าง: บรรจุข้อตรวจ "ที่เก็บอัปโหลด {siteId}/{หมวด} ทางเดียว" เข้า `Use Migrate 0` (เสนอแล้ว รอเคาะ) · (ค) กิ่ง `vps-rescue-2026-07-16` ใน GitLab คลัง = เก็บงาน rename `Use Request Merge` + สแนปช็อต VPS (แนะนำไม่รวม main · ลบได้เมื่อเจ้าของยืนยันไม่ใช้) · (ง) **ช่องว่างเครื่องมือ WTL**: `hermes-new-chat` ไม่มีคำสั่ง close/cleanup + ธง `--allow-over-limit` ที่ข้อความ error แนะนำไม่มีจริงใน CLI → worktree merge แล้วปิด/เก็บกวาดตามสัญญาไม่ได้ (วันนี้มี 4 โฟลเดอร์ค้าง: DSU, mw-station-gate, NCR, MWTS — 2 ตัวหลัง merge แล้วรอ cleanup dry-run) · (จ) ลบกิ่ง `close/mem-vps-verified` (ซ้ำ main)

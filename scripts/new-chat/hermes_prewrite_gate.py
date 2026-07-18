@@ -1,153 +1,121 @@
 #!/usr/bin/env python3
-"""Fail-closed write gate for New Chat + Worktree + AI Relay.
+"""ด่านเขียนกลางแบบ CURRENT_WORKSPACE_ONLY.
 
-v2 (2026-07-16) — แก้ "ล็อกตัวเอง" 4 จุดตามคำสั่งเจ้าของ + ปิดช่องที่ GPT-5 ตรวจเจอ:
-1. คุมเฉพาะพื้นที่ที่ระบบจัดการ (registered worktree roots + canonical repo
-   ที่มี session อ้างถึง) — ไม่ล็อกทุก git repo ทั้งเครื่อง
-   · ตัดสินจากทั้ง cwd และ "ไฟล์เป้าหมาย" — ย้าย cwd ออกนอกเขตแล้วหลบไม่ได้
-2. ช่องความจำ `.project/` + ใบงาน relay เขียนได้เสมอในพื้นที่ที่คุม
-   (กติกา Use New Chat: ตัวควบคุมเขียนตรงได้เฉพาะสองที่นี้)
-3. shell อนุญาต git ปกติ (add/commit/push/merge) + คำสั่งอ่าน + คำสั่ง
-   lifecycle — ห้าม git อันตราย, การเขียนไฟล์ตรง, redirect ลงไฟล์,
-   command substitution ที่ซ่อนคำสั่งเขียน, find -delete, curl -o
-4. ทะเบียนกลาง (VPS) ติดต่อไม่ได้/ตอบผิดรูป = ใช้ permit ท้องถิ่นที่ยังไม่
-   หมดอายุแทน (WTL Contract §8 โหมด offline) — ไม่ตายทั้งเครื่องตอน VPS ล่ม
+Shortcut และ AI ใช้เฉพาะ Git root/branch ที่แอปเปิดอยู่ ไม่ต้องมี New Chat
+session และไม่ต้องผ่าน AI Relay แต่ยังขวางกิ่งร่วม ไฟล์ลับ การเขียนข้าม
+พื้นที่ การแก้ตัวด่าน และคำสั่งอันตราย
 """
 
 from __future__ import annotations
 
-import datetime as dt
+from datetime import datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import shlex
-import shutil
 import subprocess
 import sys
 
 
-WRITE_TOOLS = {"edit", "write", "multiedit", "notebookedit", "applypatch", "apply_patch"}
+WRITE_TOOLS = {
+    "edit", "write", "multiedit", "notebookedit", "applypatch", "apply_patch",
+    "write_file", "patch",
+}
 PATCH_PATH = re.compile(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$", re.MULTILINE)
-CONTROL_PATHS = (".project/", ".hermes/ai-relay/briefs/")
-READ_ONLY_BINS = {
-    "rg", "grep", "find", "ls", "pwd", "test", "head", "tail", "cat", "sed", "awk",
-    "wc", "stat", "du", "df", "ps", "which", "diff", "sort", "uniq", "date",
-    "basename", "dirname", "realpath", "file", "sleep", "gh", "jq", "curl",
-    "pytest", "ruff", "mypy", "eslint", "tsc",
-}
-NEUTRAL_BINS = {"export", "cd", "echo", "printf", "true", ":", "set", "unset"}
-LIFECYCLE_BINS = {
-    "relay-call", "gate-run", "hermes-new-chat", "hermes-worktree",
-    "hermes-write-permit", "hermes-hook-doctor", "hermes-prewrite-gate",
-}
-GIT_BLOCKED_SUBCOMMANDS = {
-    "apply", "checkout", "switch", "reset", "clean", "stash",
-    "filter-branch", "update-ref", "reflog",
-}
-FIND_WRITE_FLAGS = {"-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fprintf", "-fls"}
-CURL_WRITE_FLAGS = {"-o", "-O", "--output", "--remote-name", "--output-dir", "-J", "--remote-header-name"}
-SED_WRITE_CMD = re.compile(r"(?:^|;)\s*[wW]\s")
+SEGMENT_SPLIT = re.compile(r"&&|\|\||;|\n|\|")
+SUBSTITUTION = re.compile(r"\$\(([^()]*)\)|`([^`]*)`")
+ENV_ASSIGN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 FD_DUP = re.compile(r"[0-9]*>&[0-9]+")
 REDIRECT_TARGET = re.compile(r"[0-9]*>{1,2}\s*([^\s;|&]+)")
-REDIRECT_SAFE_TARGETS = {"/dev/null", "/dev/stdout", "/dev/stderr"}
-SUBSTITUTION = re.compile(r"\$\(([^()]*)\)|`([^`]*)`")
-SEGMENT_SPLIT = re.compile(r"&&|\|\||;|\n|\|")
-ENV_ASSIGN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 ABS_PATH_TOKEN = re.compile(r"(?:~/|/)[^\s'\";|&<>()]+")
-DEFAULT_WORKTREE_ROOTS = (
-    Path.home() / "Documents" / "Worktrees",
-    Path("/home/linux-nat/.worktree"),
+SED_WRITE_CMD = re.compile(r"(?:^|;)\s*[wW]\s")
+
+PROTECTED_BRANCHES = {"main", "master", "develop", "development", "production", "prod"}
+SECRET_PARTS = {
+    ".hermes", ".grok", ".git", "secret", "secrets", "credential", "credentials",
+    "token", "tokens", "private-key", "private-keys", "private_key", "private_keys",
+}
+SECRET_SUFFIXES = {".pem", ".key", ".p12", ".pfx", ".jks"}
+SECRET_FILENAMES = {"id_rsa", "id_ed25519", "id_ecdsa", "id_dsa"}
+SAFE_REDIRECT_TARGETS = {"/dev/null", "/dev/stdout", "/dev/stderr"}
+READ_ONLY_BINS = {
+    "rg", "grep", "find", "ls", "pwd", "test", "head", "tail", "cat", "sed", "awk",
+    "wc", "stat", "du", "df", "ps", "which", "diff", "sort", "uniq", "date", "jq",
+    "basename", "dirname", "realpath", "file", "gh", "curl", "env", "printenv",
+}
+NEUTRAL_BINS = {"export", "cd", "echo", "printf", "true", ":", "set", "unset"}
+BLOCKED_BINS = {
+    "rm", "rmdir", "shred", "dd", "mkfs", "truncate", "tee", "chmod", "chown", "sudo",
+    "su", "kill", "pkill", "killall", "launchctl", "systemctl", "service", "reboot",
+    "shutdown", "kubectl", "helm", "terraform", "ansible", "rsync", "xargs", "eval",
+}
+SHELL_BINS = {"bash", "sh", "zsh", "fish"}
+FIND_WRITE_FLAGS = {"-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fprintf", "-fls"}
+CURL_WRITE_FLAGS = {"-o", "-O", "--output", "--remote-name", "--output-dir", "-J", "--remote-header-name"}
+GIT_BLOCKED_SUBCOMMANDS = {
+    "apply", "checkout", "switch", "reset", "clean", "stash", "rebase", "cherry-pick",
+    "filter-branch", "update-ref", "reflog",
+}
+GIT_PROTECTED_MUTATIONS = {"add", "commit", "push", "merge", "tag"}
+WORKTREE_READ_ACTIONS = {"list", "status", "doctor"}
+PACKAGE_WRITE_ACTIONS = {
+    "add", "install", "i", "remove", "rm", "uninstall", "update", "upgrade", "publish",
+    "link", "unlink", "import", "patch", "deploy", "exec", "dlx", "create", "init",
+}
+MAX_OWNER_PROMPT_CHARS = 500
+BRANCH_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
+OWNER_BRANCH_NEGATION = re.compile(
+    r"(?:ห้าม|อย่า|ไม่ต้อง|ไม่ให้|ไม่ควร|do\s+not|don't|never)"
+    r"\s*(?:ให้\s+\S+\s*)?(?:สร้าง|เปิด|create|make|new)?\s*"
+    r"(?:new\s*)?(?:branch|สาขา|กิ่ง)",
+    re.IGNORECASE,
 )
+PASTED_EXAMPLE_MARKERS = {"ตัวอย่าง", "แชทเก่า", "เหตุการณ์เดิม", "example from", "old chat"}
 
 
 def block(reason: str) -> int:
-    print(f"[Hermes New Chat Gate] BLOCKED: {reason}", file=sys.stderr)
+    print(f"[Hermes Current Workspace Gate] BLOCKED: {reason}", file=sys.stderr)
     return 2
 
 
-def warn(message: str) -> None:
-    print(f"[Hermes New Chat Gate] WARN: {message}", file=sys.stderr)
-
-
-def git_root(cwd: Path) -> Path | None:
-    if not cwd.is_dir():
-        return None
-    proc = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=cwd, text=True, capture_output=True)
-    return Path(proc.stdout.strip()).resolve() if proc.returncode == 0 else None
-
-
-def sessions_dir() -> Path:
-    return Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes")) / "new-chat" / "sessions"
-
-
-def iter_sessions():
-    folder = sessions_dir()
-    if not folder.is_dir():
-        return
-    for path in sorted(folder.glob("*.json")):
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        if isinstance(data, dict):
-            yield data
-
-
-def worktree_roots() -> list[Path]:
-    env = os.environ.get("HERMES_WORKTREE_ROOTS")
-    if env:
-        return [Path(item).expanduser() for item in env.split(os.pathsep) if item.strip()]
-    return list(DEFAULT_WORKTREE_ROOTS)
-
-
 def resolve_loose(path: Path) -> Path:
-    """resolve แบบไม่บังคับว่าไฟล์ต้องมีอยู่จริง (ไฟล์ใหม่ยังไม่ถูกสร้าง)"""
     try:
         return path.expanduser().resolve()
     except OSError:
         return path.expanduser().absolute()
 
 
-def under_worktree_root(path: Path) -> bool:
-    for base in worktree_roots():
-        try:
-            path.relative_to(resolve_loose(base))
-            return True
-        except (ValueError, OSError):
-            continue
-    return False
+def git_root(cwd: Path) -> Path | None:
+    if not cwd.is_dir():
+        return None
+    proc = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], cwd=cwd, text=True, capture_output=True
+    )
+    return resolve_loose(Path(proc.stdout.strip())) if proc.returncode == 0 else None
 
 
-def session_for(root: Path) -> dict | None:
-    for data in iter_sessions():
-        if resolve_loose(Path(data.get("worktree", "/__missing__"))) == root:
-            return data
-    return None
-
-
-def is_known_canonical(root: Path) -> bool:
-    for data in iter_sessions():
-        if resolve_loose(Path(data.get("canonical_repo", "/__missing__"))) == root:
-            return True
-    return False
-
-
-def in_managed_scope(root: Path) -> bool:
-    """คุมเฉพาะพื้นที่ที่ระบบจัดการ — ที่อื่นปล่อยผ่าน (ด่านอื่นดูแลของมันเอง)"""
-    return under_worktree_root(root) or is_known_canonical(root) or session_for(root) is not None
+def current_branch(root: Path) -> str:
+    proc = subprocess.run(
+        ["git", "branch", "--show-current"], cwd=root, text=True, capture_output=True
+    )
+    return proc.stdout.strip() if proc.returncode == 0 else ""
 
 
 def protected_paths() -> list[Path]:
-    """พื้นที่โครงสร้างของด่านเอง — ห้ามเครื่องมือเขียนเด็ดขาด (กัน AI ถอดปลั๊ก/ปลอม session)"""
     home = Path.home()
     hermes = Path(os.environ.get("HERMES_HOME", home / ".hermes"))
     return [
         hermes / "new-chat",
         hermes / "new-chat-tools",
+        hermes / "owner-intents",
         home / ".claude" / "hooks",
         home / ".claude" / "settings.json",
         home / ".claude" / "settings.local.json",
+        home / ".codex" / "hooks",
+        home / ".codex" / "hooks.json",
+        home / ".cursor" / "hooks",
     ]
 
 
@@ -158,227 +126,349 @@ def protected_target(path: Path) -> bool:
         if resolved == base_resolved or base_resolved in resolved.parents:
             return True
     local_bin = resolve_loose(Path.home() / ".local" / "bin")
-    if resolved.parent == local_bin and (
-        resolved.name.startswith("hermes-") or resolved.name in {"relay-call", "gate-run", "relay-portal"}
-    ):
-        return True
-    return False
+    return resolved.parent == local_bin and (
+        resolved.name.startswith("hermes-")
+        or resolved.name in {"relay-call", "gate-run", "relay-portal"}
+    )
 
 
-def project_key(root: Path) -> Path | None:
-    """canonical ประจำพื้นที่ — ใช้เทียบว่า 2 พื้นที่เป็นโปรเจกต์เดียวกันไหม"""
-    data = session_for(root)
-    if data:
-        return resolve_loose(Path(data.get("canonical_repo", "/__missing__")))
-    if is_known_canonical(root):
-        return root
-    for base in worktree_roots():
-        base_resolved = resolve_loose(base)
-        try:
-            rel = root.relative_to(base_resolved)
-        except ValueError:
-            continue
-        return base_resolved / rel.parts[0] if rel.parts else None
-    return None
-
-
-def managed_root_for_path(target: Path) -> Path | None:
-    """หา root ของเขตคุมที่ครอบ path นี้ — เทียบจากตัวไฟล์เป้าหมาย ไม่ใช่ cwd (กันหลบด่านด้วย cwd)"""
-    resolved = resolve_loose(target)
-    best: Path | None = None
-    for data in iter_sessions():
-        for key in ("worktree", "canonical_repo"):
-            candidate = resolve_loose(Path(data.get(key, "/__missing__")))
-            if resolved == candidate or candidate in resolved.parents:
-                if best is None or len(candidate.parts) > len(best.parts):
-                    best = candidate
-    if best is not None:
-        return best
-    for base in worktree_roots():
-        base_resolved = resolve_loose(base)
-        try:
-            rel = resolved.relative_to(base_resolved)
-        except ValueError:
-            continue
-        # ใต้ registered root: ถาม git จริงจาก ancestor ที่มีอยู่ (แม่นสุด)
-        probe = resolved
-        while not probe.is_dir() and probe != base_resolved and probe.parent != probe:
-            probe = probe.parent
-        found = git_root(probe)
-        if found is not None:
-            try:
-                found.relative_to(base_resolved)
-                return found
-            except ValueError:
-                pass
-        # สำรอง: โครงมาตรฐาน <root>/<project>/<staff>/<task>/... — เขตคุม = ระดับ task
-        depth = min(len(rel.parts) - 1, 3) if rel.parts else 0
-        return base_resolved.joinpath(*rel.parts[:depth]) if depth else base_resolved
-    return None
-
-
-def permit_locally_valid(session: dict) -> bool:
-    if session.get("status") != "NEW_CHAT_READY" or session.get("wtl") != "WTL_READY":
-        return False
+def secret_target(path: Path, root: Path) -> bool:
+    resolved = resolve_loose(path)
     try:
-        expires = dt.datetime.fromisoformat(str(session["permit_expires_at"]))
-        return expires > dt.datetime.now(dt.timezone.utc)
-    except (KeyError, TypeError, ValueError):
-        return False
-
-
-def live_session_ready(session: dict) -> bool:
-    if not permit_locally_valid(session):
-        return False
-    tool = shutil.which("hermes-worktree")
-    if not tool:
-        # WTL §8: ทะเบียนกลางเช็คไม่ได้ = ทำต่อได้เฉพาะ task เดิมที่ permit ท้องถิ่นยังไม่หมดอายุ
-        warn("ไม่พบ hermes-worktree — ใช้ permit ท้องถิ่น (โหมด offline · ห้ามเปิด/โอน/ปิดงานจนกว่าทะเบียนกลับมา)")
-        return True
-    command = [tool, "status", "--task-id", str(session.get("task_id") or ""), "--json"]
-    if session.get("registry"):
-        command += ["--registry", str(session["registry"])]
-    try:
-        proc = subprocess.run(command, text=True, capture_output=True, timeout=20)
-        result = json.loads(proc.stdout)
-    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
-        warn("ทะเบียนกลางตอบไม่ได้ — ใช้ permit ท้องถิ่น (โหมด offline · WTL §8)")
-        return True
-    if isinstance(result, dict) and "decision" in result:
-        # ทะเบียนตอบชัด: เชื่อคำตัดสินทะเบียน (READY เท่านั้นที่ผ่าน)
-        return result.get("decision") == "WTL_READY"
-    # ทะเบียนตอบผิดรูป (เช่น error ฝั่ง ssh) = infra พัง ไม่ใช่งานไม่พร้อม → โหมด offline
-    warn("ทะเบียนกลางตอบผิดรูป — ใช้ permit ท้องถิ่น (โหมด offline · WTL §8)")
-    return True
-
-
-def is_control_path(path: Path, root: Path) -> bool:
-    try:
-        rel = resolve_loose(path).relative_to(root).as_posix()
+        relative = resolved.relative_to(root)
     except ValueError:
-        return False
-    return any(rel == prefix.rstrip("/") or rel.startswith(prefix) for prefix in CONTROL_PATHS)
+        relative = resolved
+    lowered = [part.lower() for part in relative.parts]
+    name = resolved.name.lower()
+    return (
+        any(part == ".env" or part.startswith(".env.") for part in lowered)
+        or any(part in SECRET_PARTS for part in lowered)
+        or name in SECRET_FILENAMES
+        or resolved.suffix.lower() in SECRET_SUFFIXES
+    )
 
 
-def path_allowed(path: Path, root: Path, session: dict, role: str) -> bool:
-    try:
-        rel = resolve_loose(path).relative_to(root).as_posix()
-    except ValueError:
-        return False
-    if role == "code":
-        allowed = session.get("allowed_paths") or ["."]
-        return any(item == "." or rel == item.rstrip("/") or rel.startswith(item.rstrip("/") + "/") for item in allowed)
-    return any(rel.startswith(prefix) for prefix in CONTROL_PATHS)
-
-
-def lifecycle_segment_ok(tokens: list[str]) -> bool:
-    name = Path(tokens[0]).name
-    if name not in LIFECYCLE_BINS:
-        return False
-    if name == "relay-call":
-        return "--role" in tokens and "--cwd" in tokens
-    if name == "hermes-new-chat":
-        return len(tokens) > 1 and tokens[1] in {"open", "status"}
-    if name == "hermes-worktree":
-        return len(tokens) > 1 and tokens[1] in {"status", "list", "doctor", "enter", "report", "scan"}
-    if name == "hermes-write-permit":
-        return len(tokens) > 1 and tokens[1] in {"status", "check", "acquire", "release"}
-    return True  # gate-run / hermes-hook-doctor / hermes-prewrite-gate
-
-
-def git_segment_ok(tokens: list[str]) -> bool:
-    args = tokens[1:]
-    sub = next((t for t in args if not t.startswith("-")), "")
-    if sub in GIT_BLOCKED_SUBCOMMANDS:
-        return False
-    if sub == "push" and any(t in {"--force", "-f", "--force-with-lease"} for t in args):
-        return False
-    if sub == "worktree" and any(t in {"add", "remove", "move", "prune", "lock", "unlock"} for t in args):
-        return False  # สร้าง/ลบ worktree ต้องผ่าน Worktree Manager เท่านั้น (WTL §12)
-    if sub == "branch" and any(t in {"-D", "-d", "--delete", "-f", "--force", "-m", "--move"} for t in args):
-        return False
-    return bool(sub)
+def inside(path: Path, root: Path) -> bool:
+    resolved = resolve_loose(path)
+    return resolved == root or root in resolved.parents
 
 
 def redirects_safe(segment: str) -> bool:
-    cleaned = FD_DUP.sub("", segment)  # 2>&1 = ปลอดภัย (ไม่แตะไฟล์)
+    cleaned = FD_DUP.sub("", segment)
     if ">" not in cleaned:
         return True
     targets = REDIRECT_TARGET.findall(cleaned)
     stripped = REDIRECT_TARGET.sub("", cleaned)
-    if ">" in stripped:
-        return False  # มี > ที่จับ target ไม่ได้ = ไม่รู้ปลายทาง → fail-closed
-    return bool(targets) and all(t in REDIRECT_SAFE_TARGETS for t in targets)
+    return ">" not in stripped and bool(targets) and all(t in SAFE_REDIRECT_TARGETS for t in targets)
 
 
-def segment_ok(segment: str) -> bool:
+def _unwrap(tokens: list[str]) -> list[str]:
+    while tokens:
+        while tokens and ENV_ASSIGN.match(tokens[0]):
+            tokens = tokens[1:]
+        if not tokens:
+            break
+        first = Path(tokens[0]).name
+        if first == "env":
+            tokens = tokens[1:]
+            while tokens:
+                if ENV_ASSIGN.match(tokens[0]) or tokens[0] in {"-i", "--ignore-environment"}:
+                    tokens = tokens[1:]
+                    continue
+                if tokens[0] in {"-u", "--unset", "-C", "--chdir"} and len(tokens) >= 2:
+                    tokens = tokens[2:]
+                    continue
+                if tokens[0].startswith(("--unset=", "--chdir=")):
+                    tokens = tokens[1:]
+                    continue
+                break
+            continue
+        if first in {"command", "nice", "time", "nohup"}:
+            tokens = tokens[1:]
+            continue
+        break
+    return tokens
+
+
+def _content_text(value: object) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "\n".join(filter(None, (_content_text(item) for item in value)))
+    if isinstance(value, dict):
+        for key in ("text", "content", "message"):
+            if key in value:
+                text = _content_text(value[key])
+                if text:
+                    return text
+    return ""
+
+
+def _entry_user_text(entry: object) -> str:
+    if not isinstance(entry, dict) or entry.get("isMeta") is True:
+        return ""
+    message = entry.get("message")
+    role = str(entry.get("role") or "").lower()
+    entry_type = str(entry.get("type") or "").lower()
+    if isinstance(message, dict):
+        role = str(message.get("role") or role).lower()
+    if role != "user" and entry_type not in {"user", "human", "user_message"}:
+        return ""
+    return _content_text(message if message is not None else entry.get("content"))
+
+
+def _transcript_last_user(path_value: object) -> str:
+    if not isinstance(path_value, str) or not path_value.strip():
+        return ""
+    path = Path(path_value).expanduser()
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return ""
+    entries: list[object] = []
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        for line in raw.splitlines():
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    else:
+        entries = parsed if isinstance(parsed, list) else [parsed]
+    texts = [_entry_user_text(entry) for entry in entries]
+    return next((text for text in reversed(texts) if text.strip()), "")
+
+
+def latest_owner_prompt(payload: dict) -> str:
+    transcript = _transcript_last_user(
+        payload.get("transcript_path") or payload.get("transcript")
+    )
+    if transcript:
+        return transcript.strip()
+    for key in ("user_prompt", "last_user_message", "user_message", "prompt"):
+        text = _content_text(payload.get(key))
+        if text.strip():
+            return text.strip()
+    return ""
+
+
+def valid_branch_name(name: str) -> bool:
+    lowered = name.lower()
+    return bool(BRANCH_NAME.fullmatch(name)) and not (
+        lowered in PROTECTED_BRANCHES
+        or name.startswith("-")
+        or name.endswith(("/", ".", ".lock"))
+        or ".." in name
+        or "@{" in name
+        or "//" in name
+    )
+
+
+def owner_requested_branch(payload: dict | None, branch_name: str) -> bool:
+    if payload is None or not valid_branch_name(branch_name):
+        return False
+    prompt = latest_owner_prompt(payload)
+    if not prompt:
+        return stored_owner_branch_intent(payload, branch_name)
+    if (
+        len(prompt) > MAX_OWNER_PROMPT_CHARS
+        or prompt.count("\n") > 8
+        or any(marker in prompt.lower() for marker in PASTED_EXAMPLE_MARKERS)
+        or OWNER_BRANCH_NEGATION.search(prompt)
+    ):
+        return False
+    escaped = re.escape(branch_name)
+    patterns = (
+        rf"(?:สร้าง|เปิด|create|make)\s*(?:new\s*)?(?:branch|สาขา|กิ่ง)"
+        rf"\s*(?:ใหม่\s*)?(?:ชื่อ|name)?\s*(?:=|:)?\s*[`'\"]?{escaped}(?![A-Za-z0-9._/-])",
+        rf"git\s+(?:switch\s+-c|checkout\s+-b|branch)\s+{escaped}(?![A-Za-z0-9._/-])",
+    )
+    return any(re.search(pattern, prompt, re.IGNORECASE) for pattern in patterns)
+
+
+def stored_owner_branch_intent(payload: dict, branch_name: str) -> bool:
+    cwd = resolve_loose(Path(str(payload.get("cwd") or Path.cwd())))
+    root = git_root(cwd)
+    if root is None:
+        return False
+    key = hashlib.sha256(str(root).encode("utf-8")).hexdigest()
+    path = Path.home() / ".hermes" / "owner-intents" / f"{key}.json"
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+        expires = datetime.fromisoformat(str(record.get("expires_at") or ""))
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return False
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) >= expires:
+        path.unlink(missing_ok=True)
+        return False
+    return (
+        record.get("schema") == "hermes-owner-branch-intent-v1"
+        and record.get("git_root") == str(root)
+        and record.get("branch") == branch_name
+    )
+
+
+def branch_creation_target(tokens: list[str]) -> str:
+    args = tokens[1:]
+    if args == ["branch"]:
+        return ""
+    if len(args) == 2 and args[0] == "branch":
+        return args[1]
+    if len(args) == 3 and args[0] == "switch" and args[1] in {"-c", "--create"}:
+        return args[2]
+    if len(args) == 3 and args[0] == "checkout" and args[1] == "-b":
+        return args[2]
+    return ""
+
+
+def worktree_manager_ok(tokens: list[str]) -> bool | None:
+    first = Path(tokens[0]).name
+    if first in {"hermes-new-chat", "hermes-worktree"}:
+        action = next((item for item in tokens[1:] if not item.startswith("-")), "")
+        return not action or action in WORKTREE_READ_ACTIONS
+    if first != "hermes":
+        return None
+    args = [item for item in tokens[1:] if not item.startswith("-")]
+    if not args or args[0] not in {"worktree", "new-chat"}:
+        return None
+    action = args[1] if len(args) > 1 else ""
+    return not action or action in WORKTREE_READ_ACTIONS
+
+
+def git_segment_ok(tokens: list[str], branch: str, payload: dict | None = None) -> bool:
+    args = tokens[1:]
+    if any(
+        item == "-C"
+        or item in {"--git-dir", "--work-tree", "--namespace"}
+        or item.startswith(("--git-dir=", "--work-tree=", "--namespace="))
+        for item in args
+    ):
+        return False
+    sub = next((item for item in args if not item.startswith("-")), "")
+    create_target = branch_creation_target(tokens)
+    if create_target:
+        return owner_requested_branch(payload, create_target)
+    if not sub or sub in GIT_BLOCKED_SUBCOMMANDS:
+        return False
+    if sub == "push" and any(item in {"--force", "-f", "--force-with-lease"} for item in args):
+        return False
+    if sub == "worktree":
+        return len(args) > 1 and args[1] in {"list"}
+    if sub == "branch":
+        allowed = {"--show-current", "--list", "-l", "-a", "--all", "-r", "--remotes", "-v", "-vv"}
+        return all(item.startswith("-") and item in allowed for item in args[1:])
+    if branch in PROTECTED_BRANCHES and sub in GIT_PROTECTED_MUTATIONS:
+        return False
+    return True
+
+
+def package_segment_ok(tokens: list[str]) -> bool:
+    args = [item for item in tokens[1:] if not item.startswith("-")]
+    if not args:
+        return True
+    return args[0].lower() not in PACKAGE_WRITE_ACTIONS
+
+
+def shell_segment_ok(tokens: list[str], branch: str) -> bool:
+    for index, item in enumerate(tokens[1:], start=1):
+        if item == "-c" or (item.startswith("-") and "c" in item[1:]):
+            return index + 1 < len(tokens) and bash_allowed(tokens[index + 1], branch)
+    return True
+
+
+def segment_ok(segment: str, branch: str, payload: dict | None = None) -> bool:
     segment = segment.strip()
     if not segment:
         return True
-    # command substitution: เนื้อในต้องผ่านด่านเองด้วย (กัน echo $(rm ...))
-    def _check_inner(match: re.Match) -> str:
-        inner = match.group(1) or match.group(2) or ""
-        return "__SUBST_OK__" if bash_allowed(inner) else "__SUBST_BAD__"
 
-    flattened = SUBSTITUTION.sub(_check_inner, segment)
+    def check_substitution(match: re.Match) -> str:
+        inner = match.group(1) or match.group(2) or ""
+        return "__SUBST_OK__" if bash_allowed(inner, branch) else "__SUBST_BAD__"
+
+    flattened = SUBSTITUTION.sub(check_substitution, segment)
     if "__SUBST_BAD__" in flattened or "$(" in flattened or "`" in flattened:
-        return False  # ซ้อนหลายชั้น/จับไม่หมด = fail-closed
+        return False
     if not redirects_safe(flattened):
         return False
     try:
-        tokens = shlex.split(flattened)
+        tokens = _unwrap(shlex.split(flattened))
     except ValueError:
         return False
-    while tokens and ENV_ASSIGN.match(tokens[0]):
-        tokens = tokens[1:]
-    while tokens and Path(tokens[0]).name in {"command", "nice", "time", "nohup"}:
-        tokens = tokens[1:]  # ตัวห่อคำสั่ง: ตรวจคำสั่งจริงข้างใน
     if not tokens:
         return True
     first = Path(tokens[0]).name
+    manager_result = worktree_manager_ok(tokens)
+    if manager_result is not None:
+        return manager_result
+    if first in BLOCKED_BINS:
+        return False
+    if first in SHELL_BINS:
+        return shell_segment_ok(tokens, branch)
     if first in NEUTRAL_BINS:
         return True
     if first == "git":
-        return git_segment_ok(tokens)
-    if first.startswith("python"):
-        return "-m" in tokens and ("pytest" in tokens or "unittest" in tokens) and "-c" not in tokens
+        return git_segment_ok(tokens, branch, payload)
+    if first in {"pnpm", "npm", "yarn", "bun"}:
+        return package_segment_ok(tokens)
+    if first in {"pip", "pip3", "uv"} and any(item in PACKAGE_WRITE_ACTIONS for item in tokens[1:]):
+        return False
     if first == "find":
-        return not any(t in FIND_WRITE_FLAGS for t in tokens)
+        return not any(item in FIND_WRITE_FLAGS for item in tokens)
     if first == "curl":
-        return not any(t in CURL_WRITE_FLAGS for t in tokens)
+        return not any(item in CURL_WRITE_FLAGS for item in tokens)
     if first == "sed":
-        for t in tokens[1:]:
-            if t.startswith("--in-place"):
+        for item in tokens[1:]:
+            if item.startswith("--in-place"):
                 return False
-            if t.startswith("-") and t != "-" and not t.startswith("--") and "i" in t[1:]:
-                return False  # -i / -i.bak / -ni = แก้ไฟล์ตรง
-            if SED_WRITE_CMD.search(t):
+            if item.startswith("-") and item != "-" and not item.startswith("--") and "i" in item[1:]:
+                return False
+            if SED_WRITE_CMD.search(item):
                 return False
         return True
     if first in READ_ONLY_BINS:
         return True
-    return lifecycle_segment_ok(tokens)
+    if first.startswith("python") and "-c" in tokens:
+        return False
+    return True
 
 
-def bash_allowed(command: str) -> bool:
-    return all(segment_ok(part) for part in SEGMENT_SPLIT.split(command))
-
-
-def bash_touches_managed(command: str, cwd: Path) -> bool:
-    """เขต bash: จาก cwd หรือ path เต็มในคำสั่งที่ชี้เข้าเขตคุม (กันตั้ง cwd นอกเขตแล้วยิงกลับเข้า)"""
-    root = git_root(cwd)
-    if root is not None and in_managed_scope(root):
-        return True
-    for token in ABS_PATH_TOKEN.findall(command):
-        p = Path(token)
-        if managed_root_for_path(p) is not None or protected_target(p):
-            return True
-    return False
+def bash_allowed(command: str, branch: str = "", payload: dict | None = None) -> bool:
+    return all(segment_ok(part, branch, payload) for part in SEGMENT_SPLIT.split(command))
 
 
 def bash_hits_protected(command: str) -> bool:
-    """คำสั่ง shell แตะพื้นที่โครงสร้างด่านเอง (hook/session/settings/เครื่องมือ) = บล็อกเสมอ"""
     return any(protected_target(Path(token)) for token in ABS_PATH_TOKEN.findall(command))
+
+
+def bash_invokes_owner_intent(command: str) -> bool:
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        return True
+    return any(
+        Path(token).name in {"hermes-owner-intent", "hermes_owner_intent.py"}
+        for token in tokens
+    )
+
+
+def extract_targets(tool: str, tool_input: dict, cwd: Path) -> list[Path]:
+    values: list[str] = []
+    value = tool_input.get("file_path") or tool_input.get("path")
+    if isinstance(value, str) and value.strip():
+        values.append(value)
+    if tool in {"applypatch", "apply_patch"}:
+        patch_text = str(
+            tool_input.get("patch") or tool_input.get("input") or tool_input.get("command") or ""
+        )
+        values.extend(PATCH_PATH.findall(patch_text))
+    targets = []
+    for value in values:
+        path = Path(value).expanduser()
+        targets.append(path if path.is_absolute() else cwd / path)
+    return targets
 
 
 def run(payload: dict) -> int:
@@ -390,90 +480,34 @@ def run(payload: dict) -> int:
         return 0
     raw = payload.get("tool_input")
     tool_input = raw if isinstance(raw, dict) else {}
-    cwd = Path(str(payload.get("cwd") or Path.cwd())).expanduser().resolve()
+    cwd = resolve_loose(Path(str(payload.get("cwd") or Path.cwd())))
+    root = git_root(cwd)
+    branch = current_branch(root) if root else ""
+
     if tool == "bash":
         command = str(tool_input.get("command") or tool_input.get("cmd") or "")
-        if bash_hits_protected(command) and not bash_allowed(command):
-            return block("คำสั่ง shell แตะพื้นที่โครงสร้างของด่าน (hook/session/settings/เครื่องมือ Hermes) — ห้ามถอดหรือแก้ด่านผ่าน shell")
-        if not bash_touches_managed(command, cwd):
-            return 0
-        if bash_allowed(command):
-            return 0
-        return block(
-            "คำสั่ง shell เขียนไฟล์/คำสั่งเสี่ยงในพื้นที่ที่ระบบคุม — ใช้ได้เฉพาะคำสั่งอ่าน, git ปกติ, "
-            "และคำสั่ง lifecycle (relay-call/gate-run/hermes-*) · งานเขียนโค้ดต้องผ่าน relay-call --role code"
-        )
-    values = []
-    file_value = tool_input.get("file_path") or tool_input.get("path")
-    if isinstance(file_value, str) and file_value.strip():
-        values.append(file_value)
-    if tool in {"applypatch", "apply_patch"}:
-        # Claude/Cursor ส่ง patch ใน `patch` หรือ `input`; Codex Hook ส่งใน `command`.
-        patch_text = str(
-            tool_input.get("patch")
-            or tool_input.get("input")
-            or tool_input.get("command")
-            or ""
-        )
-        values.extend(PATCH_PATH.findall(patch_text))
-    root = git_root(cwd)
-    cwd_managed = root is not None and in_managed_scope(root)
-    if not values:
-        return block("คำสั่งเขียนไม่มี path ให้ตรวจ") if cwd_managed else 0
-    targets = []
-    for value in values:
-        target = Path(value).expanduser()
-        if not target.is_absolute():
-            target = cwd / target
-        targets.append(target)
-    # โครงสร้างด่านเอง (hook/session/settings/เครื่องมือ Hermes) = ห้ามเขียนเด็ดขาด ทุกกรณี
+        if bash_invokes_owner_intent(command):
+            return block("ห้าม AI สร้างใบอนุญาตกิ่งแทนข้อความจากเจ้าของ")
+        if bash_hits_protected(command) and not bash_allowed(command, branch, payload):
+            return block("คำสั่งพยายามแก้พื้นที่ Hook/Settings/เครื่องมือ Hermes")
+        if not bash_allowed(command, branch, payload):
+            return block("คำสั่งสร้าง/สลับพื้นที่ ติดตั้งของ ลบไฟล์ เขียนผ่าน shell หรือเป็นคำสั่งอันตราย")
+        return 0
+
+    targets = extract_targets(tool, tool_input, cwd)
+    if not targets:
+        return block("คำสั่งเขียนไม่มี path ให้ตรวจ")
+    workspace = root or cwd
+    if root and (not branch or branch in PROTECTED_BRANCHES):
+        label = "detached HEAD" if not branch else f"กิ่ง {branch}"
+        return block(f"พื้นที่ปัจจุบันอยู่บน {label}; เจ้าของต้องเปิดกิ่งงานก่อนเขียน")
     for target in targets:
         if protected_target(target):
-            return block("ห้ามเขียนทับพื้นที่โครงสร้างของด่าน (hook/session/settings/เครื่องมือ Hermes) — จะถอด/ปลอมด่านไม่ได้")
-    session = session_for(root) if cwd_managed else None
-    if cwd_managed and session:
-        if resolve_loose(Path(session.get("canonical_repo", "/__missing__"))) == root:
-            return block("ห้ามเขียนโค้ดใน canonical repo ที่ใช้ร่วมกัน — เปิดงานผ่าน `hermes-new-chat open`")
-        role = os.environ.get("HERMES_RELAY_ROLE", "controller")
-        this_project = project_key(root)
-        inside, outside = [], []
-        for target in targets:
-            try:
-                resolve_loose(target).relative_to(root)
-                inside.append(target)
-            except ValueError:
-                outside.append(target)
-        if outside:
-            if role == "code":
-                return block("บทบาท code ห้ามเขียนนอก worktree ของงาน — เขียนได้เฉพาะ allowed paths ใน task")
-            for target in outside:
-                governed = managed_root_for_path(target)
-                if governed is None:
-                    continue  # เป้าหมายนอกเขตคุมทั้งหมด (scratchpad/repo อิสระ) = ผ่าน
-                # ช่องความจำข้ามพื้นที่ = ผ่านเฉพาะโปรเจกต์เดียวกัน (กัน controller เขียน .project ของโปรเจกต์อื่น)
-                if is_control_path(target, governed) and project_key(governed) == this_project:
-                    continue
-                return block("เขียนไฟล์เข้าเขต Worktree/canonical อื่นที่ระบบคุม — เข้าไปทำงานในพื้นที่นั้นผ่าน `hermes-new-chat open`")
-        if inside:
-            # ช่องความจำ: .project/ + ใบงาน relay เขียนได้เสมอ (กติกา Use New Chat)
-            if not all(is_control_path(target, root) for target in inside):
-                branch = subprocess.run(["git", "branch", "--show-current"], cwd=root, text=True, capture_output=True).stdout.strip()
-                if branch != session.get("branch") or not live_session_ready(session):
-                    return block("branch, lease, permit หรือ WTL state ปัจจุบันไม่พร้อม — เช็คด้วย `hermes-new-chat status --task-id <task>`")
-                for target in inside:
-                    if not path_allowed(target, root, session, role):
-                        return block("บทบาทนี้ไม่มีสิทธิ์เขียน path ดังกล่าว; งานโปรเจกต์ต้องผ่าน relay-call --role code")
-        return 0
-    # cwd นอกเขต หรือเขตคุมแบบไม่มี session (เช่น canonical repo): ตัดสินรายไฟล์เป้าหมาย
-    for target in targets:
-        governed = managed_root_for_path(target)
-        if governed is None:
-            continue  # เป้าหมายนอกเขตคุมทั้งหมด (scratchpad, ~/.claude, โปรเจกต์อิสระ) = ผ่าน
-        if is_control_path(target, governed):
-            continue  # ช่องความจำ .project/ + ใบงาน relay = ผ่านเสมอ
-        if is_known_canonical(governed):
-            return block("ห้ามเขียนโค้ดใน canonical repo ที่ใช้ร่วมกัน — เปิดงานผ่าน `hermes-new-chat open` (เขียนตรงได้เฉพาะ .project/ และใบงาน relay)")
-        return block("ไม่พบ NEW_CHAT_READY สำหรับ Worktree นี้ — เปิดงานผ่าน `hermes-new-chat open` ก่อน")
+            return block("ห้ามเขียนทับ Hook, Settings, session หรือเครื่องมือ Hermes")
+        if not inside(target, workspace):
+            return block("ไฟล์เป้าหมายอยู่นอกพื้นที่ปัจจุบัน; ห้ามเขียนข้าม Git root")
+        if secret_target(target, workspace):
+            return block("ไฟล์เป้าหมายเป็นไฟล์ลับหรือพื้นที่ควบคุมที่ห้ามแก้")
     return 0
 
 

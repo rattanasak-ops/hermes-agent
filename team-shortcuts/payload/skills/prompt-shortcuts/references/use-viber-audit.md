@@ -592,7 +592,7 @@ $HERMES_OBSIDIAN_ROOT/sources/viber-enterprise-standard-project-audit.md
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · Audit ต้องตรวจว่าทุกงานเขียนมี task worktree, single writer, runtime namespace, handoff และ cleanup evidence; audit เองเป็น read-only จนเจ้าของอนุมัติ fix task
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · Audit ต้องตรวจว่าทุกงานเขียนอยู่ใน Git root/branch/path ที่อนุมัติและไม่มี Shortcut สร้าง/สลับ Worktree/กิ่ง; audit เองเป็น read-only จนเจ้าของอนุมัติการแก้
 
 ## Changelog
 

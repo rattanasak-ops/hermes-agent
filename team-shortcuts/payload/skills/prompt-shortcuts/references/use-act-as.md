@@ -15,12 +15,12 @@ tags:
   - role-design
   - planning
 status: active
-version: "3.1"
-updated: 2026-07-05
+version: "3.2"
+updated: 2026-07-17
 schema: memory-schema-v1.2
 ---
 
-# Use Act-As (v3.1 · 2026-07-05)
+# Use Act-As (v3.2 · 2026-07-17)
 
 คู่กับ Memory Schema v1.2 · เช็ก schema version ตอนเริ่ม · ไม่ตรง = เตือน + ห้ามเขียนไฟล์ความจำจนกว่าจะอ่าน schema ล่าสุด
 
@@ -70,7 +70,7 @@ Use Act-As กับงานนี้
 4. แบ่งงานตามถนัด — ไม่ให้ทุก role ทำทุกอย่าง / ระบุคนตรวจงาน role อื่น / ระบุคนตัดสินใจขั้นสุดท้าย
 
 5. ทำแผนเป็นเฟส (2-5 เฟส · ใช้ id ร่วม) — แต่ละเฟสมี `phase_id` (P1,P2…) / เป้าหมาย / role / งานย่อย / output / จุดที่ต้องรีวิว / ความเสี่ยง
-   - [ใหม่] วางแผน branch/worktree: ฟีเจอร์ใหม่ → ระบุว่าต้องสร้าง `worktree/<staff>/<slug>` ของใคร (ผูก New Feature Branch Gate ของ New Chat) · งานต่อเดิม → อ้าง branch/PR เดิมพร้อมหลักฐาน
+   - [พื้นที่ทำงาน] อ้าง Git root/branch/SHA ที่เจ้าของเปิดอยู่พร้อมหลักฐาน · ถ้าพื้นที่ไม่ตรงให้บล็อกและรายงาน ห้ามสร้างหรือสลับ Worktree/กิ่ง
    - [ใหม่] จุด verify ของแต่ละเฟสต้องอิงบันไดหลักฐาน Schema §4 (เช่น "เฟสนี้ verified เมื่อ: test เขียว + commit SHA") ไม่ใช่ "ทำเสร็จ" ลอย ๆ
 
 6. ก่อนลงมือจริง
@@ -79,6 +79,9 @@ Use Act-As กับงานนี้
    - พร้อมลงมือ = พร้อมเสนอครบ + เจ้าของอนุมัติ
    - ห้ามสร้าง/แก้ไฟล์/ลงมือถาวร จนกว่า "พร้อมลงมือ" เว้นแต่สั่งชัดว่าทำได้เลย
    - เมื่ออนุมัติแผน → เขียน `.project/plan.md` (phase id + เป้าหมาย + จุด verify + branch/worktree) เพื่อให้ Comply/Continue อ่านต่อ (Schema v1.2 §1, §9–10) · ห้ามเขียนลง `.hermes/` อีก
+   - [SPEC · capability-based · Schema §1d] งานเปลี่ยนระบบ (โค้ด/ตั้งค่า/ฐานข้อมูล/CI/ส่วนต่อภายนอก): เมื่ออนุมัติแผน ให้ร่างสเปคกลาง `.project/spec/<plan_id>.md` จากแม่แบบ `.project/spec/_TEMPLATE.md` คู่กับ plan.md — WHAT/WHY (ห้ามพูดวิธี) · จุดต้องเคลียร์ก่อนโค้ด (`DEC-040`) · ขอบเขต in/out · เกณฑ์ผ่าน given/when/then · ตารางแม่ G# · status เริ่ม `draft` เสมอ
+   - **อนุมัติสเปค ≠ อนุมัติแผน**: `owner_approved: true` + `status: approved` เปลี่ยนได้เฉพาะเมื่อเจ้าของพิมพ์อนุมัติตัวสเปคเอง · ต้องจดหลักฐานลงไฟล์สเปค (วันเวลา + ข้อความอนุมัติจริง) · AI ติ๊กเอง = ละเมิด `DEC-040` · สเปคยัง `draft` = งานโค้ดใต้แผนนั้นยังเริ่มไม่ได้ (§1d)
+   - โปรเจกต์ไม่มีแม่แบบ/โฟลเดอร์ `.project/spec/` = N/A ข้ามได้ ระบบเดินแบบเดิม (ไม่บังคับติดตั้ง)
 
 รูปแบบคำตอบ:
 
@@ -97,10 +100,11 @@ Use Act-As กับงานนี้
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · แผนที่มีการเขียนต้องประกาศ `project/task/staff/machine/worktree` และแบ่งบทบาท writer หนึ่งตัว + reviewer read-only; ยังไม่เปิด Worktree จนเจ้าของอนุมัติแผน
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · แผนที่มีการเขียนต้องประกาศ `project/git_root/branch/base_sha/allowed_paths` และแบ่งบทบาทผู้เขียนหนึ่งตัว + ผู้ตรวจอ่านอย่างเดียว · ห้ามสร้างหรือสลับ Worktree/กิ่ง
 
 ## Changelog
 
+- v3.2 (2026-07-17 · SPEC-CENTRAL): เพิ่มขั้นร่างสเปคกลาง `.project/spec/<plan_id>.md` คู่ plan.md สำหรับงานเปลี่ยนระบบ (capability-based ตาม Schema §1d) · แยก "อนุมัติสเปค" ออกจาก "อนุมัติแผน" ชัด — owner_approved เปลี่ยนได้เมื่อเจ้าของพิมพ์อนุมัติสเปคเองเท่านั้น + จดหลักฐานลงไฟล์ · โปรเจกต์ไม่มี spec = N/A พฤติกรรมเดิม
 - v3.1 (2026-07-05): เกาะ Memory Schema v1.2 — อ่านความจำจาก `.project/` (OverviewProgress/plan/decisions) · เขียนแผนลง `.project/plan.md` (เดิม `.hermes/plan.md`) · เพิ่ม Migration ของเก่าตาม §1b · schema ไม่ตรง = ห้ามเขียนความจำ (คำสั่งเจ้าของ 2026-07-05)
 - v3.0 (2026-06-26): เกาะ Memory Schema v1.1 · เพิ่มขั้น 0 อ่านความจำ+decision+token ก่อนวางแผน · ใช้ phase id ร่วม (P1/P2 ตาม §10) · เขียน `.hermes/plan.md` เมื่ออนุมัติ (§1, §9) · วางแผน branch/worktree ผูก New Feature Branch Gate · จุด verify อิงบันไดหลักฐาน §4 · กฎ non-dev · เช็ก schema version ตอนเริ่ม
 - v2.1 (2026-06-24): เพิ่มนิยาม "ว้าว" + ตัวกันฟุ้ง · กล่องแยกข้อมูลจริง/สมมติฐาน/ยังไม่รู้ · เพดาน role ยืดหยุ่น · เพดานเฟส 2-5 · ห้ามเดาชื่อ agent · แยก "พร้อมเสนอ" กับ "พร้อมลงมือ"

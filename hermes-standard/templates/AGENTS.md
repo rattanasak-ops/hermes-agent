@@ -1,3 +1,30 @@
+<!-- HERMES_OWNER_RULES_START -->
+> **Hermes Owner Rules (ใช้ทุกโปรเจกต์)**
+>
+> กฎนี้อยู่เหนือกฎภาษาเดิมในไฟล์โปรเจกต์ ถ้าขัดกันให้ใช้กฎนี้ก่อน
+
+## กติกากลางที่ AI ต้องทำตาม
+
+1. ใช้ภาษาของผู้ใช้ก่อนเสมอ ถ้าผู้ใช้พิมพ์ไทย ให้ตอบไทยทั้งคำอธิบาย สรุป ความเสี่ยง และขั้นตอนถัดไป
+2. ถ้าจำเป็นต้องใช้ศัพท์เทคนิค ให้แปลเป็นภาษาคนทันที เช่น `registry` = สมุดทะเบียนติดตาม, `traceability` = ร่องรอยว่าเอาไปใช้ที่ไหนแล้ว, `adapter` = ไฟล์เชื่อมบริบทให้ AI อ่าน
+3. ถ้าผู้ใช้ส่งลิงก์ บทความ โพสต์ วิดีโอ หรือข้อมูลให้เรียนรู้ ให้สรุปและเสนอทางเลือกในแชทก่อน แล้วรอเจ้าของงานเลือกก่อนบันทึกลงไฟล์ ความจำถาวร สมุดทะเบียนติดตาม หรือระบบความรู้ เว้นแต่เจ้าของงานสั่งชัดว่าให้เลือกและทำได้เลยในรอบนั้น
+4. ถ้าต้องแก้หลายไฟล์หรือหลายเฟส ให้ทำงานเป็นระบบ แยกเฟส ตรวจงานจริง และรายงานผลเป็นภาษาคนที่เจ้าของงานตัดสินใจต่อได้
+5. ถ้าผู้ใช้พิมพ์อะไรที่หน้าตาเป็น Shortcut — **ทุกข้อความที่ขึ้นต้นด้วย `Use ...`** (เช่น `Use Create Content`, `Use New Chat`, `Use Act-As`, `Use Comply`, `Use Save Git`, `Use QA QC`, `Use Continue`) หรือ `Review Chat` รวมถึงชื่อไทยใกล้เคียง (`ใช้ ...`, `เริ่มแชทใหม่`, `สร้างคอนเทนต์จากแชท`) — ต้องเปิดไฟล์ทะเบียน Shortcut แล้วเปิด Prompt เต็มของตัวที่ตรงก่อนใช้เสมอ · รายชื่อในวงเล็บเป็นแค่ตัวอย่าง **ไม่ใช่รายการครบ** ทะเบียนคือแหล่งความจริงเดียว · ห้ามเดาหรือใช้จากความจำ (แก้ 2026-07-14: ลิสต์ตายตัวเดิมทำ shortcut ใหม่ตกทะเบียน → AI เดา flow เอง)
+6. ห้ามสรุปงานด้วยภาษาเครื่องมืออย่างเดียว เช่น `parse passed`, `promoted`, `registry updated` ต้องบอกความหมายและผลกระทบเป็นภาษาไทยด้วย
+
+## ไฟล์ความจำกลางที่ต้องอ้างอิง
+
+- `/Users/rattanasak/ObsidianVault/HermesAgent/AI_MEMORY.md`
+- `/Users/rattanasak/ObsidianVault/HermesAgent/ai-context/global-context.md`
+- `/Users/rattanasak/ObsidianVault/HermesAgent/ai-context/prompt-shortcut-registry.md`
+- `/Users/rattanasak/ObsidianVault/HermesAgent/memory/profile/user-language-first.md`
+- `/Users/rattanasak/ObsidianVault/HermesAgent/memory/profile/knowledge-intake-review-before-write.md`
+
+ถ้ากำลังทำงานบน VPS ให้ใช้ mirror root `/home/linux-nat/ObsidianVault/HermesAgent` แทน `/Users/rattanasak/ObsidianVault/HermesAgent` สำหรับไฟล์ความจำกลางชุดเดียวกัน
+
+อย่าโหลดทั้ง vault ถ้าไม่จำเป็น อ่านไฟล์กลางข้างบนก่อน แล้วค่อยค้นเพิ่มเฉพาะเมื่อข้อมูลไม่พอ
+<!-- HERMES_OWNER_RULES_END -->
+
 <!-- ╔═══ HERMES-CENTRAL v1.0.0 · ห้ามแก้มือ · มาจากส่วนกลาง (hermes-standard) ═══╗ -->
 ## กฎกลาง (เหมือนกันทุก project · ส่วนกลางคุม)
 

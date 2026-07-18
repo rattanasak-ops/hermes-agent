@@ -15,12 +15,12 @@ tags:
   - compliance
   - phase-tracking
 status: active
-version: "3.2"
-updated: 2026-07-14
+version: "3.3"
+updated: 2026-07-17
 schema: memory-schema-v1.2
 ---
 
-# Use Comply (v3.2 · 2026-07-14)
+# Use Comply (v3.3 · 2026-07-17)
 
 คู่กับ Memory Schema v1.2 · เช็ก schema version ตอนเริ่ม · ไม่ตรง = เตือน + ห้ามเขียนไฟล์ความจำจนกว่าจะอ่าน schema ล่าสุด
 
@@ -44,6 +44,7 @@ Use Comply กับงานนี้
 [ขั้น 0 — อ่านก่อนแตกงาน]
 - ถ้ามี `.project/plan.md` (จาก Act-As · Schema v1.2) → แตก issue ใต้ phase_id เดิม ไม่ตั้งเฟสใหม่ซ้ำ · เจอแต่ `.hermes/plan.md` เก่า = ทำ Migration ตาม Schema §1b ก่อน (ย้าย + stub ห้ามลบ)
 - อ่าน `.project/OverviewProgress.md` (4 หัวข้อบนสุด) + decision token (Schema §2) · `NEED_OWNER_ACTION_BEFORE_CLOSE` = เตือนก่อนลุย
+- [SPEC · capability-based · Schema §1d] มีสเปคที่จับคู่แผนนี้ (`.project/spec/<plan_id>.md` — จับคู่ด้วยชื่อไฟล์) → ทุก issue ที่แตกต้องอ้าง `spec_ref` (spec_id + แถวตารางแม่ G# ที่ issue นั้นปิด) · เงื่อนไขเสร็จของ issue สืบทอดเกณฑ์ผ่าน given/when/then ของสเปค · สเปคยัง `draft` = issue งานโค้ดใต้แผนนั้นสถานะ `blocked` จนเจ้าของอนุมัติสเปค · ไม่มีไฟล์ที่จับคู่ = ทำแบบเดิม ไม่ต้องมี spec_ref
 
 [เกณฑ์ "งานใหญ่"] เข้าข้อใดข้อหนึ่ง: เกิน 3 เฟส / เกิน 8 issue / แตะหลายโมดูลหรือข้าม ownership / มี deploy หรือ migration / มีข้อมูลสำคัญ-เงิน-ความปลอดภัย → ทยอยส่งทีละเฟส (เว้นแต่สั่งให้ทำต่ออัตโนมัติ) · เล็กกว่านี้ส่งรวดเดียวได้ แต่ยังต้องมีหลักฐาน
 
@@ -69,7 +70,7 @@ Use Comply กับงานนี้
 
 2. แตก phase — แต่ละเฟส: `phase_id` (จาก plan.md ถ้ามี) / ชื่อ / เป้าหมาย / รายการ issue / เกณฑ์ผ่าน / วิธีตรวจ / output
 
-3. แตก issue — แต่ละ issue: `issue_id` (P1-I1…) / ชื่อ / รายละเอียด / ไฟล์เกี่ยวข้อง / เงื่อนไขเสร็จ / วิธีตรวจ / สถานะ / blocker / `zone` / `risk_reason` / `approval_phase` / `allowed_paths` / `external_effect`
+3. แตก issue — แต่ละ issue: `issue_id` (P1-I1…) / ชื่อ / รายละเอียด / ไฟล์เกี่ยวข้อง / เงื่อนไขเสร็จ / วิธีตรวจ / สถานะ / blocker / `zone` / `risk_reason` / `approval_phase` / `allowed_paths` / `external_effect` / `spec_ref` (เฉพาะแผนที่มีสเปคจับคู่ — Schema §1d)
 
 4. ตาราง comply — | phase_id | issue_id | zone | approval_phase | สถานะ | % | หลักฐาน | (หลักฐานละเอียดเฉพาะ verified/blocked/failed)
 
@@ -92,10 +93,11 @@ Use Comply กับงานนี้
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · ทุก Issue ที่เขียนไฟล์ต้องผูก `task_id + worktree + machine + evidence`; ตารางเปอร์เซ็นต์แยกสถานะ lifecycle และห้ามนับ verified ถ้า WTL gate ไม่พร้อม
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ทุก Issue ที่เขียนไฟล์ต้องผูก `git_root + branch + base_sha + allowed_paths + evidence`; ห้ามนับผลผ่านถ้า `CURRENT_WORKSPACE_READY` ไม่ครบ และห้ามสร้าง/สลับ Worktree/กิ่ง
 
 ## Changelog
 
+- v3.3 (2026-07-17 · SPEC-CENTRAL): ขั้น 0 อ่านสเปคที่จับคู่แผน (Schema §1d) · issue อ้าง `spec_ref` (spec_id + แถวตารางแม่ G#) · เงื่อนไขเสร็จสืบทอด given/when/then · สเปค draft = issue งานโค้ด blocked · โปรเจกต์ไม่มีสเปคจับคู่ = พฤติกรรมเดิม
 - v3.2 (2026-07-14): เพิ่ม Two-Zone Gate ตามคำสั่งเจ้าของ · ทุก issue ต้องเป็น ZONE_A/ZONE_B · Zone A ทำต่อเองได้ทั้ง Phase · Zone B รวมขออนุมัติครั้งเดียวต่อ approval_phase แทนการถามราย issue
 - v3.1 (2026-07-05): เกาะ Memory Schema v1.2 — อ่านแผนจาก `.project/plan.md` (เดิม `.hermes/plan.md`) + อ่านสถานะจาก `.project/OverviewProgress.md` · เจอไฟล์เก่า = Migration §1b ก่อน · schema ไม่ตรง = ห้ามเขียนความจำ (คำสั่งเจ้าของ 2026-07-05)
 - v3.0 (2026-06-26): เกาะ Memory Schema v1.1 · เพิ่มขั้น 0 อ่าน plan.md + handoff + token ก่อนแตกงาน (แตก issue ใต้ phase_id เดิม) · ค้น quality gate เอง (§5) · ใช้ issue_id ร่วม (P1-I1 ตาม §10) · กฎเหล็ก "ไม่มี output = claimed" (§3) · จับคู่สถานะ §11 · deploy วัดจาก CI run ของ merge SHA (§4) · redact secret (§7) · กฎ non-dev

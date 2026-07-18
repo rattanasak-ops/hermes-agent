@@ -5,11 +5,10 @@
 ใช้:  python gate-run.py --cwd <worktree> --task-id <P#-I#> [--test-path <path> ...]
 คืน: JSON บรรทัดเดียว + exit (pass=0 / fail=1 / no_gate=2 / error=3)
 """
-from __future__ import annotations
-
 import argparse, json, os, re, shlex, subprocess, sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import List, Optional
 
 try:
     import fcntl  # ล็อกไฟล์กันสองโปรเซส append ledger พร้อมกัน (มีบน Mac/Linux)
@@ -31,7 +30,7 @@ def has_python_gate(cwd: Path) -> bool:
     )
 
 
-def normalize_test_paths(cwd: Path, test_paths: list[str]) -> list[str]:
+def normalize_test_paths(cwd: Path, test_paths: List[str]) -> List[str]:
     normalized = []
     seen = set()
     for raw in test_paths:
@@ -40,7 +39,8 @@ def normalize_test_paths(cwd: Path, test_paths: list[str]) -> list[str]:
         path_text, separator, node_id = raw.partition("::")
         if not path_text:
             raise ValueError("test path ว่างเปล่า")
-        resolved = (cwd / path_text).resolve() if not Path(path_text).is_absolute() else Path(path_text).resolve()
+        path = Path(path_text)
+        resolved = (cwd / path).resolve() if not path.is_absolute() else path.resolve()
         try:
             relative = resolved.relative_to(cwd)
         except ValueError as exc:
@@ -56,7 +56,7 @@ def normalize_test_paths(cwd: Path, test_paths: list[str]) -> list[str]:
     return normalized
 
 
-def detect_gate(cwd: Path, test_paths: list[str] | None = None):
+def detect_gate(cwd: Path, test_paths: Optional[List[str]] = None):
     if test_paths:
         if not has_python_gate(cwd):
             raise ValueError("--test-path ใช้ได้เฉพาะโครงการ pytest")

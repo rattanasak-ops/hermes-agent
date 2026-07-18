@@ -29,10 +29,11 @@ MIXED = [
     ".cursorrules", "cross-code.md",
     os.path.join(".cursor", "rules", "hermes-central.mdc"),
 ]
-# ไฟล์เฉพาะ project (สร้างถ้ายังไม่มี · ไม่ sync ไม่ทับ)
+# ไฟล์เฉพาะ project (สร้างถ้ายังไม่มี · ไม่ sync ไม่ทับ · ปลายทาง .project/)
 PROJECT_ONLY = [
     "OverviewProgress.md", "BusinessPlan.md", "FeatureSpec.md",
     "DesignSystem.md", "hermes.project.yaml",
+    "plan.md", "decisions.md",
 ]
 
 
@@ -52,6 +53,22 @@ def write(path, content):
 
 def central_block():
     return read(CENTRAL_FILE).strip("\n")
+
+
+def project_only_dest(project_dir, rel):
+    return os.path.join(project_dir, ".project", rel)
+
+
+def project_only_legacy(project_dir, rel):
+    return os.path.join(project_dir, rel)
+
+
+def default_project_only_content(rel):
+    if rel == "plan.md":
+        return "# แผนที่อนุมัติแล้ว\n"
+    if rel == "decisions.md":
+        return "# Decisions (append-only)\n\n> memory-schema: v1.2\n"
+    return None
 
 
 def replace_zone(content, new_central):
@@ -94,7 +111,7 @@ def cmd_sync(project_dir, dry_run=False):
 
 
 def cmd_init(project_dir):
-    created, synced, kept = [], [], []
+    created, synced, kept, legacy_found = [], [], [], []
     cb = central_block()
     # ไฟล์ผสม
     for rel in MIXED:
@@ -118,20 +135,28 @@ def cmd_init(project_dir):
                 onboarded = cb + "\n\n\n" + PROJECT_MARKER + "\n" + old
                 write(path, onboarded)
                 synced.append(rel + " (onboard ของเก่า)")
-    # ไฟล์เฉพาะ project — สร้างถ้ายังไม่มี ไม่ทับ
+    # ไฟล์เฉพาะ project — สร้างที่ .project/ ถ้ายังไม่มี ไม่ทับ
     for rel in PROJECT_ONLY:
-        path = os.path.join(project_dir, rel)
+        legacy_path = project_only_legacy(project_dir, rel)
+        path = project_only_dest(project_dir, rel)
         tpl = os.path.join(TEMPLATES, rel)
-        if not os.path.exists(path):
-            if os.path.exists(tpl):
-                content = read(tpl)
-                if rel == "hermes.project.yaml":
-                    content = content.replace('last_sync: ""', 'last_sync: "%s"' % date.today().isoformat())
-                write(path, content)
-                created.append(rel)
-        else:
+        if os.path.exists(legacy_path):
+            legacy_found.append(rel)
+            continue
+        if os.path.exists(path):
             kept.append(rel + " (มีอยู่แล้ว · ไม่ทับ)")
-    return created, synced, kept
+            continue
+        if os.path.exists(tpl):
+            content = read(tpl)
+        else:
+            content = default_project_only_content(rel)
+            if content is None:
+                continue
+        if rel == "hermes.project.yaml":
+            content = content.replace('last_sync: ""', 'last_sync: "%s"' % date.today().isoformat())
+        write(path, content)
+        created.append(rel)
+    return created, synced, kept, legacy_found
 
 
 def main():
@@ -158,12 +183,14 @@ def main():
         if missing:
             print("ยังไม่มีในโปรเจกต์ (ใช้ init สร้าง): %s" % missing)
     else:
-        created, synced, kept = cmd_init(pdir)
+        created, synced, kept, legacy_found = cmd_init(pdir)
         print("== hermes init ==")
         print("สร้างใหม่: %d ไฟล์ %s" % (len(created), created or ""))
         print("อัปเดตโซนกลาง: %d ไฟล์ %s" % (len(synced), synced or ""))
         if kept:
             print("คงไว้ (ไม่ทับ): %s" % kept)
+        for rel in legacy_found:
+            print("พบ %s ที่ราก (ตำแหน่งเก่า v1.1) — ควรย้ายไป .project/" % rel)
 
 
 if __name__ == "__main__":

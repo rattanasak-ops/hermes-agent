@@ -1,7 +1,9 @@
 import os
+import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -46,19 +48,185 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     installer = (TEAM / "install-shortcuts.sh").read_text(encoding="utf-8")
     checker = (TEAM / "check-shortcuts.sh").read_text(encoding="utf-8")
 
-    assert version == "2026.07.17-1"
+    assert version == "2026.07.18-2"
     assert "INSTALLED_VERSION" in installer
     assert "ไม่พบตัวตรวจสุขภาพ Hook" in installer
+    assert installer.index('bash "$NEW_CHAT_INSTALLER"') < installer.index(
+        'python3 "$TEAM_HOOK_INSTALLER"'
+    ) < installer.index('if ! "$HOOK_DOCTOR_BIN"')
+    assert "ผ่าน 4/4" in installer
     assert "registry_vs_skill" in checker
     assert '"29"' not in checker
     assert '"33"' not in checker
+
+
+def test_fresh_home_installs_new_chat_tools_and_fail_closed_gate(tmp_path):
+    home = tmp_path / "fresh-home"
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+
+    result = subprocess.run(
+        ["bash", str(TEAM / "install-new-chat-tools.sh")],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    local_bin = home / ".local/bin"
+    for name in (
+        "hermes-prewrite-gate",
+        "hermes-owner-intent",
+        "hermes-new-chat",
+        "hermes-worktree",
+        "hermes-hook-doctor",
+    ):
+        tool = local_bin / name
+        assert tool.is_file(), name
+        assert os.access(tool, os.X_OK), name
+
+    for name in ("hermes-new-chat", "hermes-worktree"):
+        help_result = subprocess.run(
+            [str(local_bin / name), "--help"],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert help_result.returncode == 0, help_result.stdout + help_result.stderr
+
+    open_help = subprocess.run(
+        [str(local_bin / "hermes-new-chat"), "open", "--help"],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert open_help.returncode == 0, open_help.stdout + open_help.stderr
+    assert "--allow-over-limit" in open_help.stdout
+
+    gate = subprocess.run(
+        [str(local_bin / "hermes-prewrite-gate")],
+        input="{not-json",
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert gate.returncode == 2
+
+    hooks = subprocess.run(
+        [sys.executable, str(TEAM / "install-team-hooks.py")],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert hooks.returncode == 0, hooks.stdout + hooks.stderr
+    assert (home / ".local/bin/hermes-current-workspace-hook").is_file()
+    doctor = subprocess.run(
+        [str(local_bin / "hermes-hook-doctor")],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    health = json.loads(doctor.stdout)
+    assert len(health["gates"]) == 4
+    current = next(row for row in health["gates"] if row["gate"] == "current_workspace_prewrite")
+    assert current["ok"] is True
+    assert current["checks"] == "18/18"
+    assert current["wiring"] == {"claude": True, "codex": True, "cursor": True, "hermes": True}
+
+
+def test_team_hook_installer_adds_current_workspace_gate_to_four_apps(tmp_path):
+    home = tmp_path / "home"
+    settings = home / ".claude/settings.json"
+    settings.parent.mkdir(parents=True)
+    settings.write_text(
+        json.dumps(
+            {
+                "hooks": {
+                    "PreToolUse": [
+                        {
+                            "matcher": "Read",
+                            "hooks": [{"type": "command", "command": "keep-me"}],
+                        }
+                    ]
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    active_hermes = tmp_path / "active-hermes"
+    hermes_config_path = active_hermes / "config.yaml"
+    hermes_config_path.parent.mkdir(parents=True)
+    hermes_config_path.write_text(
+        "hooks:\n"
+        "  pre_tool_call:\n"
+        "    - command: /old/path/enforce-new-chat-relay.py\n"
+        "      matcher: terminal\n"
+        "      timeout: 20\n"
+        "  pre_llm_call:\n"
+        "    - command: keep-hermes-prompt-hook\n"
+        "      timeout: 3\n",
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+    env["HERMES_HOME"] = str(active_hermes)
+
+    result = subprocess.run(
+        [sys.executable, str(TEAM / "install-team-hooks.py")],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    for root in (home / ".claude/hooks", home / ".codex/hooks", home / ".cursor/hooks", active_hermes / "hooks"):
+        assert (root / "enforce-new-chat-relay.py").is_file()
+    data = json.loads(settings.read_text(encoding="utf-8"))
+    entries = data["hooks"]["PreToolUse"]
+    assert any(
+        entry.get("matcher") == "Edit|Write|MultiEdit|NotebookEdit|ApplyPatch|Bash"
+        and any("enforce-new-chat-relay.py" in hook.get("command", "") for hook in entry["hooks"])
+        for entry in entries
+    )
+    assert any(hook.get("command") == "keep-me" for entry in entries for hook in entry["hooks"])
+    codex_data = json.loads((home / ".codex/hooks.json").read_text(encoding="utf-8"))
+    assert any(
+        entry.get("matcher") == "Edit|Write|MultiEdit|NotebookEdit|ApplyPatch|Bash"
+        and any("enforce-new-chat-relay.py" in hook.get("command", "") for hook in entry["hooks"])
+        for entry in codex_data["hooks"]["PreToolUse"]
+    )
+    cursor_data = json.loads((home / ".cursor/hooks.json").read_text(encoding="utf-8"))
+    assert any("enforce-new-chat-relay.py" in entry.get("command", "") for entry in cursor_data["hooks"]["preToolUse"])
+    hermes_config = (active_hermes / "config.yaml").read_text(encoding="utf-8")
+    assert "pre_tool_call:" in hermes_config
+    assert "hermes-current-workspace-hook" in hermes_config
+    assert "    - command: " + str(home / ".local/bin/hermes-current-workspace-hook") in hermes_config
+    assert "/old/path/enforce-new-chat-relay.py" not in hermes_config
+    assert "pre_llm_call:" in hermes_config
+    assert "hermes-owner-intent" in hermes_config
+    assert "keep-hermes-prompt-hook" in hermes_config
+    assert hermes_config.count("pre_llm_call:") == 1
+    assert "hermes-owner-intent" in settings.read_text(encoding="utf-8")
+    assert "hermes-owner-intent" in (home / ".codex/hooks.json").read_text(encoding="utf-8")
+    assert "hermes-owner-intent" in (home / ".cursor/hooks.json").read_text(encoding="utf-8")
+    allowlist = json.loads((active_hermes / "shell-hooks-allowlist.json").read_text(encoding="utf-8"))
+    assert any(row.get("event") == "pre_tool_call" for row in allowlist["approvals"])
+    assert any(row.get("event") == "pre_llm_call" for row in allowlist["approvals"])
 
 
 def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     home = tmp_path / "home"
     root = home / "ObsidianVault/HermesAgent"
     shutil.copytree(TEAM / "payload", root)
-    (root / ".shortcut-version").write_text("2026.07.17-1\n", encoding="utf-8")
+    (root / ".shortcut-version").write_text("2026.07.18-2\n", encoding="utf-8")
 
     # แยกการทดสอบไฟล์ Migrate ออกจากจำนวนรายการ Shortcut อื่นใน payload
     (root / "ai-context/prompt-shortcut-registry.md").write_text("| `fixture` |\n", encoding="utf-8")
@@ -86,7 +254,7 @@ def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
 
     env = os.environ.copy()
     env["HOME"] = str(home)
-    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.17-1"
+    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.18-2"
     return root, env
 
 

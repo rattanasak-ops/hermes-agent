@@ -4,9 +4,7 @@ aliases:
   - Use New Chat
   - use-new-chat
   - Start New Chat
-  - start-new-chat
   - New Chat Startup
-  - new-chat-startup
   - Initialize Hermes Agent chat
   - เริ่ม New Chat
   - เปิด New Chat
@@ -16,18 +14,15 @@ tags:
   - prompt-shortcuts
   - new-chat
   - startup-gate
-  - flow-guardian
 status: active
-version: "2.8"
-updated: 2026-07-15
+version: "4.1"
+updated: 2026-07-18
 schema: memory-schema-v1.2
-pairs_with: use-close-chat >= 2.2
-includes: use-ai-relay >= 2.9
+execution_policy: work-execution-policy >= 2.0
+default_mode: CURRENT_WORKSPACE_ONLY
 ---
 
-# Use New Chat (v2.8 · 2026-07-15)
-
-คู่กับ Use Close Chat ≥ v2.2 · อ้าง Memory Schema v1.2 · เช็ก schema version ตอนเริ่ม · ไม่ตรง = เตือน + ห้ามเขียนไฟล์ความจำจนกว่าจะอ่าน schema ล่าสุด
+# Use New Chat (v4.1 · 2026-07-18)
 
 ## Shortcut
 
@@ -40,183 +35,80 @@ Use New Chat
 ```text
 Use New Chat
 
-คู่กับ Use Close Chat ≥ v2.2 · อ้าง Memory Schema v1.2 · เช็ก schema version ตอนเริ่ม · ไม่ตรง = เตือน + ห้ามเขียนไฟล์ความจำจนกว่าจะอ่าน schema ล่าสุด
-เป้าหมาย: เริ่มแชทใหม่ให้พร้อมทำงานจริง โดยตรวจของจริงก่อน + เรียนรู้ทั้งโปรเจกต์ ไม่ใช่แค่ตอบ "พร้อมรับคำสั่ง"
-หลักการ: capability-based — มีอะไรตรวจอันนั้น · ไม่มีก็ N/A
+เป้าหมาย: เปิดแชทโดยเรียนรู้โปรเจกต์และตรวจพื้นที่ที่เจ้าของเปิดอยู่ ห้ามสร้างหรือสลับ Worktree/กิ่ง
+อ่าน `work-execution-policy.md` ก่อนใช้กฎด้านล่าง
 
-[Use New Chat = New Chat Gate + AI Relay Startup]
-- ผู้ใช้พิมพ์ `Use New Chat` ครั้งเดียว = ทำขั้นเปิดแชททั้งหมด + เปิดโหมดตรวจความพร้อมของ Use AI Relay อัตโนมัติ
-- งานเขียนใหม่ต้องเรียก `hermes-new-chat open` ให้ได้ `NEW_CHAT_READY + WTL_READY + RELAY_REQUIRED` ก่อนแตะไฟล์จริง · คำสั่งนี้สร้าง task worktree, branch, writer lease, Write Permit และ session state จริงในครั้งเดียว
-- การพิมพ์ Shortcut ถือเป็นคำสั่งให้ทำขั้นเปิดที่ย้อนกลับได้ทันที ไม่ต้องหยุดขอ OK แยกสำหรับการสร้าง task worktree; ถ้าข้อมูล project/staff/task ขาดจริงจึงถามเฉพาะค่าที่ขาด
-- หลังย่อบริบทหรือเปิด AI client ใหม่ ให้เรียก `hermes-new-chat status --task-id <task>` เพื่อกลับเข้า session เดิม ห้ามเปิด task ใหม่หรือเดาจากความจำ
-- งานแก้ไฟล์โปรเจกต์ต้องผ่าน `relay-call --role code --cwd <registered-worktree>`; ตัวควบคุมเขียนตรงได้เฉพาะ `.project/` และใบงานใต้ `.hermes/ai-relay/briefs/`
-- AI Relay Startup ตรวจทะเบียน/โปรแกรม/รุ่น/บัญชี/สถานะพัก/งานค้างจากของจริง แต่ห้ามยิง AI เพียงเพราะเปิดแชท
-- รายงาน AI Relay: ตัวคิด/ตัวเขียน/ตัวตรวจใดพร้อม ไม่พร้อม ค้าง พัก หรือรุ่นไม่เข้ากัน
-- ถ้า Relay ไม่พร้อม ยังอ่าน/ตรวจได้ แต่ห้ามเริ่มงานเขียนที่ต้องใช้ Relay จนกว่าจะรายงานข้อจำกัดให้เจ้าของรู้
-- ส่งกฎตรวจไม่ผ่าน 2 รอบไปยัง AI Relay: ผู้ตรวจและวิธีเดิมใช้ได้สูงสุด 2 รอบต่อปัญหา · ถ้ายังไม่ผ่านต้องแยกปัญหาและเปลี่ยนเป็น test/lint/build/gate-run หรือผู้ตรวจคนละค่าย ห้ามเรียกรอบที่ 3
+[กฎสูงสุด — CURRENT_WORKSPACE_ONLY]
+- ใช้ `pwd` และ Git root ที่แอปเปิดอยู่เท่านั้น
+- Shortcut นี้ห้ามเรียก `hermes-new-chat open`, `hermes worktree open`, `git worktree add/remove`, `git switch`, `git checkout` และคำสั่งสร้าง/สลับกิ่ง
+- การพิมพ์ `Use New Chat` ไม่ใช่คำอนุมัติให้สร้าง Worktree หรือกิ่ง
+- คำสั่งสั้นแยกต่างหากจากเจ้าของที่ระบุชื่อกิ่งตรง ๆ ใช้ `OWNER_EXPLICIT_BRANCH_ONLY`: AI สร้างกิ่งชื่อนั้นใน Git root ปัจจุบันได้หนึ่งครั้ง ห้ามสร้าง Worktree และห้ามผลักให้เจ้าของเปิด Terminal เอง
+- ข้อความยาวที่วางเป็นตัวอย่าง ประวัติแชท และชื่อกิ่งที่ AI คิดเองไม่ใช่คำอนุมัติ
+- Worktree ที่เปิดอยู่แล้วใช้ได้เหมือนโฟลเดอร์ Git ปกติ แต่ห้ามสร้างเพิ่ม ย้ายเข้าเอง หรือเก็บกวาดเอง
+- ใช้ AI Relay เฉพาะเมื่อเจ้าของเรียก `Use AI Relay` โดยชัดเจน
+- ผู้ตรวจและวิธีเดิมใช้ได้สูงสุด 2 รอบต่อปัญหา ถ้ายังไม่ผ่านให้เปลี่ยนเป็น test/lint/build หรือผู้ตรวจอื่น ห้ามเรียกรอบที่ 3
 
-[Fresh Close Receipt — ลดการตรวจซ้ำแต่ไม่เชื่อความจำลอย ๆ]
-- อ่าน `latest-close.md` ก่อน แล้วเทียบ receipt กับ project/workspace/branch/HEAD SHA ของจริง
-- ไม่ว่าปิดแบบใด ต้องรันขั้นต่ำสดเสมอ: cwd + git root + branch + `git status --short --branch` + memory schema + hook doctor
-- receipt ตรงและ `CLOSED_CLEAN` = ใช้ผล quality/CI/VPS ที่แนบไว้ได้โดยไม่รันด่านหนักซ้ำ เว้นแต่งานใหม่ต้องใช้ความสามารถนั้นหรือสถานะเปลี่ยน
-- receipt ไม่ตรง/ไม่มี/เป็น PENDING หรือ NEED_OWNER_ACTION = ตรวจเต็มตาม capability และรายงานความต่าง
-- ห้ามข้าม Git ขั้นพื้นฐานเพียงเพราะ token บอก CLEAN
+[ขั้น 1 — อ่านความจำ]
+- อ่าน `.project/OverviewProgress.md` แล้วอ่านไฟล์ตามสารบัญบังคับ โดยอย่างน้อยต้องตรวจ `.project/plan.md` และ `.project/decisions.md` เมื่อมี
+- อ่าน `latest-close.md` หรือ session log ล่าสุดเมื่อมี แล้วเทียบกับ Git จริง ห้ามเชื่อสถานะเก่าโดยไม่ตรวจ
+- ถ้ามีสเปคที่จับคู่กับแผน `.project/spec/<plan_id>.md` ให้ตรวจ status และ owner approval; สเปค draft บล็อกเฉพาะงานโค้ดใต้แผนนั้น
+- ห้ามโหลดประวัติทั้งหมดโดยไม่จำเป็น ให้ดึงเฉพาะเป้าหมาย ข้อห้าม งานค้าง และหลักฐานล่าสุด
 
-[Hook Health Gate — ตรวจจริง ไม่ใช่ดูว่ามีไฟล์]
-- รัน `hermes-hook-doctor` ตอนเปิดแชต · ต้องได้ `ok=true` ครบ 4 ด่าน: ภาษาคน / ผู้ตรวจอิสระก่อนปิดงานโค้ด / หลักฐานครบตาม Prompt / ด่าน New Chat+Relay ก่อนเขียน
-- ถ้าคำสั่งหายหรือด่านใดไม่ผ่าน ให้รายงาน `HOOK_HEALTH_BLOCKED` และห้ามอ้างว่างานเขียนพร้อมส่ง · ไม่ต้องคัดลอกกฎเต็มเข้าคำตอบ
+[ขั้น 2 — ตรวจพื้นที่จริง]
+รันแบบอ่านอย่างเดียว:
+- `pwd`
+- `git rev-parse --show-toplevel`
+- `git branch --show-current`
+- `git rev-parse HEAD`
+- `git status --short --branch`
+- `git worktree list --porcelain` เพื่อรายงานเท่านั้น ห้ามเปลี่ยนรายการ
 
-[รูปแบบการใช้ AI — ไม่หยุดถามซ้ำ]
-ถ้าเจ้าของระบุ 1/2 ให้ใช้ค่านั้นตลอด task; ถ้าไม่ได้ระบุ ให้ใช้รูปแบบ 1 เป็นค่ากลางและรายงานใน Startup Report โดยไม่หยุดถาม:
-1. แบ่ง AI คนละขั้น: Opus ศึกษา/วิเคราะห์/วางแผน → AI ตัวที่สองผลิตผลงานหรือลงมือทำ → AI ตัวที่สามตรวจผลงาน
-2. ใช้ AI สองตัวในขั้นศึกษา/วิเคราะห์: AI ตัวหลักสร้าง output (ผลลัพธ์หลัก) → AI อีกตัวรีวิวเพื่อตรวจข้อผิดพลาดก่อนยอมรับผล แล้วจึงส่งเข้าสายงานถัดไป
-ส่งค่ารูปแบบต่อไปยัง AI Relay และทำงานต่อเองภายในสิทธิ์ Phase; ถ้าขอบเขตเสี่ยงจริงหรือข้อมูล task ขาดจึงหยุดถามเฉพาะส่วนนั้น
-คำถามนี้เลือก “รูปแบบแบ่งหน้าที่” ไม่ใช่ถามว่าใช้สมองเดียวหรือสมองคู่ · ห้ามตีความโหมด 1 ว่า Opus ทำทุกขั้นคนเดียว · ห้ามบังคับโหมด 2 เป็นค่าถาวรทุกงาน
+[ขั้น 3 — ตัดสินสถานะ]
+- งานอ่านอย่างเดียว → `CURRENT_WORKSPACE_READ_ONLY`
+- งานเขียนผ่านได้เมื่อ Git root ตรงพื้นที่ปัจจุบัน, ไม่ detached HEAD, กิ่งไม่ใช่ main/master/develop/development/production/prod, เป้าหมายอยู่ใน root และไฟล์ค้างไม่ชนงานอื่น → `CURRENT_WORKSPACE_READY`
+- เงื่อนไขไม่ครบ → `CURRENT_WORKSPACE_BLOCKED` และชี้โฟลเดอร์หลักของโครงการเพียงแห่งเดียว ห้ามเสนอ Worktree ใหม่; ถ้าเจ้าของสั่งสร้างกิ่งพร้อมชื่อชัดเจน ให้ AI ทำตามข้อยกเว้นกลางได้
+- ถ้า dirty เป็นไฟล์ของงานเดียวกันและอยู่ในขอบเขต ให้ทำต่อได้โดยรักษาไฟล์เดิม; ถ้าไม่รู้เจ้าของหรือทับงานอื่น ให้บล็อกเฉพาะไฟล์ที่เสี่ยง
 
-[ด่านก่อนเขียนทุก Phase — ตรวจซ้ำเมื่อขอบเขตจริงเปลี่ยน ไม่ถามราย issue]
-- การอนุมัติ branch ใช้ได้กับ `task_id + approval_phase + ขอบเขต + รายการ path` หนึ่งชุด · ทุก issue ใน Phase เดิมใช้สิทธิ์เดียวกันได้ ไม่ต้องขอซ้ำ
-- คำสั่งผู้ใช้ก้อนใหม่ การเปลี่ยนหัวข้อ/ขอบเขต/path/branch/SHA หรือหลังย่อบริบทที่ตรวจค่าเดิมไม่ได้ = ต้องตรวจใหม่เสมอ
-- ก่อนการแก้ไฟล์ครั้งแรกของทุกงาน และก่อนส่ง AI ตัวเขียนผ่าน Relay ให้รันใหม่: `git branch --show-current` + `git status --short --branch` + ตรวจ branch/งานค้างใน `.project/OverviewProgress.md` + ตรวจ claim เมื่อโปรเจกต์มีระบบจอง
-- จัดประเภททุกงานเป็น `CONTINUATION` หรือ `NEW_WRITABLE_TASK` พร้อมหลักฐาน:
-  - `CONTINUATION` ใช้ branch เดิมได้เฉพาะเมื่อ task/issue เดิมตรงกัน, branch/PR เดิมมีหลักฐาน, ขอบเขต path เดิมไม่เปลี่ยน และ dirty ทั้งหมดเป็นของงานนั้น
-  - ไม่ครบข้อใดข้อหนึ่ง = `NEW_WRITABLE_TASK` · การเรียก `Use New Chat` ของเจ้าของเป็นสิทธิ์ให้ `hermes-new-chat open` สร้างพื้นที่แยกทันที; ถ้าข้อมูลไม่ครบให้ถามเฉพาะค่าที่ขาด
-- คำว่า “ทำต่อ”, “แก้เพิ่ม”, “อีกเรื่อง”, หรือการอยู่ในแชตเดิม ไม่ใช่หลักฐานว่าเป็นงานต่อเดิม
-- ก่อนเขียนให้ประกาศ `Phase Write Permit`: task_id / approval_phase / branch / base SHA / allowed paths / owner approval / claim status · ไม่มีหรือค่าเปลี่ยน = ห้ามเขียน
-- ถ้าโปรเจกต์ไม่มีระบบ claim ให้ใช้ `hermes-write-permit acquire ...` เป็นตัวล็อกกลางต่อโฟลเดอร์ · ผล `workspace_locked` = มีอีกงานถือสิทธิ์ ห้ามเขียน · ก่อนเขียนแต่ละรอบใช้ `check` และเมื่อจบ/ส่งต่อใช้ `release` · ไม่พบคำสั่งนี้ = ติดตั้งชุด Shortcut ใหม่ ห้ามทำเหมือนมีล็อก
-- งานอ่าน ตรวจ อธิบาย และรันทดสอบที่ไม่แก้ไฟล์ไม่ต้องสร้าง branch แต่ถ้าเครื่องมือกำลังจะเขียนไฟล์ให้กลับเข้าด่านนี้ทันที
+[ขั้น 4 — ด่านสุขภาพ]
+- รัน `hermes-hook-doctor` เมื่อมี และตรวจว่าทั้ง Codex App, Claude Code App, Cursor และ Hermes Agent ใช้กฎเดียวกัน
+- ด่านต้องยอมให้แอปปัจจุบันเขียนตรงและรัน pnpm dev/test/lint/build ได้เมื่อพื้นที่พร้อม
+- ด่านต้องขวางการเขียนข้าม root, กิ่งร่วม, detached HEAD, `.env`, `.hermes`, `.grok`, secret, การแก้ Hook/Settings และคำสั่งอันตราย
+- AI Relay หรือ New Chat session หายต้องไม่ทำให้พื้นที่ที่พร้อมกลายเป็น blocked
 
-[Registered Worktree Policy — กฎกลาง Notebook/VPS]
-- หนึ่ง task = หนึ่ง task worktree ในรากที่ลงทะเบียน; Notebook ใช้ `~/Documents/Worktrees` และ VPS ใช้ `/home/linux-nat/.worktree`
-- Use New Chat ต้องแสดง current folder + git root + registered task worktree + folder match + branch + dirty ก่อนรับงานเขียน
-- ห้าม Shortcut หรือ AI สร้าง/switch branch/worktree ด้วย Git เอง; งานใหม่ต้องผ่าน Worktree Manager
-- ถ้า task เดิมไม่มีในทะเบียน = ห้าม fallback ไป main/คนอื่น; ถ้าเป็นงานใหม่ให้ `hermes-new-chat open` สร้างใต้ registered root ตามคำสั่ง Shortcut
-- ห้ามใช้ canonical repo เป็นพื้นที่เขียน แม้ไฟล์จะ clean
-- แต่ละ task แยกโฟลเดอร์; task หนึ่งมี writer lease ได้ครั้งละหนึ่งเครื่อง ส่วน reviewer อ่านอย่างเดียว
+[ขั้น 5 — สรุป 3 บรรทัด]
+- โปรเจกต์นี้คืออะไรและ Process อยู่ขั้นไหน
+- งานล่าสุดถึงไหน โดยอ้าง branch/SHA/ไฟล์ค้างจริง
+- งานถัดไปหนึ่งข้อที่ตรงกับคำสั่งเจ้าของ
 
-กฎบังคับ:
-- เจ้าของงานอาจเป็น non-dev → อธิบายภาษาคน · เสนอคำสั่งก๊อปวางได้ · ห้ามถามว่า "ใช้ test ตัวไหน" ค้นเอง (Schema §5)
-- ห้ามตอบ "พร้อมรับคำสั่ง" ก่อนตรวจสถานะจริง
-- ห้ามเดา project/worktree/branch/dirty/remote/VPS/CI · ตรวจด้วย command จริงก่อนสรุป
-- ทุกค่าจาก command จริง · แนบ Evidence (timestamp/host/cwd/commands) ท้ายรายงาน
-- ผู้ใช้พิมพ์ไทย ตอบไทย แปลศัพท์ทันที
-- ห้ามแก้ไฟล์ก่อนส่ง startup report เว้นแต่เจ้าของสั่งทำต่อเอง
-- redact secret ใน remote URL เสมอ (https://***@...)
+[รายงานบังคับ]
+Project:
+Current workspace:
+Git root:
+Branch:
+HEAD:
+Dirty:
+Memory/Plan/Spec:
+Hook health:
+AI Relay: OPTIONAL หรือ OWNER_REQUESTED
+Decision: CURRENT_WORKSPACE_READY / CURRENT_WORKSPACE_READ_ONLY / CURRENT_WORKSPACE_BLOCKED
+Blocked reason:
+Next action:
 
-แหล่ง config (ห้าม fallback ไปค่า default ของโปรเจกต์อื่น):
-project config > repo runbook > AGENTS.md/.hermes context > ถามเจ้าของ
-
-ขั้นตอน (ทำเท่าที่โปรเจกต์มี):
-
-0. อ่านความจำ + เรียนรู้ทั้งโปรเจกต์ (บังคับ)
-
-0a. ความจำรอบล่าสุด (แก้ AI ลืมงานข้ามแชท · Schema v1.2: อ่าน `.project/` ที่เดียวต้องไปต่อได้):
-- เปิด `.project/OverviewProgress.md` (เช็กป้าย `> memory-schema:` บรรทัดแรก + อ่าน 4 หัวข้อบนสุด: สถานะล่าสุด/งานถัดไป/ข้อห้าม/งานค้าง-ส่งต่อ) → อ่านตามสารบัญบังคับ: `.project/plan.md` + `.project/decisions.md` → session log ล่าสุด (ตาม `latest-close.md` ของ staff ตัวเอง — Schema §6)
-- ถ้าพบความจำเก่า, memory-audit, QA/QC หรือโหมดงานทีม ให้อ่านเฉพาะหัวข้อที่ตรงเงื่อนไขใน `use-new-chat-conditional-gates.md` · ห้ามโหลดไฟล์นั้นเมื่อไม่เข้าเงื่อนไข
-- memory guard: ยืนยันว่า memory ที่อ่านเป็นของ project + worktree นี้จริงก่อนใช้ · ไม่ใช่ = ไม่ใช้ รายงาน
-- หา latest-close/handoff ไม่เจอ = บอกว่าไม่พบความจำรอบก่อน ไม่เดาว่าทำอะไรไป
-- reality-overrides-token (Schema §2): เทียบ token รอบก่อนกับของจริง (git/CI/SHA)
-  - token = `CLOSED_CLEAN` แต่เจอ dirty / SHA ไม่ตรง / CI แดง → เชื่อของจริง + ตีธงว่ารอบก่อนปิดไม่ตรงจริง
-  - `CLOSED_WITH_PENDING` → อ่านงานค้าง + claimed ก่อนเริ่ม
-  - `NEED_OWNER_ACTION_BEFORE_CLOSE` → รอบก่อนยังไม่ปิดจริง เตือนเจ้าของ
-
-0b. เรียนรู้ทั้งโปรเจกต์ (แก้ AI ไม่อ่านภาพรวม):
-- อ่าน + สรุปสั้น: `AGENTS.md` / runbook / architecture / `.project/decisions.md` (สะสมทั้งหมด ไม่ใช่แค่ decision ล่าสุด) / ไฟล์ source of truth ตามสารบัญใน OverviewProgress
-- สรุปออกมาให้เจ้าของเห็นว่าโปรเจกต์นี้คืออะไร / โครงหลัก / ข้อตกลงสำคัญที่ตัดสินไปแล้ว
-
-0c. สรุปบังคับ 3 บรรทัด (ไม่ครบ = ยังไม่เริ่มงาน):
-- Process อยู่ขั้นไหน
-- งานล่าสุดถึงไหน (commit/PR/SHA ล่าสุด — เทียบ `git log -5` + branch + PR/timestamp ไม่เชื่อ handoff อย่างเดียวเพราะอาจ stale)
-- สิ่งที่ต้องทำต่อ 1 ข้อ
-
-1. Project Detection
-- project path + repo name · execution target (local/VPS — ถ้า shell local แต่ target VPS รายงานทั้งสอง ห้ามบอก "อยู่บน VPS แล้ว") · context ที่เจอ (AGENTS.md/.hermes/*)
-
-2. Git Gate
-- `git rev-parse --show-toplevel` / `branch --show-current` / `status --short --branch` / `worktree list` → แปลผล clean/dirty
-- ไม่ใช่ git repo / nested / monorepo ไม่ชัด → `NEED_OWNER_INPUT` ห้ามเดา
-
-3. Remote Gate
-- ตรวจ remote · หลาย remote = รายงาน candidate ทั้งหมด แล้วถามอันไหนหลัก ห้ามเลือกมั่ว · เทียบ local HEAD กับ remote หลัก
-
-4. Staff / Worktree Routing Gate — [เฉพาะเมื่อ project config ใช้ worktree/ownership routing]
-- ระบุ staff id (nat/may/mind) · ไม่รู้ → ถาม ห้าม fallback ไป worktree คนอื่น
-- ตรวจว่า staff id + project มี worktree จริง (รัน `scripts/hermes_worktree_route.py` ถ้ามี) · ไม่เจอ = รายงาน missing หยุดก่อนแก้
-- โปรเจกต์ที่ config ไม่ระบุ routing → ข้ามขั้นนี้
-
-5. Quality Gate Detection (ค้นเอง · เจ้าของไม่ต้องบอก)
-- ค้นว่ามี gate อะไร (Schema §5: package.json/Makefile/pyproject/CI) → รายงานว่าโปรเจกต์ตรวจงานด้วยอะไร
-- ยังไม่ต้องรันตอนเปิด (รันตอน Close/ก่อน commit) แต่ต้องรู้ว่ามีอะไร เพื่อบอกเจ้าของได้ว่าจะ verify งานยังไง
-- ไม่พบ gate = รายงานตรง ๆ ว่าโปรเจกต์นี้ไม่มีตัวตรวจอัตโนมัติ (ความเสี่ยงที่ต้องรู้)
-
-6. VPS / Runtime + Deploy Gate — [capability-based · โปรเจกต์ deploy แบบ CI/CD on-merge]
-- service/endpoint ตาม config เท่านั้น (ห้าม port-scan กว้าง) · ไม่มี VPS → N/A
-- เทียบ deployed SHA กับ main/branch: prod ตามโค้ดล่าสุดทันไหม
-  - ดู CI run ล่าสุดของ main (เช่น `gh run list` สำหรับ GitHub / `glab ci status` หรือ pipeline API สำหรับ GitLab) เขียวไหม · live SHA = HEAD ของ main ไหม
-  - main นำหน้า live SHA = มีโค้ดที่ merge แล้วแต่ยังไม่ขึ้น prod → flag
-- ตรวจไม่ได้ = ระบุว่าไม่ได้ตรวจเพราะอะไร ห้ามบอกว่าใช้ได้
-
-7. Risk Gate
-- dirty files → แยกไฟล์แก้ค้าง vs ไฟล์ใหม่
-- งานถัดไปเป็น feature/deploy/migration/security/multi-file → ต้อง audit ก่อนแก้
-- worktree dirty + งานเป็น feature ใหม่ → หยุด ห้าม stash/ย้ายไฟล์/สร้าง worktree หนี · ปิดหรือส่งต่องานเดิมก่อน
-
-[Hermes Agent เท่านั้น — ตรวจจาก repo marker ไม่ใช่ชื่อโฟลเดอร์]
-- ถ้า config ยืนยันเป็น Hermes: Mac = local controller · VPS target ตาม runbook · ใช้ ssh/enter script ของโปรเจกต์ ไม่ hardcode IP/path
-- branch จริงเป็นชื่อพนักงาน (เช่น nat) → แสดงเป็น "Update Feature (branch จริง: nat)" · ห้ามเปลี่ยนชื่อ branch git จริง
-
-[New Feature Branch Gate — บังคับสร้าง branch ใหม่ก่อนแก้โค้ดฟีเจอร์ใหม่]
-"ฟีเจอร์ใหม่" = เพิ่ม behavior/UI/command/tool/config/integration ใหม่ หรือเจ้าของใช้คำ build/add/create/implement/ทำ
-"งานต่อเดิม" ต้องมีหลักฐาน: handoff ระบุ branch เดิม / task-PR เดิม / commit ล่าสุดตรง · ไม่มีหลักฐาน = ถือเป็นงานใหม่
-ก่อนแก้โค้ดเช็ก:
-- branch เป็น main/master/develop/shared/release/ของคนอื่น + ฟีเจอร์ใหม่ → STOP
-- detached HEAD → STOP เสมอ
-- dirty worktree → STOP ใน task นั้น · ห้ามย้าย changes/stash · รายงานว่าเป็นงานใครและปิด/พัก/ส่งต่อ หรือเสนอ task ใหม่ผ่าน Manager
-สร้าง task worktree ใหม่ผ่าน `hermes-new-chat open` เท่านั้น: branch มาตรฐาน `task/<staff-id>/<task-id>-<slug>` · ชื่อ/path ชนให้ Manager บล็อก · การเรียก Shortcut คือคำอนุมัติให้สร้างจริง
-ยกเว้น: อ่านอย่างเดียว/audit/review/explain/test/grep/git · typo/docs เล็ก (เจ้าของยืนยัน) · hotfix → `hotfix/<slug>` · งานต่อ PR เดิมที่มีหลักฐาน
-
-[Team-Safe Flow] ถ้า config เป็นงานทีม/มี routing ให้อ่านหัวข้อ Team Claim Gate ใน `use-new-chat-conditional-gates.md` แล้วบังคับจอง path ก่อนทุกงานเขียน · งานอ่านอย่างเดียวข้ามได้
-
-รูปแบบคำตอบบังคับ:
-
-New Chat Startup Report
-Project: path / repo / execution target / local controller / context loaded
-Workspace: current folder / git root / registered folder / folder match
-Project Overview (3 บรรทัด): โปรเจกต์คืออะไร / โครงหลัก / ข้อตกลงสำคัญ
-Memory: process ขั้นไหน / งานล่าสุดถึงไหน(SHA) / ต้องทำต่อ 1 ข้อ / token รอบก่อน(+ธงถ้าไม่ตรงจริง)
-Git: worktree / branch / dirty / HEAD / remote match (หรือ candidate)
-Routing: staff id / target worktree / route status (หรือ N/A)
-AI Relay: brain / coder / reviewer readiness / account state / version compatibility / queue state
-Branch Gate: current branch / new-or-continuation / registered task worktree / proposed branch
-Quality Gate: gate ที่ค้นเจอ (หรือ "ไม่พบตัวตรวจอัตโนมัติ")
-VPS / Deploy: service / endpoint / live SHA vs main (หรือ N/A)
-Evidence: timestamp / host / cwd / commands ที่รัน
-Readiness: READY / BLOCKED / NEED_OWNER_INPUT + เหตุผล + งานที่ควรทำต่อ
-
-ตัวอย่าง READY: Readiness: READY · git clean บน feature/login ตรง origin · main live SHA ตรง CI เขียว · พร้อมรับงานต่อ
-ตัวอย่าง BLOCKED: Readiness: BLOCKED · registered folder หายหรือมี dirty จากงานอื่น · ห้ามเริ่มงานเขียน
-ตัวอย่าง NEED_OWNER_INPUT: Readiness: NEED_OWNER_INPUT · มี 2 remote ยังไม่รู้อันไหนหลัก + ไม่รู้ staff id · ขอข้อมูลที่ขาดก่อน
-
-ข้อห้าม: ตอบแค่ "พร้อมรับคำสั่ง" · บอก clean โดยไม่รัน git status · บอก deploy ใช้ได้โดยไม่เทียบ SHA/CI · เชื่อ token โดยไม่เทียบของจริง · ถามเจ้าของว่าใช้ test ตัวไหน · สรุปด้วยศัพท์เทคนิคโดยไม่แปล
+ห้ามตอบว่า “พร้อม” โดยไม่มีผลคำสั่งจริง ห้ามแก้ไฟล์ก่อนรายงาน เว้นแต่เจ้าของสั่งให้ทำต่อจากงานที่อนุมัติไว้ชัดเจนในแชทเดียวกัน
 ```
 
-## Worktree Lifecycle v1 (มีผลเหนือกฎ fixed-folder รุ่นเก่า)
+## Worktree แบบอ่านและจัดการของเดิมเท่านั้น
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · task เดิมใช้ `hermes-new-chat status`; task ใหม่ใช้ `hermes-new-chat open` ซึ่งเรียก Manager และบันทึกสิทธิ์จาก Shortcut ให้ครบในครั้งเดียว · ห้ามใช้ `git worktree add` หรือ switch branch เอง · รายงาน task/machine/writer/runtime และ Decision Token WTL ทุกครั้ง
+ถ้าเจ้าของพิมพ์คำสั่งให้ตรวจ ส่งต่อ ปิด หรือเก็บกวาด Worktree ที่มีอยู่ จึงอ่าน `worktree-lifecycle-contract.md` เพิ่ม ด่าน AI ไม่เปิด Worktree ใหม่
 
 ## Changelog
 
-- v2.8 (2026-07-15): เปลี่ยนจากคำแนะนำเป็นคำสั่งทำงานจริง `hermes-new-chat open/status` · งานใหม่สร้าง task worktree+branch+lease+permit+Relay state ในครั้งเดียว · ห้ามเขียน canonical repo · Hook ก่อนเขียนบล็อกเมื่อไม่ผ่าน Relay
-- v2.7 (2026-07-14): เพิ่ม Fresh Close Receipt ลดการตรวจ CI/VPS ซ้ำแต่ยังบังคับ Git ขั้นพื้นฐานสด · ถามโหมด AI 1/2 เฉพาะเมื่อจะใช้หลาย AI · เปลี่ยน Write Permit เป็นสิทธิ์ระดับ Phase ไม่ถามราย issue
-- v2.6 (2026-07-13): ส่งกฎหยุดหลังตรวจไม่ผ่าน 2 รอบให้ AI Relay · บังคับแยกปัญหาและเปลี่ยนวิธีตรวจแทนการเรียกผู้ตรวจเดิมรอบที่ 3
-- v2.5 (2026-07-12): เพิ่ม Hook Health Gate ตรวจสด 3 ด่าน ป้องกันกรณีมีไฟล์ Hook แต่ถูกปิดหรือปล่อยผ่าน
-- v2.4 (2026-07-12): เพิ่มด่านก่อนเขียนทุกงานหลังพบปัญหา branch ถูกอนุมัติครั้งเดียวแล้วนำไปใช้ซ้ำจนไฟล์ทับกัน · สิทธิ์ผูก task+scope+paths · งานใหม่ทุกก้อนต้องตรวจ branch/dirty/claim และขออนุมัติ branch ใหม่ · แก้ตัวอย่าง BLOCKED ที่ใช้ token ผิด
-- ประวัติก่อน v2.4 อยู่ใน Git history และสรุปเงื่อนไขใน `use-new-chat-conditional-gates.md` เพื่อไม่ให้ AI อ่านประวัติที่ไม่ใช้ทุกแชต
+- v4.1 (2026-07-18): เพิ่ม `OWNER_EXPLICIT_BRANCH_ONLY` · AI สร้างกิ่งตามชื่อที่เจ้าของสั่งตรง ๆ ได้โดยไม่สร้าง Worktree · กันข้อความตัวอย่างยาว
+- v4.0 (2026-07-18): เปลี่ยนเป็น `CURRENT_WORKSPACE_ONLY` · ยกเลิกการสร้าง/สลับ Worktree และกิ่งจาก Shortcut · AI Relay เป็นทางเลือก · ใช้สถานะกลาง 3 ค่า
+- v3.0 (2026-07-18): งานอ่านไม่สร้าง Worktree · AI ในแอปเขียนตรงได้เมื่อ WTL พร้อม · AI Relay เป็นทางเลือก
 
 ## Graph Links
 
-- Parent hub: [[skills/prompt-shortcuts/Prompt Shortcuts|Prompt Shortcuts]]
-- Registry: [[ai-context/prompt-shortcut-registry|Prompt Shortcut Registry]]
-- Schema: [[skills/prompt-shortcuts/references/memory-schema|Memory Schema v1.1]]
-- Pair: [[skills/prompt-shortcuts/references/use-close-chat|Use Close Chat]]
-- Related: [[ai-context/session-start-contract|Session Start Contract]]
-- คู่มือเจ้าของงาน: [[skills/prompt-shortcuts/references/memory-system-owner-guide-th|ระบบความจำข้ามแชท — คู่มือเจ้าของงาน]]
+- [[skills/prompt-shortcuts/references/work-execution-policy|Work Execution Policy]]
+- [[skills/prompt-shortcuts/references/use-close-chat|Use Close Chat]]
+- [[ai-context/prompt-shortcut-registry|Prompt Shortcut Registry]]

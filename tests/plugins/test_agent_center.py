@@ -20,7 +20,7 @@ import plugins.agent_center as agent_center
 from plugins.agent_center import catalog, policies, routing, tools
 
 
-ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 # ---------------------------------------------------------------------------
@@ -720,26 +720,6 @@ def test_prepare_training_candidate_rejects_missing_str_field():
 # Tool handlers (JSON string outputs) — six tools + error paths
 # ---------------------------------------------------------------------------
 
-def test_plugin_registers_exactly_six_agent_center_tools():
-    registered = []
-
-    class Context:
-        def register_tool(self, **entry):
-            registered.append(entry)
-
-    agent_center.register(Context())
-
-    assert [entry["name"] for entry in registered] == [
-        "agent_center_list_agents",
-        "agent_center_get_agent",
-        "agent_center_list_skills",
-        "agent_center_route",
-        "agent_center_prepare_training_candidate",
-        "agent_center_validate",
-    ]
-    assert all(entry["toolset"] == "agent_center" for entry in registered)
-    assert all(callable(entry["handler"]) for entry in registered)
-
 def _tool(handler, **args):
     """Invoke a tool handler and parse its JSON string output."""
 
@@ -879,10 +859,87 @@ def test_tool_outputs_are_sorted_json_strings():
 
 
 # ---------------------------------------------------------------------------
-# Use Agent skill + team payload + one real routing example (UAG-P3)
+# Bundled skill and team-shortcuts payload
 # ---------------------------------------------------------------------------
 
-def test_use_agent_example_produces_team_manifest_and_work_packet():
+def test_agent_center_skill_payload_is_byte_identical():
+    source = REPO_ROOT / "skills" / "agent-center" / "SKILL.md"
+    payload = (
+        REPO_ROOT
+        / "team-shortcuts"
+        / "payload"
+        / "skills"
+        / "agent-center"
+        / "SKILL.md"
+    )
+    assert source.read_bytes() == payload.read_bytes()
+
+
+def test_agent_center_metadata_payload_is_byte_identical():
+    source = REPO_ROOT / "skills" / "agent-center" / "agents" / "openai.yaml"
+    payload = (
+        REPO_ROOT
+        / "team-shortcuts"
+        / "payload"
+        / "skills"
+        / "agent-center"
+        / "agents"
+        / "openai.yaml"
+    )
+    assert source.read_bytes() == payload.read_bytes()
+
+
+def test_agent_center_skill_frontmatter_and_tools():
+    skill = (REPO_ROOT / "skills" / "agent-center" / "SKILL.md").read_text()
+    frontmatter = skill.split("---", 2)[1]
+    keys = {
+        line.split(":", 1)[0]
+        for line in frontmatter.splitlines()
+        if ":" in line
+    }
+    assert keys == {"name", "description"}
+    for tool_name in (
+        "agent_center_list_agents",
+        "agent_center_get_agent",
+        "agent_center_list_skills",
+        "agent_center_route",
+        "agent_center_prepare_training_candidate",
+        "agent_center_validate",
+    ):
+        assert tool_name in skill
+
+
+def test_agent_center_skill_is_fail_closed_and_review_before_write():
+    skill = (REPO_ROOT / "skills" / "agent-center" / "SKILL.md").read_text()
+    assert "CURRENT_WORKSPACE_BLOCKED" in skill
+    assert "Do not replace catalog results with a team invented from memory." in skill
+    assert "Do not write it or promote it automatically." in skill
+    assert "owner approval" in skill
+    assert "Treat `Use AI Relay` as optional." in skill
+
+
+def test_plugin_registers_exactly_six_agent_center_tools():
+    registered = []
+
+    class Context:
+        def register_tool(self, **entry):
+            registered.append(entry)
+
+    agent_center.register(Context())
+
+    assert [entry["name"] for entry in registered] == [
+        "agent_center_list_agents",
+        "agent_center_get_agent",
+        "agent_center_list_skills",
+        "agent_center_route",
+        "agent_center_prepare_training_candidate",
+        "agent_center_validate",
+    ]
+    assert all(entry["toolset"] == "agent_center" for entry in registered)
+    assert all(callable(entry["handler"]) for entry in registered)
+
+
+def test_use_agent_creative_web_design_pilot():
     diagnosis = {
         "project_id": "sample-web",
         "goal": "design a new public service page",
@@ -923,7 +980,7 @@ def test_use_agent_example_produces_team_manifest_and_work_packet():
     assert policies.validate_work_receipt(receipt)["code"] == "receipt_valid"
 
 
-def test_use_agent_web_engine_pilot_selects_web_engine_as_the_core_team():
+def test_use_agent_web_engine_pilot_selects_web_engine_as_core_team():
     diagnosis = {
         "project_id": "enterprise-web-engine",
         "goal": "extend a large multi-tenant web engine with reusable page modules",
@@ -969,32 +1026,23 @@ def test_use_agent_web_engine_pilot_selects_web_engine_as_the_core_team():
     assert policies.validate_work_receipt(receipt)["code"] == "receipt_valid"
 
 
-def test_use_agent_skill_and_team_payload_are_connected():
-    skill = (ROOT / "skills/agent-center/SKILL.md").read_text(encoding="utf-8")
-    prompt_root = ROOT / "team-shortcuts/payload/skills/prompt-shortcuts"
+def test_use_agent_shortcut_and_skill_are_connected():
+    skill = (REPO_ROOT / "skills/agent-center/SKILL.md").read_text(encoding="utf-8")
+    prompt_root = REPO_ROOT / "team-shortcuts/payload/skills/prompt-shortcuts"
     prompt = (prompt_root / "references/use-agent.md").read_text(encoding="utf-8")
     shortcut_skill = (prompt_root / "SKILL.md").read_text(encoding="utf-8")
     shortcut_index = (prompt_root / "Prompt Shortcuts.md").read_text(encoding="utf-8")
     registry = (
-        ROOT / "team-shortcuts/payload/ai-context/prompt-shortcut-registry.md"
+        REPO_ROOT / "team-shortcuts/payload/ai-context/prompt-shortcut-registry.md"
     ).read_text(encoding="utf-8")
 
     assert "TODO" not in skill
     assert skill.startswith("---\nname: agent-center\n")
     assert "Use Agent" in skill
-    for tool_name in (
-        "agent_center_list_agents",
-        "agent_center_get_agent",
-        "agent_center_list_skills",
-        "agent_center_route",
-        "agent_center_prepare_training_candidate",
-        "agent_center_validate",
-    ):
-        assert tool_name in skill
-
     assert "`Use AI Relay` as optional" in skill
     assert "explicit owner request" in skill
     assert "Use AI Relay เฉพาะเมื่อเจ้าของเรียกชัดเจน" in prompt
+    assert shortcut_skill.count("Use Agent") >= 3
     assert shortcut_skill.count("| `Use Agent` |") == 1
     assert shortcut_index.count("| `Use Agent` |") == 1
     assert registry.count("| `Use Agent` |") == 1

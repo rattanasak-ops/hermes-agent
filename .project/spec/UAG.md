@@ -76,7 +76,7 @@ updated: 2026-07-18
 | U12 | ทักษะเริ่มต้น (seed skill) 52 ตัว | `data/skills.json` | ☑ 52/52 |
 | U13 | ช่องนิยาม Agent ขั้นต่ำ 19 ช่อง + Skill ขั้นต่ำ 13 ช่อง | `plugins/agent_center/catalog.py` | ☑ 19/19 + 13/13 |
 | U14 | ใบเสร็จงาน (Work Receipt) เฟส 1 นิยาม schema · pilot กรอกจริง | `plugins/agent_center/policies.py` | ☑ 2/2 pilot receipt valid |
-| U15 | เทสต์คลุมสมุด/จัดเส้นทาง/2 นโยบาย/4 ที่นั่ง | `tests/plugins/test_agent_center.py` | ☑ gate-run ผ่าน 105/105 |
+| U15 | เทสต์คลุมสมุด/จัดเส้นทาง/2 นโยบาย/4 ที่นั่ง | `tests/plugins/test_agent_center.py` | ☑ 109/109 |
 
 ### รายการ 9 หัวหน้าทีม (lead · เก็บเป็นรายการตรรกะเท่านั้น · ยังไม่ติดตั้งรันจริง · N/M = 9/9)
 1. consultor — ที่ปรึกษาวินิจฉัยหน้าด่านแรก

@@ -117,6 +117,8 @@ def test_hook_subprocess_writes_log_to_env_stats_dir(tmp_path):
     env = os.environ.copy()
     env["AI_FAIL_STATS_DIR"] = str(stats_dir)
     env["HOME"] = str(home_dir)
+    # Keep HOME-based dashboard refresh from writing outside tmp
+    env["BADWORD_DASHBOARD_HTML"] = str(tmp_path / "dashboard.html")
 
     proc = subprocess.run(
         [sys.executable, SCRIPT],
@@ -130,7 +132,8 @@ def test_hook_subprocess_writes_log_to_env_stats_dir(tmp_path):
 
     assert proc.returncode == 0
     assert proc.stderr == ""
-    assert "target:opus" in proc.stdout
+    # With Badword Tracker wired, response may be receipt text instead of legacy category label
+    assert "บันทึก" in proc.stdout or "target:opus" in proc.stdout
 
     log_path = stats_dir / "log.jsonl"
     assert log_path.exists()
@@ -143,6 +146,11 @@ def test_hook_subprocess_writes_log_to_env_stats_dir(tmp_path):
 
     counts = json.loads((stats_dir / "counts.json").read_text(encoding="utf-8"))
     assert counts["target:opus"] == 1
+
+    # P5/P8 path: hook also records into tracker.db when module is available
+    tracker_db = stats_dir / "tracker.db"
+    assert tracker_db.is_file()
+    assert "BWT-E-" in proc.stdout
 
 
 def test_hook_write_failure_exits_zero_without_output(monkeypatch):
@@ -165,3 +173,25 @@ def test_hook_write_failure_exits_zero_without_output(monkeypatch):
     assert module.main() == 0
     assert stdout.getvalue() == ""
     assert stderr.getvalue() == ""
+
+
+def test_record_receipt_uses_tracker_and_never_shell(tmp_path):
+    module = load_hook()
+    stats_dir = tmp_path / "stats"
+    stats_dir.mkdir()
+    # Prefer lab tracker from hermes-standard/bin (second candidate)
+    receipt = module.record_receipt(
+        "fuck you hermes งานยังไม่เสร็จ token=supersecret",
+        str(tmp_path / "Hermes"),
+        {"phrase": "fuck you hermes", "target": "hermes", "category": "hermes-fail"},
+        stats_dir=str(stats_dir),
+        host="test-host",
+    )
+    assert receipt is not None
+    assert receipt.event_id.startswith("BWT-E-")
+    assert (stats_dir / "tracker.db").is_file()
+
+    # source safety: hook must not shell/git/relay
+    source = open(SCRIPT, encoding="utf-8").read()
+    for token in ("subprocess.", "os.system", "os.popen", "Popen(", "relay-call"):
+        assert token not in source, f"hook ห้ามมี {token}"

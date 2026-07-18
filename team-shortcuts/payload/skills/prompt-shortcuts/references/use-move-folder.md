@@ -81,7 +81,7 @@ Footer ทุกเฟส: สถานะ / ผลตรวจ / ต้อง�
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · registered worktree roots และ task worktree ทุกสถานะเป็น no-touch สำหรับ Move Folder · การสำรวจ/ย้ายทะเบียน/cleanup ส่งให้ `hermes worktree scan/import/cleanup`; Shortcut นี้ห้ามย้าย เปลี่ยนชื่อ หรือลบเอง
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · Git root และ Worktree ทุกแห่งเป็นพื้นที่ห้ามแตะสำหรับ Move Folder · Shortcut นี้ห้ามย้าย เปลี่ยนชื่อ ลบ หรือส่งคำสั่ง cleanup Worktree/กิ่งเอง
 
 ## Changelog
 - v2.1 (2026-06-26): ผ่าน cross-check 2 รอบ · MUST-1 no-touch fail-closed (ทุก `.` = no-touch + allowlist) · MUST-2 ด่าน 9 สแกน ref + symlink เปลี่ยนผ่าน · S-1..S-5 (guardian ปลอดภัย/free space/cross-fs เก็บ source/rollback ใน .hermes รักษา perm/stop batch) · แยก protected (วางของใหม่เข้าได้ ห้ามแตะของเดิม) · เพิ่มเงื่อนไข executor ก่อนปล่อยรันกลางคืน

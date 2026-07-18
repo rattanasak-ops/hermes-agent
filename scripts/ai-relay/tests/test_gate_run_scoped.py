@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 GATE_RUN = ROOT / "gate-run.py"
 
 
-def _prepare_python_repo(tmp_path: Path) -> tuple[Path, Path]:
+def _prepare_python_repo(tmp_path: Path):
     (tmp_path / "pyproject.toml").write_text(
         "[project]\nname = 'gate-fixture'\nversion = '0.0.0'\n",
         encoding="utf-8",
@@ -33,7 +33,7 @@ def _prepare_python_repo(tmp_path: Path) -> tuple[Path, Path]:
     return first.relative_to(tmp_path), second.relative_to(tmp_path)
 
 
-def _run_gate(tmp_path: Path, *test_paths: str) -> subprocess.CompletedProcess[str]:
+def _run_gate(tmp_path: Path, *test_paths: str):
     capture = tmp_path / "gate-args.txt"
     env = os.environ.copy()
     env["GATE_CAPTURE"] = str(capture)

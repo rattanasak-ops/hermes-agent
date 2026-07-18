@@ -10,6 +10,7 @@ import sys
 
 
 REQUIRED_HEADINGS = [
+    "## 0. เงื่อนไขการเรียกใช้",
     "## 1. ขอบเขตและแหล่งจริง",
     "## 3. โครงสร้างตำแหน่ง",
     "## 5. สมุดทะเบียนกลาง",
@@ -29,8 +30,11 @@ REQUIRED_HEADINGS = [
 ]
 
 REQUIRED_PHRASES = [
+    "CURRENT_WORKSPACE_ONLY",
+    "ห้ามสร้าง/สลับ Worktree/กิ่ง",
+    "ด่าน AI ไม่เปิด Worktree ใหม่",
     "หนึ่งโครงการมีพื้นที่หลักหนึ่งแห่ง",
-    "หนึ่งงานเขียนมี task worktree ของตัวเอง",
+    "OWNER_EXPLICIT_BRANCH_ONLY",
     "หนึ่ง task มีเครื่องถือสิทธิ์เขียนได้ครั้งละหนึ่งเครื่อง",
     "~/Documents/Worktrees/<project-id>/<staff-id>/<task-id>-<slug>",
     "/home/linux-nat/.worktree/<project-id>/<staff-id>/<task-id>-<slug>",
@@ -43,7 +47,7 @@ REQUIRED_PHRASES = [
     "hermes worktree open",
     "hermes worktree cleanup --dry-run",
     "WTL_BLOCKED",
-    "Shortcut visibility เห็นกฎ WTL 30/30",
+    "Shortcut visibility เห็นกฎ `CURRENT_WORKSPACE_ONLY` ครบ",
     "โซน A — AI ทำต่อเองจนจบเฟส",
     "โซน B — รวบขออนุมัติระดับ Phase ครั้งเดียว",
 ]
@@ -79,11 +83,12 @@ SHORTCUTS = [
     "Use Create Content",
     "Use QA QC",
     "Use SonarQube",
+    "Use Migrate Web",
+    "Use Migrate 0",
 ]
 
 CONFLICT_PHRASES = [
     "หลาย Cursor/AI ใช้โฟลเดอร์เดียวกันได้",
-    "ห้ามเสนอ ห้ามสร้าง และห้ามสั่งสร้าง Git worktree ใหม่",
     "งานใหม่สร้างได้เฉพาะ branch ภายใน registered folder เดิม",
     "allow_multiple_writers: true",
     "cleanup_by_age: true",

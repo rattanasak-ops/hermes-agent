@@ -50,6 +50,9 @@ run_datagen_sonnet.sh
 source-data/*
 run_datagen_megascience_glm4-6.sh
 data/*
+!plugins/agent_center/data/
+!plugins/agent_center/data/agents.json
+!plugins/agent_center/data/skills.json
 node_modules/
 browser-use/
 agent-browser/

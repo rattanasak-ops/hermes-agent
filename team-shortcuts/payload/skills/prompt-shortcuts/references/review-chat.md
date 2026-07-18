@@ -49,7 +49,7 @@ Review Chat
 
 ## Worktree Lifecycle v1
 
-อ่าน `worktree-lifecycle-contract.md` ก่อนใช้ Prompt นี้ · เพิ่มหลักฐาน `task_id / machine_id / worktree / branch / writer / lifecycle / cleanup` ในรายงาน · Review Chat อ่านสถานะและเสนอ action เท่านั้น เว้นแต่เจ้าของอนุมัติการเขียน/ปิดชัดเจน
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · เพิ่มหลักฐาน `git root / branch / SHA / dirty / allowed paths` ในรายงาน · Review Chat อ่านสถานะและเสนอ action เท่านั้น และห้ามสร้าง/สลับ/ปิด/ลบ Worktree หรือกิ่ง
 
 ## Changelog
 
