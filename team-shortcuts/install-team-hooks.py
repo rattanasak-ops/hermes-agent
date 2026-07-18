@@ -4,8 +4,11 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import pwd
 import shutil
+import subprocess
 import sys
 
 
@@ -19,6 +22,56 @@ HOOK_NAMES = (
     "enforce-flow-gate.py",
     "enforce-new-chat-relay.py",
 )
+
+
+def active_hermes_home() -> Path:
+    explicit = os.environ.get("HERMES_HOME", "").strip()
+    if explicit:
+        return Path(explicit).expanduser().resolve()
+    default = HOME / ".hermes"
+    try:
+        account_home = Path(pwd.getpwuid(os.getuid()).pw_dir).resolve()
+    except (KeyError, OSError):
+        return default
+    if HOME.resolve() != account_home or shutil.which("hermes") is None:
+        return default
+    try:
+        result = subprocess.run(
+            ["hermes", "config", "path"],
+            text=True,
+            capture_output=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return default
+    candidate = Path(result.stdout.strip()).expanduser()
+    return candidate.resolve().parent if result.returncode == 0 and candidate.name == "config.yaml" else default
+
+
+def config_hook_section(text: str) -> tuple[list[str], int, int]:
+    lines = text.splitlines()
+    hooks_index = next(
+        (
+            i
+            for i, line in enumerate(lines)
+            if not line.startswith(" ") and line.split(":", 1)[0].strip() == "hooks"
+        ),
+        None,
+    )
+    if hooks_index is None:
+        if lines and lines[-1].strip():
+            lines.append("")
+        hooks_index = len(lines)
+        lines.append("hooks:")
+    elif lines[hooks_index].strip() != "hooks:":
+        lines[hooks_index] = "hooks:"
+    section_end = len(lines)
+    for i in range(hooks_index + 1, len(lines)):
+        if lines[i] and not lines[i].startswith((" ", "#")):
+            section_end = i
+            break
+    return lines, hooks_index, section_end
 
 
 def load_json(path: Path) -> dict:
@@ -43,6 +96,14 @@ def install_files(target: Path) -> None:
         if not dst.exists() or src.read_bytes() != dst.read_bytes():
             shutil.copy2(src, dst)
         dst.chmod(0o755)
+
+
+def install_hermes_runner(path: Path) -> None:
+    source = SOURCE / "enforce-new-chat-relay.py"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists() or source.read_bytes() != path.read_bytes():
+        shutil.copy2(source, path)
+    path.chmod(0o755)
 
 
 def install_stop_entry(settings_path: Path, runner: Path) -> None:
@@ -175,6 +236,30 @@ def install_new_chat_entry(settings_path: Path, runner: Path) -> None:
     tmp.replace(settings_path)
 
 
+def install_owner_prompt_entry(settings_path: Path, runner: Path) -> None:
+    data = load_json(settings_path)
+    hooks = data.setdefault("hooks", {})
+    if not isinstance(hooks, dict):
+        raise SystemExit(f"ช่อง hooks ผิดรูปแบบใน {settings_path}")
+    entries = hooks.setdefault("UserPromptSubmit", [])
+    if not isinstance(entries, list):
+        raise SystemExit(f"ช่อง hooks.UserPromptSubmit ผิดรูปแบบใน {settings_path}")
+    command = str(runner)
+    if not any(
+        isinstance(entry, dict)
+        and any(
+            isinstance(hook, dict) and "hermes-owner-intent" in str(hook.get("command", ""))
+            for hook in entry.get("hooks", [])
+        )
+        for entry in entries
+    ):
+        entries.append({"hooks": [{"type": "command", "command": command, "timeout": 5}]})
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = settings_path.with_suffix(settings_path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(settings_path)
+
+
 def install_cursor_entry(settings_path: Path, runner: Path) -> None:
     data = load_json(settings_path)
     data.setdefault("version", 1)
@@ -212,52 +297,97 @@ def install_cursor_entry(settings_path: Path, runner: Path) -> None:
     tmp.replace(settings_path)
 
 
+def install_cursor_owner_prompt_entry(settings_path: Path, runner: Path) -> None:
+    data = load_json(settings_path)
+    data.setdefault("version", 1)
+    hooks = data.setdefault("hooks", {})
+    if not isinstance(hooks, dict):
+        raise SystemExit(f"ช่อง hooks ผิดรูปแบบใน {settings_path}")
+    entries = hooks.setdefault("beforeSubmitPrompt", [])
+    if not isinstance(entries, list):
+        raise SystemExit(f"ช่อง hooks.beforeSubmitPrompt ผิดรูปแบบใน {settings_path}")
+    command = str(runner)
+    if not any(
+        isinstance(entry, dict) and "hermes-owner-intent" in str(entry.get("command", ""))
+        for entry in entries
+    ):
+        entries.append({"command": command, "timeout": 5, "failClosed": False})
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = settings_path.with_suffix(settings_path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(settings_path)
+
+
 def install_hermes_config_entry(config_path: Path, runner: Path) -> None:
     """Append one Hermes pre_tool_call hook without rewriting existing YAML."""
     command = str(runner)
     text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
-    if "enforce-new-chat-relay.py" in text:
+    if "hermes-current-workspace-hook" in text:
         return
-    block = (
-        "\nhooks:\n"
-        "  pre_tool_call:\n"
-        f"    - command: {command}\n"
-        "      timeout: 20\n"
-    )
-    if not text.strip():
-        updated = block.lstrip("\n")
-    elif "\nhooks:\n" not in "\n" + text:
-        updated = text.rstrip() + block
-    else:
+    if "enforce-new-chat-relay.py" in text:
         lines = text.splitlines()
-        hooks_index = next(i for i, line in enumerate(lines) if line.strip() == "hooks:" and not line.startswith(" "))
-        section_end = len(lines)
-        for i in range(hooks_index + 1, len(lines)):
-            if lines[i] and not lines[i].startswith((" ", "#")):
-                section_end = i
+        for index, line in enumerate(lines):
+            if "command:" in line and "enforce-new-chat-relay.py" in line:
+                prefix = line[: line.index("command:")]
+                lines[index] = f"{prefix}command: {command}"
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = config_path.with_suffix(config_path.suffix + ".tmp")
+        tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        tmp.replace(config_path)
+        return
+    lines, hooks_index, section_end = config_hook_section(text)
+    pre_index = next(
+        (i for i in range(hooks_index + 1, section_end) if lines[i].strip() == "pre_tool_call:"),
+        None,
+    )
+    entry = [
+        f"    - command: {command}",
+        "      matcher: (?i)terminal|bash|shell|write|edit|apply_patch",
+        "      timeout: 20",
+    ]
+    if pre_index is None:
+        lines[section_end:section_end] = ["  pre_tool_call:", *entry]
+    else:
+        insert_at = section_end
+        for i in range(pre_index + 1, section_end):
+            if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].strip():
+                insert_at = i
                 break
-        pre_index = next(
-            (i for i in range(hooks_index + 1, section_end) if lines[i].strip() == "pre_tool_call:"),
-            None,
-        )
-        if pre_index is None:
-            insert = ["  pre_tool_call:", f"    - command: {command}", "      timeout: 20"]
-            lines[section_end:section_end] = insert
-        else:
-            insert_at = section_end
-            for i in range(pre_index + 1, section_end):
-                if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].strip():
-                    insert_at = i
-                    break
-            lines[insert_at:insert_at] = [f"    - command: {command}", "      timeout: 20"]
-        updated = "\n".join(lines) + "\n"
+        lines[insert_at:insert_at] = entry
+    updated = "\n".join(lines) + "\n"
     config_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = config_path.with_suffix(config_path.suffix + ".tmp")
     tmp.write_text(updated, encoding="utf-8")
     tmp.replace(config_path)
 
 
-def install_hermes_allowlist(path: Path, runner: Path) -> None:
+def install_hermes_prompt_entry(config_path: Path, runner: Path) -> None:
+    command = str(runner)
+    text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+    if "hermes-owner-intent" in text:
+        return
+    lines, hooks_index, section_end = config_hook_section(text)
+    pre_index = next(
+        (i for i in range(hooks_index + 1, section_end) if lines[i].strip() == "pre_llm_call:"),
+        None,
+    )
+    entry = [f"    - command: {command}", "      timeout: 5"]
+    if pre_index is None:
+        lines[section_end:section_end] = ["  pre_llm_call:", *entry]
+    else:
+        insert_at = section_end
+        for i in range(pre_index + 1, section_end):
+            if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].strip():
+                insert_at = i
+                break
+        lines[insert_at:insert_at] = entry
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = config_path.with_suffix(config_path.suffix + ".tmp")
+    tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    tmp.replace(config_path)
+
+
+def install_hermes_allowlist(path: Path, runner: Path, event: str = "pre_tool_call") -> None:
     data = load_json(path)
     approvals = data.setdefault("approvals", [])
     if not isinstance(approvals, list):
@@ -265,11 +395,11 @@ def install_hermes_allowlist(path: Path, runner: Path) -> None:
     command = str(runner)
     if not any(
         isinstance(row, dict)
-        and row.get("event") == "pre_tool_call"
+        and row.get("event") == event
         and row.get("command") == command
         for row in approvals
     ):
-        approvals.append({"event": "pre_tool_call", "command": command})
+        approvals.append({"event": event, "command": command})
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -280,11 +410,15 @@ def main() -> int:
     claude_hooks = HOME / ".claude" / "hooks"
     codex_hooks = HOME / ".codex" / "hooks"
     cursor_hooks = HOME / ".cursor" / "hooks"
-    hermes_hooks = HOME / ".hermes" / "hooks"
+    hermes_home = active_hermes_home()
+    hermes_hooks = hermes_home / "hooks"
+    owner_intent = HOME / ".local" / "bin" / "hermes-owner-intent"
+    hermes_runner = HOME / ".local" / "bin" / "hermes-current-workspace-hook"
     install_files(claude_hooks)
     install_files(codex_hooks)
     install_files(cursor_hooks)
     install_files(hermes_hooks)
+    install_hermes_runner(hermes_runner)
     install_stop_entry(HOME / ".claude" / "settings.json", claude_hooks / "team-stop-gates.py")
     install_pretooluse_entry(
         HOME / ".claude" / "settings.json", claude_hooks / "enforce-flow-gate.py"
@@ -292,19 +426,28 @@ def main() -> int:
     install_new_chat_entry(
         HOME / ".claude" / "settings.json", claude_hooks / "enforce-new-chat-relay.py"
     )
+    install_owner_prompt_entry(HOME / ".claude" / "settings.json", owner_intent)
     install_stop_entry(HOME / ".codex" / "hooks.json", codex_hooks / "team-stop-gates.py")
     install_new_chat_entry(
         HOME / ".codex" / "hooks.json", codex_hooks / "enforce-new-chat-relay.py"
     )
+    install_owner_prompt_entry(HOME / ".codex" / "hooks.json", owner_intent)
     install_cursor_entry(
         HOME / ".cursor" / "hooks.json", cursor_hooks / "enforce-new-chat-relay.py"
     )
+    install_cursor_owner_prompt_entry(HOME / ".cursor" / "hooks.json", owner_intent)
     install_hermes_config_entry(
-        HOME / ".hermes" / "config.yaml", hermes_hooks / "enforce-new-chat-relay.py"
+        hermes_home / "config.yaml", hermes_runner
+    )
+    install_hermes_prompt_entry(hermes_home / "config.yaml", owner_intent)
+    install_hermes_allowlist(
+        hermes_home / "shell-hooks-allowlist.json",
+        hermes_runner,
     )
     install_hermes_allowlist(
-        HOME / ".hermes" / "shell-hooks-allowlist.json",
-        hermes_hooks / "enforce-new-chat-relay.py",
+        hermes_home / "shell-hooks-allowlist.json",
+        owner_intent,
+        event="pre_llm_call",
     )
     print("ติดตั้ง Hook พื้นที่ปัจจุบันให้ Claude Code, Codex, Cursor และ Hermes Agent แล้ว")
     return 0

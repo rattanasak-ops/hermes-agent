@@ -47,6 +47,8 @@ ACTIVE_CONFLICTS = [
     "ให้ Manager แสดง dry-run และรอเจ้าของอนุมัติ",
 ]
 
+OWNER_BRANCH_POLICY = "OWNER_EXPLICIT_BRANCH_ONLY"
+
 
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -66,6 +68,11 @@ def validate(vault: Path, payload: Path) -> dict:
             errors.append("missing:{}".format(path))
 
     contract_text = contract.read_text(encoding="utf-8") if contract.is_file() else ""
+    policy_text = policy.read_text(encoding="utf-8") if policy.is_file() else ""
+    skill_text = skill.read_text(encoding="utf-8") if skill.is_file() else ""
+    for label, text in (("policy", policy_text), ("skill", skill_text), ("contract", contract_text)):
+        if OWNER_BRANCH_POLICY not in text:
+            errors.append("owner_branch_policy_missing:{}".format(label))
     for shortcut in ALL_SHORTCUTS:
         if shortcut not in contract_text:
             errors.append("contract_missing_shortcut:{}".format(shortcut))
@@ -106,6 +113,8 @@ def validate(vault: Path, payload: Path) -> dict:
         "mode": "CURRENT_WORKSPACE_ONLY",
         "shortcut_visibility": "{}/{}".format(len(ALL_SHORTCUTS), len(ALL_SHORTCUTS)),
         "direct_integrations": "{}/{}".format(len(DIRECT_FILES), len(DIRECT_FILES)),
+        "worktree_auto_create": "0/{}".format(len(ALL_SHORTCUTS)),
+        "owner_branch_policy": "{}/{}".format(len(ALL_SHORTCUTS), len(ALL_SHORTCUTS)),
         "parity_files": len(parity_files) + 1,
         "errors": errors,
     }

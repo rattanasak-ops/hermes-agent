@@ -15,14 +15,14 @@ tags:
   - new-chat
   - startup-gate
 status: active
-version: "4.0"
+version: "4.1"
 updated: 2026-07-18
 schema: memory-schema-v1.2
 execution_policy: work-execution-policy >= 2.0
 default_mode: CURRENT_WORKSPACE_ONLY
 ---
 
-# Use New Chat (v4.0 · 2026-07-18)
+# Use New Chat (v4.1 · 2026-07-18)
 
 ## Shortcut
 
@@ -42,6 +42,8 @@ Use New Chat
 - ใช้ `pwd` และ Git root ที่แอปเปิดอยู่เท่านั้น
 - Shortcut นี้ห้ามเรียก `hermes-new-chat open`, `hermes worktree open`, `git worktree add/remove`, `git switch`, `git checkout` และคำสั่งสร้าง/สลับกิ่ง
 - การพิมพ์ `Use New Chat` ไม่ใช่คำอนุมัติให้สร้าง Worktree หรือกิ่ง
+- คำสั่งสั้นแยกต่างหากจากเจ้าของที่ระบุชื่อกิ่งตรง ๆ ใช้ `OWNER_EXPLICIT_BRANCH_ONLY`: AI สร้างกิ่งชื่อนั้นใน Git root ปัจจุบันได้หนึ่งครั้ง ห้ามสร้าง Worktree และห้ามผลักให้เจ้าของเปิด Terminal เอง
+- ข้อความยาวที่วางเป็นตัวอย่าง ประวัติแชท และชื่อกิ่งที่ AI คิดเองไม่ใช่คำอนุมัติ
 - Worktree ที่เปิดอยู่แล้วใช้ได้เหมือนโฟลเดอร์ Git ปกติ แต่ห้ามสร้างเพิ่ม ย้ายเข้าเอง หรือเก็บกวาดเอง
 - ใช้ AI Relay เฉพาะเมื่อเจ้าของเรียก `Use AI Relay` โดยชัดเจน
 - ผู้ตรวจและวิธีเดิมใช้ได้สูงสุด 2 รอบต่อปัญหา ถ้ายังไม่ผ่านให้เปลี่ยนเป็น test/lint/build หรือผู้ตรวจอื่น ห้ามเรียกรอบที่ 3
@@ -64,7 +66,7 @@ Use New Chat
 [ขั้น 3 — ตัดสินสถานะ]
 - งานอ่านอย่างเดียว → `CURRENT_WORKSPACE_READ_ONLY`
 - งานเขียนผ่านได้เมื่อ Git root ตรงพื้นที่ปัจจุบัน, ไม่ detached HEAD, กิ่งไม่ใช่ main/master/develop/development/production/prod, เป้าหมายอยู่ใน root และไฟล์ค้างไม่ชนงานอื่น → `CURRENT_WORKSPACE_READY`
-- เงื่อนไขไม่ครบ → `CURRENT_WORKSPACE_BLOCKED` และบอกการกระทำเดียวที่เจ้าของต้องทำ ห้ามสร้างหรือสลับพื้นที่แทนเจ้าของ
+- เงื่อนไขไม่ครบ → `CURRENT_WORKSPACE_BLOCKED` และชี้โฟลเดอร์หลักของโครงการเพียงแห่งเดียว ห้ามเสนอ Worktree ใหม่; ถ้าเจ้าของสั่งสร้างกิ่งพร้อมชื่อชัดเจน ให้ AI ทำตามข้อยกเว้นกลางได้
 - ถ้า dirty เป็นไฟล์ของงานเดียวกันและอยู่ในขอบเขต ให้ทำต่อได้โดยรักษาไฟล์เดิม; ถ้าไม่รู้เจ้าของหรือทับงานอื่น ให้บล็อกเฉพาะไฟล์ที่เสี่ยง
 
 [ขั้น 4 — ด่านสุขภาพ]
@@ -95,12 +97,13 @@ Next action:
 ห้ามตอบว่า “พร้อม” โดยไม่มีผลคำสั่งจริง ห้ามแก้ไฟล์ก่อนรายงาน เว้นแต่เจ้าของสั่งให้ทำต่อจากงานที่อนุมัติไว้ชัดเจนในแชทเดียวกัน
 ```
 
-## Worktree แบบสั่งตรงเท่านั้น
+## Worktree แบบอ่านและจัดการของเดิมเท่านั้น
 
-ถ้าเจ้าของพิมพ์คำสั่งที่ระบุชัดว่าให้สร้าง ส่งต่อ ปิด หรือเก็บกวาด Worktree จึงอ่าน `worktree-lifecycle-contract.md` และใช้ Worktree Manager งานนั้นแยกจาก Shortcut นี้
+ถ้าเจ้าของพิมพ์คำสั่งให้ตรวจ ส่งต่อ ปิด หรือเก็บกวาด Worktree ที่มีอยู่ จึงอ่าน `worktree-lifecycle-contract.md` เพิ่ม ด่าน AI ไม่เปิด Worktree ใหม่
 
 ## Changelog
 
+- v4.1 (2026-07-18): เพิ่ม `OWNER_EXPLICIT_BRANCH_ONLY` · AI สร้างกิ่งตามชื่อที่เจ้าของสั่งตรง ๆ ได้โดยไม่สร้าง Worktree · กันข้อความตัวอย่างยาว
 - v4.0 (2026-07-18): เปลี่ยนเป็น `CURRENT_WORKSPACE_ONLY` · ยกเลิกการสร้าง/สลับ Worktree และกิ่งจาก Shortcut · AI Relay เป็นทางเลือก · ใช้สถานะกลาง 3 ค่า
 - v3.0 (2026-07-18): งานอ่านไม่สร้าง Worktree · AI ในแอปเขียนตรงได้เมื่อ WTL พร้อม · AI Relay เป็นทางเลือก
 
