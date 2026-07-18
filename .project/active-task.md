@@ -1,7 +1,7 @@
 ---
 task_id: UAG-P5
 goal_id: UAG-P5-DIRECT-CODEX-20260718
-status: gate_fix_pull_request_open_owner_merge_pending
+status: gate_fix_pull_request_closed_unmerged
 owner_decision_at: 2026-07-19
 writer: codex-current-chat
 external_ai_relay: disabled
@@ -70,7 +70,7 @@ spec: .project/spec/UAG.md
 
 ## ขั้นตอนถัดไปเพียงหนึ่งขั้น
 
-เจ้าของตรวจและ merge PR #79 เมื่อเห็นสมควร; ตัวงาน Agent Center รวมเข้า `main` แล้วผ่าน PR #74
+เจ้าของเปิด PR #79 กลับและรวมเมื่อเห็นสมควร; PR ถูกปิดโดยไม่รวมเมื่อ 2026-07-19 เวลา 02:51 น. ส่วนตัวงาน Agent Center รวมเข้า `main` แล้วผ่าน PR #74
 
 ## จุดติดที่เคลียร์แล้วใน UAG-P3
 
@@ -97,6 +97,7 @@ spec: .project/spec/UAG.md
 - `save-git --stage local --json` คืน `SAFE_TO_MERGE` ด้วย exit 0 และตรวจไฟล์ค้างที่อนุมัติ 2/2
 - push กิ่งขึ้น `origin` สำเร็จ 1/1 และเปิด PR #71 สำเร็จ 1/1: https://github.com/rattanasak-ops/hermes-agent/pull/71
 - PR #71 ปิดโดยไม่รวม; ตัวงาน Agent Center รวมผ่าน PR #74 แล้ว และงานซ่อมด่านปัจจุบันอยู่ใน PR #79: https://github.com/rattanasak-ops/hermes-agent/pull/79
+- PR #79 ถูกบัญชีเจ้าของปิดโดยไม่รวมเมื่อ 2026-07-19 เวลา 02:51 น.; Codex ไม่เปิดกลับเองเพื่อเคารพการเปลี่ยนสถานะจากเจ้าของ
 
 ## แบบ UAG-P3 ที่ลงมือแล้ว
 
