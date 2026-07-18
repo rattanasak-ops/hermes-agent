@@ -717,7 +717,7 @@ def check_plan_anchor(cwd: Path, task_id: str, no_plan: bool) -> tuple[str, str 
 def record_fail(cwd: Path, tool: str, cd: dict, now: float):
     # อ่าน-แก้-เขียน ใต้ล็อกเดียว กันสองโปรเซสทับสถานะกัน
     lockf = cfg_dir(cwd)/".cooldown.lock"; lockf.parent.mkdir(parents=True, exist_ok=True)
-    with open(lockf, "w") as lk:
+    with open(lockf, "w", encoding="utf-8") as lk:
         if fcntl: fcntl.flock(lk, fcntl.LOCK_EX)
         state = load_cooldown(cwd)
         e = state.setdefault(tool, {"fails": [], "until": 0})
