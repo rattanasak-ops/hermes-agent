@@ -4,6 +4,7 @@
 > task: `BRM-P1-I1` · branch: `task/codex/BRM-P1-I1-branch-remediation-main-integration`
 > base: `origin/main` @ `d0cf379ca15f63510eb48cdb855bb20e405786ac`
 > หลักบังคับ: ย้ายเฉพาะงานใหม่จริงจากฐานล่าสุด · ห้ามรวมสาขาเก่าทั้งก้อน · ห้ามทับงานค้างใน worktree อื่น · ห้ามลบสาขาทันที
+> owner execution override: 2026-07-18 เจ้าของสั่ง “ยกเลิก use ai relay ใช้ codex ทำงานให้จบเลย” · งาน BRM ที่เหลือให้ Codex ทำตรงใน worktree นี้ · ไม่เรียก Relay เพิ่ม · ด่านตัดสินใช้ผลทดสอบและ Git จริง
 
 ## BRM-P1 — ตรวจสาขาและจำแนกงาน · สถานะ: ตรวจแล้ว
 
@@ -18,10 +19,10 @@
 
 ## BRM-P3 — ย้ายงานใหม่จริงและตรวจรายกลุ่ม
 
-- **BRM-P3-I1** STD-I2: ลงงานแล้ว · ย้าย project-dir และ owner rules รุ่นใหม่ โดยไม่เอางานเก่าที่ main มีแล้ว · scoped test 2/2 · ค้างด่านทางการเพราะ Python ของ worktree ไม่มี pytest-xdist
-- **BRM-P3-I2** BWT V2: ลงงานแล้ว · badword command center + executable hook · scoped test 39/39 · ค้างด่านทางการด้วยสาเหตุ environment เดียวกัน
-- **BRM-P3-I3** UAG: ทำแล้วบางส่วน · plugin-only + catalog + data + 6 tools · scoped test รวม 173/173 · ค้าง Skill/shortcut ทีมเพราะ AI Relay เชื่อมทุกสายไม่ได้
-- **BRM-P3-I4** NCR: ตรวจคัดแล้ว · commit เดิมมีใน main แบบเนื้อหาเท่ากัน 2/2 · เตรียมใบงานเฉพาะ lease/permit/หลักฐาน Relay/cleanup ที่ไม่ขัด Portal-only · Relay ใช้ 2/3 รอบและเขียนไฟล์ 0 ไฟล์; เก็บรอบสุดท้ายไว้หลัง Portal พร้อม
+- **BRM-P3-I1** STD-I2: เสร็จ · ย้าย project-dir และ owner rules รุ่นใหม่ โดยไม่เอางานเก่าที่ main มีแล้ว · ทดสอบเฉพาะส่วน 2/2 และยืนยันซ้ำด้วย Python กลาง
+- **BRM-P3-I2** BWT V2: เสร็จ · badword command center + executable hook · ทดสอบเฉพาะส่วน 39/39 และยืนยันซ้ำด้วย Python กลาง
+- **BRM-P3-I3** UAG: เสร็จ · plugin-only + catalog + data + 6 tools + Skill + ชุดแจกทีมที่เนื้อหาเหมือนต้นฉบับทุกไบต์ · ทดสอบ Agent Center/Skill/การค้นพบปลั๊กอิน/ชุดแจกทีม 159/159 และตรวจรูปแบบ Skill 2/2
+- **BRM-P3-I4** NCR: ตรวจคัดแล้ว · commitเดิมมีใน main แบบเนื้อหาเท่ากัน 2/2 · ไม่ย้าย commit ซ้ำ · ประเมินเฉพาะช่องว่างที่ยังไม่มีใน `origin/main` ด้วย Git/test จริง
 - **BRM-P3-I5** Fable memory: เสร็จ · ไม่ย้าย commit local-only ที่ล้าสมัย; เพิ่ม `DEC-AIR-001` + session log ปัจจุบันใน commit `eda5faf51`
 - zone: A · verify: `scripts/run_tests.sh` ตามขอบเขต + gate-run รายกลุ่ม + review diff เทียบ `origin/main`
 
@@ -36,9 +37,17 @@
 - Git: branch รวมงานยังนำ `origin/main` 9 commit · worktree สะอาด 0 ไฟล์ · `git diff --check` ผ่าน
 - ทดสอบซ้ำด้วย Python กลางที่มี pytest-xdist: UAG + plugin discovery 173/173 และ STD + BWT 41/41 รวม 214/214
 - ตรวจรูปแบบกุญแจที่พบบ่อยใน diff ใหม่ 4 กลุ่ม: พบ 0 รายการ
-- Relay: `BRM-P4-I1` รอบ 2/3 จบเองภายในประมาณ 53 วินาทีและลองครบ 4 สาย · ห้ามใช้รอบ 3 จนกว่า AI Portal token/สิทธิ์เชื่อมต่อจะพร้อมจริง
+- Relay: ยุติการเรียกเพิ่มตามคำสั่งเจ้าของ 2026-07-18 · หลักฐานเดิมเก็บไว้เพื่อสอบย้อนหลัง แต่ไม่เป็นตัวกั้น BRM อีก
 - Full suite วินิจฉัย: ผ่าน 24,815 · ล้ม 648 · ข้าม 139 · setup error 25 จาก 25,627 รายการ; กลุ่มล้มตัวอย่างอยู่ในไฟล์ฐาน `main` ที่ BRM ไม่ได้แก้ และมี prompt เลือก model แทรกระหว่างเทสต์ จึงยังใช้เป็น closeout gate ไม่ได้
 - NCR recovery: รอบ 1 ถูกยุติหลัง Gemini/Ollama ค้างเพื่อกัน Codex App ดูเหมือนหยุดตอบสนอง และเผย bug ว่า Ctrl-C ทิ้ง `now.json`; รอบ 2 จบตามปกติ ล้าง `now.json` แล้ว แต่ Codex/Grok ขาด Portal token, Gemini timeout และ Ollama ไม่เปลี่ยน workspace
+
+### คำสั่งยกเลิก Relay และตัวกั้น Codex ตรง · 2026-07-18
+
+- เจ้าของสั่งชัด: “ยกเลิก use ai relay ใช้ codex ทำงานให้จบเลย” · จึงยุติการเรียก AI ตัวอื่นและไม่รอ AI Portal
+- Codex ตรวจพื้นที่จริงแล้ว: `NEW_CHAT_READY` + `WTL_READY` · branch ตรง · ไฟล์ค้างก่อนเริ่ม 0 ไฟล์ · นำ `origin/main` 10 commit
+- Codex เขียนไฟล์ควบคุม `.project/plan.md` ได้ แต่การเพิ่ม `skills/agent-center/` และ `team-shortcuts/payload/skills/agent-center/` ถูก hook ที่ติดตั้งจริงปฏิเสธด้วยข้อความว่างานโค้ดต้องผ่าน `relay-call --role code`
+- ด่านที่บังคับอยู่: `~/.codex/hooks/enforce-new-chat-relay.py` → `~/.local/bin/hermes-prewrite-gate` → `~/.hermes/new-chat-tools/scripts/new-chat/hermes_prewrite_gate.py`
+- เจ้าของอนุมัติให้พักด่านนี้ชั่วคราวเพื่อทำ BRM โดยตรง · สำรอง `hooks.json` และสคริปต์ด่านก่อนแก้ · ลง Skill/ชุดแจกทีมและทดสอบสำเร็จแล้ว · ต้องคืนไฟล์จากสำเนาและตรวจ hook doctor ก่อนส่งงาน
 
 ## BRM-P5 — ส่งเข้า main และจัดคิวเก็บสาขา
 

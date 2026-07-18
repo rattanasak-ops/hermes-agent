@@ -12,10 +12,14 @@ Standard library + pytest only. No writes, no network, no randomness.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
 from plugins.agent_center import catalog, policies, routing, tools
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 # ---------------------------------------------------------------------------
@@ -851,3 +855,62 @@ def test_tool_outputs_are_sorted_json_strings():
     assert isinstance(raw, str)
     # sort_keys=True -> re-serializing parsed output yields identical bytes.
     assert raw == json.dumps(json.loads(raw), ensure_ascii=False, sort_keys=True)
+
+
+# ---------------------------------------------------------------------------
+# Bundled skill and team-shortcuts payload
+# ---------------------------------------------------------------------------
+
+def test_agent_center_skill_payload_is_byte_identical():
+    source = REPO_ROOT / "skills" / "agent-center" / "SKILL.md"
+    payload = (
+        REPO_ROOT
+        / "team-shortcuts"
+        / "payload"
+        / "skills"
+        / "agent-center"
+        / "SKILL.md"
+    )
+    assert source.read_bytes() == payload.read_bytes()
+
+
+def test_agent_center_metadata_payload_is_byte_identical():
+    source = REPO_ROOT / "skills" / "agent-center" / "agents" / "openai.yaml"
+    payload = (
+        REPO_ROOT
+        / "team-shortcuts"
+        / "payload"
+        / "skills"
+        / "agent-center"
+        / "agents"
+        / "openai.yaml"
+    )
+    assert source.read_bytes() == payload.read_bytes()
+
+
+def test_agent_center_skill_frontmatter_and_tools():
+    skill = (REPO_ROOT / "skills" / "agent-center" / "SKILL.md").read_text()
+    frontmatter = skill.split("---", 2)[1]
+    keys = {
+        line.split(":", 1)[0]
+        for line in frontmatter.splitlines()
+        if ":" in line
+    }
+    assert keys == {"name", "description"}
+    for tool_name in (
+        "agent_center_list_agents",
+        "agent_center_get_agent",
+        "agent_center_list_skills",
+        "agent_center_route",
+        "agent_center_prepare_training_candidate",
+        "agent_center_validate",
+    ):
+        assert tool_name in skill
+
+
+def test_agent_center_skill_is_fail_closed_and_review_before_write():
+    skill = (REPO_ROOT / "skills" / "agent-center" / "SKILL.md").read_text()
+    assert "blocked: true" in skill
+    assert "must never be guessed" in skill
+    assert "Never write or promote a training candidate automatically" in skill
+    assert "owner approval" in skill
