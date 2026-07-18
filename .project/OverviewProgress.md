@@ -2,9 +2,12 @@
 > อ่านตามลำดับ: plan-wtl.md (plan_id: WTL — active · Worktree Lifecycle) → plan.md (plan_id: QAQC/MW) → plan-grd.md (แผน GRD จบแล้ว + คิว GRD-P5..P9) → decisions.md → hermes-standard/REQUIREMENTS.md (บัญชีความต้องการ 66 ข้อ)
 
 # Overview & Progress — Hermes Agent
-อัปเดตล่าสุด: 2026-07-16 (ชุด `Use Migrate 0-13` v1.0 active ทุกเครื่อง + กติกาโควตาเมนู + VPS ซิงก์แล้ว + **station gate PR #51 merged**) · branch งานถัดไป: แตกใหม่จาก `main` ผ่าน `hermes-new-chat open` · ป้าย: [fact] เว้นแต่ระบุ
+อัปเดตล่าสุด: 2026-07-18 (BRM ตรวจสาขา Fable/NCR + ล็อกกฎ AI Portal กลาง) · branch งานปัจจุบัน: `task/codex/BRM-P1-I1-branch-remediation-main-integration` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
+- **2026-07-18 (BRM · ตรวจสาขา Fable/NCR): ล็อกกฎปัจจุบันว่า AI ทุกตัวผ่าน AI Portal; ไม่รวม commit ความจำ Fable local-only และไม่ย้าย local fallback จาก NCR** [fact · `DEC-AIR-001` · รายละเอียด `session-log-2026-07-18-ai-portal-routing.md`]
+  - งานใหม่จริงจาก NCR ที่รอเขียน: ต่ออายุ lease อย่างตรวจตัวตนครบ · status กัน permit หมดอายุ · Relay ต้องเห็นไฟล์เปลี่ยนและคำตัดสินรีวิว · cleanup ตอนยกเลิก
+  - ตัวกั้นปัจจุบัน: Codex DNS ล้ม · Grok ไหลไป CLI ผิดตัว · Gemini รอ login · Ollama exit 1 → UAG Skill ยังไม่ถูกเขียนและห้ามนับว่าจบ
 - **2026-07-17 (แชท Opus · DSU-P4): shortcut `Use Create Design System` อัปเป็น v3.1 — ปิดข้อบกพร่อง 3/5 ที่การนำร่อง Root Admin ตรวจพบ · PR #58 merged (`af3aa41db`)** [fact]
   - บัญชีข้อบกพร่องจากการนำร่อง = `.project/dsu-pilot-findings.md` (สิ่งส่งมอบหลักตาม Goal Lock `DEC-DSU-002`): F-01 ด่านตรวจสำเนามาตรฐาน · F-02 กฎกันกลืนเป้าหมายแม่ (`caller_goal` + บรรทัดประกาศสถานี + โหมด pilot) · F-03 ด่านสีจำแนกสีเดิม 3 แบบ — ปิดครบทั้งคลัง (commit `e133f00` · ผู้ตรวจ GPT-5 แก้ตาม 3/3) + payload ตรงคลัง 100% (แฮชตรง 2/2) · F-04 relay ตีผลผิดเมื่อ coder commit = ปักธง task chip (เจอซ้ำ 2 เคสจริง) · F-05 ด่านเครื่องบล็อก ds-gate = รอเจ้าของเคาะ
   - สนามนำร่อง Root Admin (newwebengine2026 · worktree `DSU-P4-I1`): ชั้นแบรนด์ H/U/F ผ่าน `ds-gate` 20/20 exit 0 + สำเนามาตรฐานในโปรเจกต์อัปเป็น v3.1 (commit `c669a7a4`) · ค้าง: เดิน PHASE 3-5 ด้วย prompt รุ่นใหม่ (DSU-P4-I3) + `DesignSystem.md` ของโปรเจกต์นั้นยังไม่เข้า git
