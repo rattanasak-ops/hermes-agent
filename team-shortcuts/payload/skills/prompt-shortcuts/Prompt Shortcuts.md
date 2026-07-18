@@ -28,6 +28,11 @@ aliases:
   - ใช้ AI Relay
   - สายพาน AI
   - สายพานส่งต่องาน AI
+  - Use Agent
+  - use-agent
+  - ใช้ Agent
+  - จัดทีม AI
+  - เลือกทีม AI
   - Use Business Plan
   - use-business-plan
   - Business Plan
@@ -170,6 +175,7 @@ Use Comply
 Use Summary
 Use Scan Feature
 Use AI Relay
+Use Agent
 Use Viber Structure
 Use Viber Audit
 Use Impeccable
@@ -204,6 +210,7 @@ Use SonarQube
 ใช้ $prompt-shortcuts Use Summary กับ link + content นี้
 ใช้ $prompt-shortcuts Use Scan Feature กับ repo นี้
 ใช้ $prompt-shortcuts Use AI Relay กับงานนี้
+ใช้ $prompt-shortcuts Use Agent เพื่อวินิจฉัยงาน เลือกทีม AI และสร้างซองสั่งงาน
 ใช้ $prompt-shortcuts Use Viber Structure กับโปรเจกต์ Viber Code นี้
 ใช้ $prompt-shortcuts Use Viber Audit กับโปรเจกต์นี้ หรือทุกโปรเจกต์ใน Viber Project
 ใช้ $prompt-shortcuts Use Impeccable กับงาน UI นี้
@@ -239,6 +246,7 @@ Use SonarQube
 | `Use Summary` | `use-summary`, `Summary`, `summary`, `ใช้ Summary`, `สรุป`, `สรุปลิงก์`, `วิเคราะห์บทความ`, `สรุปข้อมูล` | [[skills/prompt-shortcuts/references/use-summary|use-summary]] |
 | `Use Scan Feature` | `use-scan-feature`, `Scan Feature`, `scan-feature`, `สแกนฟีเจอร์`, `ตรวจฟีเจอร์`, `บัญชีฟีเจอร์` | [[skills/prompt-shortcuts/references/use-scan-feature|use-scan-feature]] |
 | `Use AI Relay` | `use-ai-relay`, `AI Relay`, `ai-relay`, `ใช้ AI Relay`, `สายพาน AI`, `สายพานส่งต่องาน AI`, `Claude วางแผน Grok โค้ด`, `ให้ AI ตัวอื่นโค้ดแล้ว Claude ตรวจ` | [[skills/prompt-shortcuts/references/use-ai-relay|use-ai-relay]] |
+| `Use Agent` | `use-agent`, `ใช้ Agent`, `จัดทีม AI`, `เลือกทีม AI` | [[skills/prompt-shortcuts/references/use-agent|use-agent]] |
 | `Use Viber Structure` | `use-viber-structure`, `Viber Structure`, `viber-structure`, `ใช้ Viber Structure`, `โครงสร้าง Viber`, `วางโครงสร้าง Viber Code`, `วางแผน Viber Code`, `Vibe Code Enterprise` | [[skills/prompt-shortcuts/references/use-viber-structure|use-viber-structure]] |
 | `Use Viber Audit` | `use-viber-audit`, `Viber Audit`, `viber-audit`, `Use Viber Standard Audit`, `Use Viber Compliance`, `ใช้ Viber Audit`, `ตรวจ Viber Standard`, `ตรวจ Viber Enterprise`, `ตรวจมาตรฐาน Viber`, `Viber Enterprise Standard` | [[skills/prompt-shortcuts/references/use-viber-audit|use-viber-audit]] |
 | `Use Impeccable` | `use-impeccable`, `Impeccable`, `ใช้ Impeccable`, `ตรวจ UI Slop`, `แก้ AI Slop` | [[skills/prompt-shortcuts/references/use-impeccable|use-impeccable]] |
@@ -280,6 +288,7 @@ Claude Code, Gemini, Qwen, Cursor และ AI ตัวอื่นให้เ
 - [[skills/prompt-shortcuts/references/use-scan-feature|use-scan-feature]] - prompt สำหรับสแกน repo จริงเป็น phase และสกัดบัญชีฟีเจอร์พร้อมหลักฐาน/สถานะจริง-ปลอม
 - [[skills/prompt-shortcuts/references/use-ai-pair|use-ai-pair]] - prompt สำหรับทีม 3 AI ค่าเริ่มต้น Claude วางแผน/ตรวจท้าย · Codex เขียน · Qwen ตรวจ read-only พร้อมสร้าง Coder Brief, Review Packet, และ handoff ทันทีเมื่อข้อมูลพอ ไม่หยุดถามซ้ำ
 - [[skills/prompt-shortcuts/references/use-ai-relay|use-ai-relay]] - prompt สำหรับสายพาน AI รุ่นใหม่: Opus 4.8 เป็นสมองหลักตัวเดียว, AI ตัวอื่นเขียน/ตรวจผ่าน `relay-call`, และผลผ่านจริงมาจาก `gate-run`
+- [[skills/prompt-shortcuts/references/use-agent|use-agent]] - prompt สำหรับวินิจฉัยงาน เลือกทีมและทักษะจาก Agent Center แล้วสร้าง Team Manifest กับ Work Packet
 - [[skills/prompt-shortcuts/references/use-business-plan|use-business-plan]] - prompt สำหรับรีวิวโจทย์ธุรกิจ การตลาด pitch งานประมูล เว็บไซต์ และแตกเป็น role/phase/issue ก่อนลงมือ
 - [[skills/prompt-shortcuts/references/use-viber-structure|use-viber-structure]] - prompt สำหรับแปลงมาตรฐาน Viber Code / Vibe Code Enterprise เป็นโครงโปรเจกต์ เอกสาร phase/issue tracker และ quality gates
 - [[skills/prompt-shortcuts/references/use-viber-audit|use-viber-audit]] - prompt สำหรับตรวจโปรเจกต์เดียวหรือทุกโปรเจกต์เทียบ Viber Enterprise Standard พร้อม gap, คะแนน, หลักฐาน, และ tracker ระหว่างทำงาน
