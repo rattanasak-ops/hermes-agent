@@ -11,8 +11,8 @@ tags:
   - agent-center
   - team-routing
 status: active
-version: "1.0"
-updated: 2026-07-18
+version: "1.1"
+updated: 2026-07-19
 ---
 
 # Use Agent
@@ -30,21 +30,27 @@ Use Agent
 
 ใช้ศูนย์รวมทีม AI เพื่อวินิจฉัยงานนี้ เลือกทีมและทักษะจากสมุดรายชื่อจริง แล้วคืนใบรายชื่อทีมกับซองสั่งงานก่อนลงมือ
 
+Use Agent ใช้ได้กับงานคิด วิเคราะห์ วางแผน ออกแบบ สร้าง ตรวจ และฝึก Agent/Skill ไม่ได้จำกัดเฉพาะงานเขียนโค้ด ห้ามปฏิเสธเพียงเพราะโจทย์เป็นงานคิดหรือไม่มีขั้นลงมือสร้าง
+
 กติกา:
 1. อ่าน AGENTS.md และความจำโปรเจกต์ที่กำหนดก่อนวินิจฉัย
 2. ทำงานเฉพาะ Git root และ branch ที่เจ้าของเปิดอยู่ ห้ามสร้างหรือสลับ branch/Worktree
-3. แปลงคำขอเป็น structured diagnosis ที่มี project, goal, phase, domains, risks, signals, allowed paths, forbidden actions, deliverables และ evidence gates
+3. แปลงคำขอเป็น structured diagnosis ที่มี project, goal, phase, execution_mode, domains, risks, signals, allowed paths, forbidden actions, deliverables และ evidence gates โดย execution_mode ใช้ think, plan, build, review หรือ train
 4. เรียก agent_center_validate เพื่อตรวจสมุดรายชื่อ แล้วใช้ agent_center_route เพื่อสร้าง Team Manifest และ Work Packet
-5. บังคับ THINK_PAIR และ BUILD_REVIEW ตามผลเครื่องมือ ห้ามลดเหลือยี่ห้อเดียวเงียบ ๆ
+5. ทุกโหมดบังคับ THINK_PAIR ให้ AI สองค่ายตรวจความคิดกัน ส่วน BUILD_REVIEW ใช้เฉพาะโหมด build โดยคนสร้างห้ามตรวจงานตัวเอง ห้ามลดเหลือยี่ห้อเดียวเงียบ ๆ
 6. ตรวจ Work Packet ด้วย agent_center_validate ก่อนลงมือ
-7. ให้ AI ในแอปปัจจุบันลงมือได้เมื่อพื้นที่และขอบเขตผ่าน ใช้ Use AI Relay เฉพาะเมื่อเจ้าของเรียกชัดเจน
+7. โหมด think, plan, review และ train ให้ส่งผลวิเคราะห์หรือคำตัดสินที่ผ่านคู่คิดได้ทันที โดยไม่บังคับสร้าง branch เขียนโค้ด หรือขออนุมัติงานสร้าง ส่วนโหมด build ให้ AI ในแอปปัจจุบันลงมือได้เมื่อพื้นที่และขอบเขตผ่าน ใช้ Use AI Relay เฉพาะเมื่อเจ้าของเรียกชัดเจน
 8. ผลผ่านต้องมาจาก test/lint/build/manual evidence จริง ไม่ใช่คำบอกของ AI
 9. การเทรน Agent/Skill ให้สร้าง training candidate เท่านั้น ห้ามเลื่อนขั้นหรือเขียน Obsidian ถาวรอัตโนมัติ
+10. ถ้าไม่พบ Skill, plugin หรือเครื่องมือ Agent Center ให้คืน AGENT_CENTER_UNAVAILABLE พร้อมหลักฐานส่วนที่หาย ห้ามแต่งกฎว่า Use Agent ใช้กับงานคิดไม่ได้
+11. ผล route_ready หมายถึงจัดทีมได้เท่านั้น ยังไม่ใช่หลักฐานว่า AI ทุกที่นั่งทำงานแล้ว ต้องเรียกทุก active seat ผ่านความสามารถ Agent/Subagent ที่มีจริง เก็บ output_ref ของแต่ละที่นั่ง และสังเคราะห์ข้อเห็นต่างก่อนสรุป ถ้าเรียกคู่คิดคนละค่ายจริงไม่ได้ ให้คืน THINK_PAIR_EXECUTION_UNAVAILABLE ห้ามสร้างผลตรวจปลอม
+12. ก่อนอ้างว่างานจบ ต้องส่ง Work Packet ต้นฉบับพร้อม Work Receipt รุ่น 2 ที่มี seat_evidence และ synthesis เข้า agent_center_validate ในครั้งเดียว Receipt เดี่ยวหรือ Packet รุ่น 1 ห้ามใช้เป็นหลักฐานจบงาน
 
 ผลลัพธ์ขั้นต่ำ:
 - ใบวินิจฉัยงาน
 - Team Manifest: leads, specialists, skills, reasons
-- Work Packet: packet_id, scope, four seats, deliverables, evidence gates
+- Work Packet: packet_schema_version, packet_id, execution_mode, scope, active seats, deliverables, evidence gates
+- Work Receipt รุ่น 2: seat_evidence ของทุก active seat, synthesis, gate results และผลตรวจที่ผูกกับ Work Packet ต้นฉบับ
 - Decision: route_ready หรือ blocked พร้อมเหตุผลและขั้นตอนถัดไปหนึ่งข้อ
 ```
 

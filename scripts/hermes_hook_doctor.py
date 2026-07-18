@@ -178,6 +178,9 @@ def main() -> int:
         evidence = call(CLAUDE_HOOKS / "enforce-prompt-evidence.py", {"transcript_path": str(evidence_file), "last_assistant_message": "เสร็จครบ 100% แล้วครับ"})
         results.append({"gate": "prompt_evidence", "ok": evidence.returncode == 2, "exit": evidence.returncode})
 
+        friction = call(CLAUDE_HOOKS / "owner-friction-gate.py", {"last_assistant_message": "ให้เจ้าของเปิด workspace ใหม่ก่อน แล้วค่อยส่งมาให้ผมทำต่อ"})
+        results.append({"gate": "owner_friction", "ok": friction.returncode == 2, "exit": friction.returncode})
+
     gate = HOME / ".local" / "bin" / "hermes-prewrite-gate"
     scenarios = {}
     wiring = {}

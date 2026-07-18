@@ -48,13 +48,13 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     installer = (TEAM / "install-shortcuts.sh").read_text(encoding="utf-8")
     checker = (TEAM / "check-shortcuts.sh").read_text(encoding="utf-8")
 
-    assert version == "2026.07.18-2"
+    assert version == "2026.07.19-1"
     assert "INSTALLED_VERSION" in installer
     assert "ไม่พบตัวตรวจสุขภาพ Hook" in installer
     assert installer.index('bash "$NEW_CHAT_INSTALLER"') < installer.index(
         'python3 "$TEAM_HOOK_INSTALLER"'
     ) < installer.index('if ! "$HOOK_DOCTOR_BIN"')
-    assert "ผ่าน 4/4" in installer
+    assert "ผ่าน 5/5" in installer
     assert "registry_vs_skill" in checker
     assert '"29"' not in checker
     assert '"33"' not in checker
@@ -134,7 +134,9 @@ def test_fresh_home_installs_new_chat_tools_and_fail_closed_gate(tmp_path):
     )
     assert doctor.returncode == 0, doctor.stdout + doctor.stderr
     health = json.loads(doctor.stdout)
-    assert len(health["gates"]) == 4
+    assert len(health["gates"]) == 5
+    owner_friction = next(row for row in health["gates"] if row["gate"] == "owner_friction")
+    assert owner_friction["ok"] is True
     current = next(row for row in health["gates"] if row["gate"] == "current_workspace_prewrite")
     assert current["ok"] is True
     assert current["checks"] == "18/18"
@@ -226,7 +228,7 @@ def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     home = tmp_path / "home"
     root = home / "ObsidianVault/HermesAgent"
     shutil.copytree(TEAM / "payload", root)
-    (root / ".shortcut-version").write_text("2026.07.18-2\n", encoding="utf-8")
+    (root / ".shortcut-version").write_text("2026.07.19-1\n", encoding="utf-8")
 
     # แยกการทดสอบไฟล์ Migrate ออกจากจำนวนรายการ Shortcut อื่นใน payload
     (root / "ai-context/prompt-shortcut-registry.md").write_text("| `fixture` |\n", encoding="utf-8")
@@ -254,7 +256,7 @@ def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
 
     env = os.environ.copy()
     env["HOME"] = str(home)
-    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.18-2"
+    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.19-1"
     return root, env
 
 
@@ -317,4 +319,5 @@ def test_team_installer_includes_real_stop_hooks_for_fresh_notebooks():
     assert (hook_dir / "validate-thai-language.py").is_file()
     assert (hook_dir / "enforce-codex-review.py").is_file()
     assert (hook_dir / "enforce-prompt-evidence.py").is_file()
+    assert (hook_dir / "owner-friction-gate.py").is_file()
     assert (hook_dir / "team-stop-gates.py").is_file()

@@ -14,13 +14,13 @@ tags:
   - safe-workflow
   - workspace
 status: active
-version: "2.1"
-updated: 2026-07-18
+version: "2.2"
+updated: 2026-07-19
 execution_policy: work-execution-policy >= 2.0
 default_mode: CURRENT_WORKSPACE_ONLY
 ---
 
-# Use Flow Guardian (v2.1 · 2026-07-18)
+# Use Flow Guardian (v2.2 · 2026-07-19)
 
 ## Shortcut
 
@@ -37,10 +37,10 @@ Use Flow Guardian
 
 1. รัน `pwd`, `git rev-parse --show-toplevel`, `git branch --show-current`, `git rev-parse HEAD`, `git status --short --branch` และ `git worktree list --porcelain` แบบอ่านอย่างเดียว
 2. เทียบเป้าหมายและไฟล์ที่จะเขียนกับ Git root ปัจจุบัน
-3. ตรวจว่าไม่ใช่ detached HEAD และไม่ใช่ main/master/develop/development/production/prod
+3. ถ้าเป็น detached HEAD หรือกิ่งร่วม แต่ Git root ตรงงาน ให้รัน `hermes-current-workspace-recover --cwd <Git root> --json` แล้วตรวจซ้ำ
 4. แยกไฟล์ค้างเป็น: อยู่ในงานเดียวกัน / อยู่นอกขอบเขตแต่ไม่ทับ / ไม่ทราบเจ้าของหรือทับงาน
 5. ตรวจไฟล์ลับและคำสั่งอันตรายตาม `work-execution-policy.md`
-6. คืนสถานะเดียว: CURRENT_WORKSPACE_READY, CURRENT_WORKSPACE_READ_ONLY หรือ CURRENT_WORKSPACE_BLOCKED
+6. คืนสถานะเดียว: CURRENT_WORKSPACE_READY, CURRENT_WORKSPACE_READ_ONLY หรือ CURRENT_WORKSPACE_BLOCKED พร้อมรหัสเหตุผลจากเครื่องเมื่อกู้ไม่ได้
 
 ข้อห้าม:
 - ห้ามสร้าง ลบ ย้าย หรือสลับ Worktree/กิ่ง
@@ -48,6 +48,7 @@ Use Flow Guardian
 - ห้าม stash, reset, clean, ย้าย หรือลบไฟล์ค้างเพื่อทำให้สถานะดูสะอาด
 - ห้ามบังคับ AI Relay
 - ห้ามแก้ไฟล์ในรอบตรวจ เว้นแต่เจ้าของสั่งแก้ไว้ชัดเจนแล้ว
+- ห้ามผลักให้ผู้ใช้เปิด/สร้าง/switch workspace, Worktree, folder หรือ branch
 
 รายงาน:
 - Project / Current workspace / Git root
@@ -66,6 +67,7 @@ Use Flow Guardian
 
 ## Changelog
 
+- v2.2 (2026-07-19): กู้กิ่งที่ลงทะเบียนไว้ใน Git root เดิมก่อนบล็อก · ไม่ส่งภาระเปิดพื้นที่หรือกิ่งกลับไปให้ผู้ใช้
 - v2.1 (2026-07-18): ระบุว่าคำสั่งสร้างกิ่งตรงจากเจ้าของใช้กติกากลางได้ แต่ Flow Guardian เองยังอ่านอย่างเดียวและไม่เปิด Worktree
 - v2.0 (2026-07-18): ตรวจพื้นที่ปัจจุบันอย่างเดียว · ไม่สร้าง/สลับ Worktree หรือกิ่ง · ไม่บังคับ AI Relay
 - v1.1 (2026-06-24): เพิ่มรายงาน Git และไฟล์ค้าง

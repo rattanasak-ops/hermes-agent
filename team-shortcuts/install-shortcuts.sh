@@ -215,7 +215,7 @@ if ! "$HOOK_DOCTOR_BIN" >/dev/null; then
   "$HOOK_DOCTOR_BIN" || true
   exit 1
 fi
-say "      สำเร็จ: Hook ภาษาคน/ผู้ตรวจอิสระ/หลักฐาน/New Chat ผ่าน 4/4"
+say "      สำเร็จ: Hook ภาษาคน/ผู้ตรวจอิสระ/หลักฐาน/Owner friction/New Chat ผ่าน 5/5"
 
 # --- 2) ต่อ Claude Code (ทุกโปรเจกต์ผ่าน global memory) ---
 say "[2/4] ต่อ Claude Code ผ่าน ~/.claude/CLAUDE.md"

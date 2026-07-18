@@ -13,6 +13,7 @@ GATES = (
     "validate-thai-language.py",
     "enforce-codex-review.py",
     "enforce-prompt-evidence.py",
+    "owner-friction-gate.py",
 )
 
 

@@ -100,7 +100,7 @@ else
 fi
 
 if [ -x "$HOOK_DOCTOR" ] && "$HOOK_DOCTOR" >/dev/null 2>&1; then
-  printf 'PASS %-28s %s\n' "hook_health" "4/4"
+  printf 'PASS %-28s %s\n' "hook_health" "5/5"
 else
   printf 'FAIL %-28s %s\n' "hook_health" "ด่านจริงไม่ผ่าน"
   pass=false
