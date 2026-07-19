@@ -25,6 +25,9 @@ VERSION_FILE="$SCRIPT_DIR/VERSION"
 DEST_ROOT="${HERMES_SHORTCUTS_DEST:-$HOME/ObsidianVault/HermesAgent}"
 REGISTRY="$DEST_ROOT/ai-context/prompt-shortcut-registry.md"
 SKILL_SRC="$DEST_ROOT/skills/prompt-shortcuts"
+AGENT_SKILL_PAYLOAD="$PAYLOAD/skills/agent-center"
+AGENT_SKILL_SRC="$DEST_ROOT/skills/agent-center"
+AGENT_PLUGIN_SRC="$SCRIPT_DIR/../plugins/agent_center"
 WRITE_PERMIT_SRC="$SCRIPT_DIR/../scripts/hermes_write_permit.py"
 WRITE_PERMIT_BIN="$HOME/.local/bin/hermes-write-permit"
 HOOK_DOCTOR_SRC="$SCRIPT_DIR/../scripts/hermes_hook_doctor.py"
@@ -32,6 +35,40 @@ HOOK_DOCTOR_BIN="$HOME/.local/bin/hermes-hook-doctor"
 INSTALLED_VERSION="$DEST_ROOT/.shortcut-version"
 TEAM_HOOK_INSTALLER="$SCRIPT_DIR/install-team-hooks.py"
 NEW_CHAT_INSTALLER="$SCRIPT_DIR/install-new-chat-tools.sh"
+
+resolve_hermes_runtime_home() {
+  if [ -n "${HERMES_HOME:-}" ]; then
+    printf '%s\n' "$HERMES_HOME"
+    return 0
+  fi
+
+  if command -v hermes >/dev/null 2>&1; then
+    local reported
+    reported="$(hermes dump 2>/dev/null | sed -n 's/^hermes_home:[[:space:]]*//p' | head -n 1)"
+    case "$reported" in
+      "~")
+        printf '%s\n' "$HOME"
+        return 0
+        ;;
+      "~/"*)
+        printf '%s/%s\n' "$HOME" "${reported#\~/}"
+        return 0
+        ;;
+      /*)
+        printf '%s\n' "$reported"
+        return 0
+        ;;
+    esac
+  fi
+
+  printf '%s/.hermes\n' "$HOME"
+}
+
+HERMES_RUNTIME_HOME="$(resolve_hermes_runtime_home)"
+AGENT_PLUGIN_DEST="$HERMES_RUNTIME_HOME/plugins/agent-center"
+HERMES_AGENT_SKILL_DEST="$HERMES_RUNTIME_HOME/skills/agent-center"
+CODEX_LINK="$HOME/.codex/skills/prompt-shortcuts"
+CODEX_AGENT_LINK="$HOME/.codex/skills/agent-center"
 
 # --- ที่อยู่เดิมที่ไฟล์ตัวเชื่อมทุกตัวในโปรเจกต์ชี้ถึง (ใช้ทำทางลัดชดเชยให้ Cursor) ---
 OWNER_PATH="/Users/rattanasak/ObsidianVault/HermesAgent"
@@ -70,6 +107,27 @@ add_conflict_if_newer() {
   fi
 }
 
+is_generated_runtime_file() {
+  case "$1" in
+    */__pycache__/*|*.pyc|*.pyo|*/.DS_Store|.DS_Store) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+add_destination_only_conflicts() {
+  local src_root="$1"
+  local dest_root="$2"
+  local label="$3"
+
+  [ -d "$dest_root" ] || return 0
+  while IFS= read -r -d '' dest; do
+    local rel="${dest#"$dest_root"/}"
+    if [ ! -e "$src_root/$rel" ] && ! is_generated_runtime_file "$rel"; then
+      CONFLICTS+=("$label/$rel (มีเฉพาะปลายทาง)")
+    fi
+  done < <(find "$dest_root" \( -type f -o -type l \) -print0)
+}
+
 detect_newer_destination_conflicts() {
   CONFLICTS=()
 
@@ -82,6 +140,71 @@ detect_newer_destination_conflicts() {
     local rel="${src#"$PAYLOAD"/}"
     add_conflict_if_newer "$src" "$DEST_ROOT/$rel" "$rel"
   done < <(find "$PAYLOAD/skills/prompt-shortcuts" -type f -print0)
+  add_destination_only_conflicts \
+    "$PAYLOAD/skills/prompt-shortcuts" \
+    "$SKILL_SRC" \
+    "skills/prompt-shortcuts"
+
+  while IFS= read -r -d '' src; do
+    local rel="${src#"$PAYLOAD"/}"
+    add_conflict_if_newer "$src" "$DEST_ROOT/$rel" "$rel"
+  done < <(find "$AGENT_SKILL_PAYLOAD" -type f -print0)
+  add_destination_only_conflicts \
+    "$AGENT_SKILL_PAYLOAD" \
+    "$AGENT_SKILL_SRC" \
+    "skills/agent-center"
+
+  if [ -d "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ]; then
+    while IFS= read -r -d '' src; do
+      local rel="${src#"$PAYLOAD/skills/prompt-shortcuts"/}"
+      add_conflict_if_newer \
+        "$src" \
+        "$CODEX_LINK/$rel" \
+        "Codex skill/prompt-shortcuts/$rel"
+    done < <(find "$PAYLOAD/skills/prompt-shortcuts" -type f -print0)
+    add_destination_only_conflicts \
+      "$PAYLOAD/skills/prompt-shortcuts" \
+      "$CODEX_LINK" \
+      "Codex skill/prompt-shortcuts"
+  fi
+
+  if [ -d "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ]; then
+    while IFS= read -r -d '' src; do
+      local rel="${src#"$AGENT_SKILL_PAYLOAD"/}"
+      add_conflict_if_newer \
+        "$src" \
+        "$CODEX_AGENT_LINK/$rel" \
+        "Codex skill/agent-center/$rel"
+    done < <(find "$AGENT_SKILL_PAYLOAD" -type f -print0)
+    add_destination_only_conflicts \
+      "$AGENT_SKILL_PAYLOAD" \
+      "$CODEX_AGENT_LINK" \
+      "Codex skill/agent-center"
+  fi
+
+  while IFS= read -r -d '' src; do
+    local rel="${src#"$AGENT_SKILL_PAYLOAD"/}"
+    add_conflict_if_newer \
+      "$src" \
+      "$HERMES_AGENT_SKILL_DEST/$rel" \
+      "Hermes runtime skill/agent-center/$rel"
+  done < <(find "$AGENT_SKILL_PAYLOAD" -type f -print0)
+  add_destination_only_conflicts \
+    "$AGENT_SKILL_PAYLOAD" \
+    "$HERMES_AGENT_SKILL_DEST" \
+    "Hermes runtime skill/agent-center"
+
+  while IFS= read -r -d '' src; do
+    local rel="${src#"$AGENT_PLUGIN_SRC"/}"
+    add_conflict_if_newer \
+      "$src" \
+      "$AGENT_PLUGIN_DEST/$rel" \
+      "Hermes runtime plugin/agent-center/$rel"
+  done < <(find "$AGENT_PLUGIN_SRC" -type f -print0)
+  add_destination_only_conflicts \
+    "$AGENT_PLUGIN_SRC" \
+    "$AGENT_PLUGIN_DEST" \
+    "Hermes runtime plugin/agent-center"
 }
 
 shortcuts_payload_differs() {
@@ -90,6 +213,28 @@ shortcuts_payload_differs() {
   fi
 
   if ! diff -qr "$PAYLOAD/skills/prompt-shortcuts" "$SKILL_SRC" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! diff -qr "$AGENT_SKILL_PAYLOAD" "$AGENT_SKILL_SRC" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! diff -qr "$AGENT_SKILL_PAYLOAD" "$HERMES_AGENT_SKILL_DEST" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [ -d "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ] \
+    && ! diff -qr "$AGENT_SKILL_PAYLOAD" "$CODEX_AGENT_LINK" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [ -d "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ] \
+    && ! diff -qr "$PAYLOAD/skills/prompt-shortcuts" "$CODEX_LINK" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! diff -qr "$AGENT_PLUGIN_SRC" "$AGENT_PLUGIN_DEST" >/dev/null 2>&1; then
     return 0
   fi
 
@@ -116,7 +261,10 @@ prune_old_shortcuts_backups() {
 }
 
 backup_existing_shortcuts_if_needed() {
-  if [ ! -d "$SKILL_SRC" ]; then
+  if [ ! -d "$SKILL_SRC" ] && [ ! -d "$AGENT_SKILL_SRC" ] \
+    && [ ! -d "$HERMES_AGENT_SKILL_DEST" ] && [ ! -d "$AGENT_PLUGIN_DEST" ] \
+    && { [ ! -d "$CODEX_LINK" ] || [ -L "$CODEX_LINK" ]; } \
+    && { [ ! -d "$CODEX_AGENT_LINK" ] || [ -L "$CODEX_AGENT_LINK" ]; }; then
     return 0
   fi
 
@@ -137,7 +285,24 @@ backup_existing_shortcuts_if_needed() {
   if [ -f "$REGISTRY" ]; then
     cp "$REGISTRY" "$backup_dir/ai-context/"
   fi
-  rsync -a "$SKILL_SRC/" "$backup_dir/skills/prompt-shortcuts/"
+  if [ -d "$SKILL_SRC" ]; then
+    rsync -a "$SKILL_SRC/" "$backup_dir/skills/prompt-shortcuts/"
+  fi
+  if [ -d "$AGENT_SKILL_SRC" ]; then
+    rsync -a "$AGENT_SKILL_SRC/" "$backup_dir/skills/agent-center/"
+  fi
+  if [ -d "$HERMES_AGENT_SKILL_DEST" ]; then
+    rsync -a "$HERMES_AGENT_SKILL_DEST/" "$backup_dir/runtime-skills/agent-center/"
+  fi
+  if [ -d "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ]; then
+    rsync -a "$CODEX_AGENT_LINK/" "$backup_dir/codex-skills/agent-center/"
+  fi
+  if [ -d "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ]; then
+    rsync -a "$CODEX_LINK/" "$backup_dir/codex-skills/prompt-shortcuts/"
+  fi
+  if [ -d "$AGENT_PLUGIN_DEST" ]; then
+    rsync -a "$AGENT_PLUGIN_DEST/" "$backup_dir/runtime-plugins/agent-center/"
+  fi
   prune_old_shortcuts_backups
   say "      สำรองของเดิมไว้ที่ $backup_dir"
 }
@@ -149,6 +314,18 @@ if [ ! -f "$PAYLOAD/ai-context/prompt-shortcut-registry.md" ]; then
 fi
 if [ ! -f "$VERSION_FILE" ]; then
   say "ผิดพลาด: ไม่พบหมายเลขชุดติดตั้งที่ $VERSION_FILE"
+  exit 1
+fi
+if [ ! -f "$AGENT_SKILL_PAYLOAD/SKILL.md" ]; then
+  say "ผิดพลาด: ไม่พบ Agent Center skill ที่ $AGENT_SKILL_PAYLOAD"
+  exit 1
+fi
+if [ ! -f "$AGENT_PLUGIN_SRC/plugin.yaml" ]; then
+  say "ผิดพลาด: ไม่พบ Agent Center plugin ที่ $AGENT_PLUGIN_SRC"
+  exit 1
+fi
+if ! command -v hermes >/dev/null 2>&1; then
+  say "ผิดพลาด: ไม่พบคำสั่ง hermes — Use Agent ต้องมี Hermes Agent ก่อนติดตั้ง"
   exit 1
 fi
 if ! command -v rsync >/dev/null 2>&1; then
@@ -176,9 +353,19 @@ mkdir -p "$DEST_ROOT/ai-context" "$DEST_ROOT/skills"
 cp "$PAYLOAD/ai-context/prompt-shortcut-registry.md" "$DEST_ROOT/ai-context/"
 mkdir -p "$SKILL_SRC"
 rsync -a --delete "$PAYLOAD/skills/prompt-shortcuts/" "$SKILL_SRC/"
+mkdir -p "$AGENT_SKILL_SRC" "$HERMES_AGENT_SKILL_DEST" "$AGENT_PLUGIN_DEST"
+rsync -a --delete "$AGENT_SKILL_PAYLOAD/" "$AGENT_SKILL_SRC/"
+rsync -a --delete "$AGENT_SKILL_PAYLOAD/" "$HERMES_AGENT_SKILL_DEST/"
+rsync -a --delete --exclude='__pycache__/' "$AGENT_PLUGIN_SRC/" "$AGENT_PLUGIN_DEST/"
 cp "$VERSION_FILE" "$INSTALLED_VERSION"
 REF_COUNT="$(ls -1 "$SKILL_SRC/references/"*.md 2>/dev/null | wc -l | tr -d ' ')"
 say "      สำเร็จ: รุ่น $(tr -d '[:space:]' < "$VERSION_FILE") · ทะเบียน 1 ไฟล์ + prompt $REF_COUNT ไฟล์"
+say "      สำเร็จ: ติดตั้ง Agent Center skill และ plugin ที่ $HERMES_RUNTIME_HOME"
+if ! hermes plugins enable agent-center >/dev/null; then
+  say "ผิดพลาด: คัด Agent Center แล้ว แต่เปิดใช้ผ่าน Hermes Agent ไม่สำเร็จ"
+  exit 1
+fi
+say "      สำเร็จ: เปิดใช้ Agent Center ใน Hermes Agent"
 
 # ติดตั้งด่านล็อกงานเขียนให้ใช้ได้จากทุก project แม้ project นั้นไม่มี repo Hermes Agent
 if [ ! -f "$WRITE_PERMIT_SRC" ]; then
@@ -243,9 +430,18 @@ say "      สำเร็จ: เพิ่มตัวชี้ทะเบี�
 # --- 3) ต่อ Codex (ทางลัด skill) ---
 say "[3/4] ต่อ Codex ผ่าน ~/.codex/skills/prompt-shortcuts"
 mkdir -p "$HOME/.codex/skills"
-CODEX_LINK="$HOME/.codex/skills/prompt-shortcuts"
 if [ -L "$CODEX_LINK" ] || [ -f "$CODEX_LINK" ]; then
   rm -f "$CODEX_LINK"
+fi
+if [ -L "$CODEX_AGENT_LINK" ] || [ -f "$CODEX_AGENT_LINK" ]; then
+  rm -f "$CODEX_AGENT_LINK"
+fi
+if [ -e "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ]; then
+  say "      พบโฟลเดอร์เดิมที่ $CODEX_AGENT_LINK — คัดให้ตรงกับชุดติดตั้งล่าสุด"
+  rsync -a --delete "$AGENT_SKILL_SRC/" "$CODEX_AGENT_LINK/"
+else
+  ln -s "$AGENT_SKILL_SRC" "$CODEX_AGENT_LINK"
+  say "      สำเร็จ: $CODEX_AGENT_LINK -> $AGENT_SKILL_SRC"
 fi
 if [ -e "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ]; then
   say "      พบโฟลเดอร์เดิมที่ $CODEX_LINK — คัดให้ตรงกับชุดติดตั้งล่าสุด"

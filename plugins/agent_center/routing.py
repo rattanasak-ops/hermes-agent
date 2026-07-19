@@ -20,6 +20,7 @@ from plugins.agent_center import catalog, policies
 
 
 CONSULTOR_ID = "consultor"
+PACKET_SCHEMA_VERSION = "2.0"
 
 DIAGNOSIS_REQUIRED_STR_FIELDS = ("project_id", "goal", "phase")
 # Must be a list of strings AND carry at least one entry.
@@ -37,13 +38,23 @@ DIAGNOSIS_OPTIONAL_LIST_FIELDS = (
     "evidence_gates",
 )
 
+PHASE_DEFAULT_EXECUTION_MODE = {
+    "discovery": "think",
+    "design": "plan",
+    "build": "build",
+    "review": "review",
+    "release": "build",
+}
+
 # Every field the built Work Packet body carries must be present for the packet
 # to be valid (packet_id is the content hash of all the other fields).
 PACKET_REQUIRED_FIELDS = (
     "packet_id",
+    "packet_schema_version",
     "project_id",
     "goal",
     "phase",
+    "execution_mode",
     "domains",
     "risk_tags",
     "signals",
@@ -154,6 +165,16 @@ def validate_diagnosis(diagnosis: Any) -> dict[str, Any]:
         if not value:
             errors.append(f"diagnosis: '{field}' is required and must be a non-empty string")
         normalized[field] = value
+
+    phase = normalized.get("phase", "")
+    explicit_mode = _clean_str(diagnosis.get("execution_mode")).lower()
+    execution_mode = explicit_mode or PHASE_DEFAULT_EXECUTION_MODE.get(phase, "")
+    if execution_mode not in policies.EXECUTION_MODES:
+        errors.append(
+            "diagnosis: 'execution_mode' must be one of "
+            + ", ".join(sorted(policies.EXECUTION_MODES))
+        )
+    normalized["execution_mode"] = execution_mode
 
     supported = set(catalog.get_supported_domains())
     for field in DIAGNOSIS_REQUIRED_LIST_FIELDS:
@@ -292,6 +313,7 @@ def build_team_manifest(diagnosis: dict[str, Any]) -> dict[str, Any]:
         "project_id": diagnosis.get("project_id"),
         "goal": diagnosis.get("goal"),
         "phase": diagnosis.get("phase"),
+        "execution_mode": diagnosis.get("execution_mode"),
         "domains": wanted,
         "intake": _consultor_intake(),
         "leads": _select_leads(wanted),
@@ -318,7 +340,12 @@ def build_work_packet(
         return diag_report
     normalized = diag_report["diagnosis"]
 
-    seat_report = policies.assign_seats(seats, current_provider_id, current_session_id)
+    seat_report = policies.assign_seats(
+        seats,
+        current_provider_id,
+        current_session_id,
+        normalized["execution_mode"],
+    )
     if not seat_report["ok"]:
         return {
             "ok": False,
@@ -331,9 +358,11 @@ def build_work_packet(
     manifest = build_team_manifest(normalized)
 
     body = {
+        "packet_schema_version": PACKET_SCHEMA_VERSION,
         "project_id": normalized["project_id"],
         "goal": normalized["goal"],
         "phase": normalized["phase"],
+        "execution_mode": normalized["execution_mode"],
         "domains": normalized["domains"],
         "risk_tags": normalized["risk_tags"],
         "signals": normalized["signals"],
@@ -355,7 +384,7 @@ def build_work_packet(
     return {"ok": True, "code": "packet_ready", "decision": "assigned", "packet": packet}
 
 
-def _packet_seat(record: Any, label: str, errors: list[str]) -> dict[str, str] | None:
+def _packet_seat(record: Any, label: str, errors: list[str]) -> dict[str, Any] | None:
     """Validate one packet seat record; return normalized fields or None."""
 
     if not isinstance(record, dict):
@@ -367,21 +396,39 @@ def _packet_seat(record: Any, label: str, errors: list[str]) -> dict[str, str] |
         errors.append(f"{label}: missing provider_id")
     if not session:
         errors.append(f"{label}: missing session_id")
+    healthy = record.get("healthy") is True
+    if not healthy:
+        errors.append(f"{label}: must be marked healthy:true")
+    roles_raw = record.get("roles")
+    roles = (
+        [policies.normalize_id(role) for role in roles_raw]
+        if isinstance(roles_raw, list)
+        else []
+    )
+    roles = [role for role in roles if role]
+    if not roles:
+        errors.append(f"{label}: roles must be a non-empty list")
     if not provider or not session:
         return None
     # Derive the family from the provider id itself; never trust a caller-supplied
     # provider_family, so the cross-family checks cannot be spoofed by the payload.
     family = policies.provider_family(provider)
-    return {"provider": provider, "session": session, "family": family}
+    return {
+        "provider": provider,
+        "session": session,
+        "family": family,
+        "healthy": healthy,
+        "roles": roles,
+    }
 
 
 def validate_work_packet(packet: Any) -> dict[str, Any]:
     """Validate a built Work Packet without rebuilding or persisting anything.
 
-    Checks required fields, that the four seats use four unique sessions, that
-    both cross-check pairs (planner primary/challenger and worker/reviewer) come
-    from different provider families, that the reviewer is marked read_only, and
-    that ``packet_id`` still matches the content hash of the rest of the packet.
+    Checks required fields and the active seat contract. Every mode requires a
+    cross-provider planner pair. Build mode additionally requires a distinct
+    worker/reviewer pair with a read-only reviewer. ``packet_id`` must still
+    match the content hash of the rest of the packet.
     """
 
     errors: list[str] = []
@@ -392,21 +439,51 @@ def validate_work_packet(packet: Any) -> dict[str, Any]:
             "errors": ["packet must be a structured object"],
         }
 
+    legacy_required_fields = set(PACKET_REQUIRED_FIELDS) - {
+        "packet_schema_version",
+        "execution_mode",
+    }
+    legacy_packet = (
+        "packet_schema_version" not in packet
+        and legacy_required_fields.issubset(packet)
+    )
+
     for field in PACKET_REQUIRED_FIELDS:
         if field not in packet:
             errors.append(f"packet: missing field '{field}'")
+
+    if packet.get("packet_schema_version") != PACKET_SCHEMA_VERSION:
+        errors.append(
+            "packet: 'packet_schema_version' must be " + PACKET_SCHEMA_VERSION
+        )
 
     packet_id = packet.get("packet_id")
     packet_id_ok = isinstance(packet_id, str) and bool(packet_id.strip())
     if not packet_id_ok:
         errors.append("packet: 'packet_id' must be a non-empty string")
 
+    execution_mode = policies.normalize_id(packet.get("execution_mode"))
+    try:
+        active_seat_names = policies.required_seat_names(execution_mode)
+    except ValueError:
+        errors.append(
+            "packet: 'execution_mode' must be one of "
+            + ", ".join(sorted(policies.EXECUTION_MODES))
+        )
+        active_seat_names = ()
+
     seats = packet.get("seats")
-    seat_info: dict[str, dict[str, str]] = {}
+    seat_info: dict[str, dict[str, Any]] = {}
     if not isinstance(seats, dict):
-        errors.append("packet: 'seats' must be an object with four seat records")
+        errors.append("packet: 'seats' must be an object with the active seat records")
     else:
-        for name in policies.SEAT_NAMES:
+        unexpected_seats = sorted(set(seats) - set(active_seat_names))
+        if unexpected_seats:
+            errors.append(
+                "packet.seats: inactive or unknown seat(s) for execution_mode "
+                f"'{execution_mode}': " + ", ".join(unexpected_seats)
+            )
+        for name in active_seat_names:
             if name not in seats:
                 errors.append(f"packet.seats: missing seat '{name}'")
                 continue
@@ -414,26 +491,54 @@ def validate_work_packet(packet: Any) -> dict[str, Any]:
             if info is not None:
                 seat_info[name] = info
 
-    if len(seat_info) == len(policies.SEAT_NAMES):
+    if active_seat_names and len(seat_info) == len(active_seat_names):
         sessions = [info["session"] for info in seat_info.values()]
         if len(set(sessions)) != len(sessions):
-            errors.append("packet.seats: all four session ids must be unique")
+            errors.append("packet.seats: all active session ids must be unique")
 
         primary = seat_info["planner_primary"]
         challenger = seat_info["planner_challenger"]
+        for name, planner in (
+            ("planner_primary", primary),
+            ("planner_challenger", challenger),
+        ):
+            if not (policies.CHALLENGER_ROLES & set(planner["roles"])):
+                errors.append(
+                    f"packet.seats.{name}: must support planner, analysis, or brain"
+                )
         if primary["family"] == challenger["family"]:
             errors.append(
                 "packet.seats: planner pair must be cross-family (never same provider)"
             )
 
-        worker = seat_info["worker"]
-        reviewer = seat_info["reviewer"]
-        if worker["family"] == reviewer["family"]:
-            errors.append("packet.seats: worker and reviewer must be cross-family")
+        if execution_mode == "build":
+            worker = seat_info["worker"]
+            reviewer = seat_info["reviewer"]
+            if not ({"worker", "code"} & set(worker["roles"])):
+                errors.append(
+                    "packet.seats.worker: must support worker or code"
+                )
+            if "review" not in set(reviewer["roles"]):
+                errors.append("packet.seats.reviewer: must support review")
+            if worker["family"] == reviewer["family"]:
+                errors.append("packet.seats: worker and reviewer must be cross-family")
 
-        reviewer_record = seats.get("reviewer") if isinstance(seats, dict) else None
-        if not (isinstance(reviewer_record, dict) and reviewer_record.get("read_only") is True):
-            errors.append("packet.seats.reviewer: must be marked read_only:true")
+            reviewer_record = seats.get("reviewer") if isinstance(seats, dict) else None
+            if not (
+                isinstance(reviewer_record, dict)
+                and reviewer_record.get("read_only") is True
+            ):
+                errors.append("packet.seats.reviewer: must be marked read_only:true")
+
+    team = packet.get("team")
+    if not isinstance(team, dict):
+        errors.append("packet: 'team' must be an object")
+    else:
+        for field in ("project_id", "goal", "phase", "execution_mode", "domains"):
+            if team.get(field) != packet.get(field):
+                errors.append(
+                    f"packet.team: '{field}' must match packet '{field}'"
+                )
 
     if packet_id_ok:
         body = {key: value for key, value in packet.items() if key != "packet_id"}
@@ -442,7 +547,11 @@ def validate_work_packet(packet: Any) -> dict[str, Any]:
             errors.append("packet: 'packet_id' does not match packet content hash")
 
     if errors:
-        return {"ok": False, "code": "packet_invalid", "errors": errors}
+        return {
+            "ok": False,
+            "code": "packet_legacy_unsupported" if legacy_packet else "packet_invalid",
+            "errors": errors,
+        }
     return {"ok": True, "code": "packet_valid", "packet_id": packet_id.strip()}
 
 

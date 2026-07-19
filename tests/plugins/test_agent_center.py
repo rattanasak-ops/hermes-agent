@@ -1,7 +1,7 @@
 """Deterministic tests for the bundled ``agent_center`` plugin.
 
 Covers the catalog (counts, filters, negative cases), structured-diagnosis
-routing over domains, the four-seat policy (THINK_PAIR + BUILD_REVIEW), the
+routing over domains, the mode-aware seat policy (THINK_PAIR + BUILD_REVIEW), the
 Grok challenger fallback ladder, provider aliases within a family, Work Packet
 build + validation, Work Receipt validation, training-candidate preparation,
 the six registered tool handlers, and their error paths.
@@ -12,6 +12,7 @@ Standard library + pytest only. No writes, no network, no randomness.
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -283,6 +284,42 @@ def test_assign_seats_reviewer_cross_family_from_worker():
     assert seats["reviewer"]["provider_family"] == "opus"
 
 
+@pytest.mark.parametrize("execution_mode", ["think", "plan", "review", "train"])
+def test_non_build_modes_assign_only_cross_provider_planner_pair(execution_mode):
+    pool = [
+        _seat("opus-primary", "s1", roles=["planner"]),
+        _seat("codex-challenger", "s2", roles=["analysis"]),
+    ]
+    report = policies.assign_seats(
+        pool,
+        "opus-primary",
+        "s1",
+        execution_mode=execution_mode,
+    )
+    assert report["ok"] is True
+    assert report["execution_mode"] == execution_mode
+    assert set(report["seats"]) == set(policies.PLANNER_SEAT_NAMES)
+    assert (
+        report["seats"]["planner_primary"]["provider_family"]
+        != report["seats"]["planner_challenger"]["provider_family"]
+    )
+
+
+def test_build_mode_still_blocks_without_worker_and_reviewer():
+    pool = [
+        _seat("opus-primary", "s1", roles=["planner"]),
+        _seat("codex-challenger", "s2", roles=["analysis"]),
+    ]
+    report = policies.assign_seats(
+        pool,
+        "opus-primary",
+        "s1",
+        execution_mode="build",
+    )
+    assert report["ok"] is False
+    assert any("worker" in error for error in report["errors"])
+
+
 # ---------------------------------------------------------------------------
 # Grok challenger fallback ladder
 # ---------------------------------------------------------------------------
@@ -406,6 +443,44 @@ def test_assign_seats_blocks_when_primary_unhealthy():
     assert any("not healthy" in e for e in report["errors"])
 
 
+@pytest.mark.parametrize("healthy", ["false", 1, None])
+def test_assign_seats_requires_boolean_health(healthy):
+    pool = [
+        _seat("opus-primary", "s1", roles=["planner"]),
+        _seat("codex-challenger", "s2", roles=["analysis"]),
+    ]
+    pool[0]["healthy"] = healthy
+    report = policies.assign_seats(
+        pool, "opus-primary", "s1", execution_mode="think"
+    )
+    assert report["ok"] is False
+    assert any("must be a boolean" in error for error in report["errors"])
+
+
+def test_assign_seats_ignores_unused_unhealthy_boolean_seat():
+    pool = [
+        _seat("opus-primary", "s1", roles=["planner"]),
+        _seat("codex-challenger", "s2", roles=["analysis"]),
+        _seat("grok-unused", "s3", healthy=False, roles=["review"]),
+    ]
+    report = policies.assign_seats(
+        pool, "opus-primary", "s1", execution_mode="think"
+    )
+    assert report["ok"] is True
+
+
+def test_assign_seats_blocks_when_primary_has_no_thinking_role():
+    pool = [
+        _seat("opus-primary", "s1", roles=["worker", "code"]),
+        _seat("codex-challenger", "s2", roles=["analysis"]),
+    ]
+    report = policies.assign_seats(
+        pool, "opus-primary", "s1", execution_mode="think"
+    )
+    assert report["ok"] is False
+    assert any("planner_primary" in error for error in report["errors"])
+
+
 def test_assign_seats_blocks_when_no_cross_family_challenger():
     # Only opus family present besides primary aliases -> no challenger.
     pool = [
@@ -498,6 +573,15 @@ def test_validate_diagnosis_success_normalizes():
     # Optional list fields are filled in as empty lists.
     for field in routing.DIAGNOSIS_OPTIONAL_LIST_FIELDS:
         assert norm[field] == []
+    assert norm["execution_mode"] == "build"
+
+
+def test_validate_diagnosis_rejects_unknown_execution_mode():
+    diag = _valid_diagnosis()
+    diag["execution_mode"] = "code-only"
+    report = routing.validate_diagnosis(diag)
+    assert report["ok"] is False
+    assert any("execution_mode" in error for error in report["errors"])
 
 
 def test_build_team_manifest_intake_is_consultor_non_producing():
@@ -552,6 +636,7 @@ def test_build_work_packet_success_is_valid_and_deterministic():
     second = routing.build_work_packet(diag, pool, "opus-primary", "sess-opus")
     assert first["ok"] is True
     assert first["code"] == "packet_ready"
+    assert first["packet"]["packet_schema_version"] == routing.PACKET_SCHEMA_VERSION
     # Same inputs -> identical content-addressed packet id (deterministic).
     assert first["packet"]["packet_id"] == second["packet"]["packet_id"]
     assert first["packet"]["packet_id"].startswith("packet_")
@@ -598,32 +683,136 @@ def test_validate_work_packet_rejects_non_dict():
     assert report["code"] == "packet_invalid"
 
 
+def test_validate_work_packet_rejects_unversioned_legacy_packet():
+    packet = routing.build_work_packet(
+        _valid_diagnosis(), _full_pool(), "opus-primary", "sess-opus"
+    )["packet"]
+    packet.pop("packet_schema_version")
+    packet.pop("execution_mode")
+    body = {key: value for key, value in packet.items() if key != "packet_id"}
+    packet["packet_id"] = routing._content_id("packet", body)
+    report = routing.validate_work_packet(packet)
+    assert report["ok"] is False
+    assert report["code"] == "packet_legacy_unsupported"
+    assert any("packet_schema_version" in error for error in report["errors"])
+
+
+def test_validate_work_packet_rejects_build_seats_in_think_mode():
+    diagnosis = _valid_diagnosis()
+    diagnosis["execution_mode"] = "think"
+    packet = routing.build_work_packet(
+        diagnosis, _full_pool(), "opus-primary", "sess-opus"
+    )["packet"]
+    packet["seats"]["worker"] = {
+        "provider_id": "codex-worker",
+        "session_id": "s-extra",
+    }
+    body = {key: value for key, value in packet.items() if key != "packet_id"}
+    packet["packet_id"] = routing._content_id("packet", body)
+    report = routing.validate_work_packet(packet)
+    assert report["ok"] is False
+    assert any("inactive or unknown" in error for error in report["errors"])
+
+
+@pytest.mark.parametrize(
+    "tamper",
+    [
+        {"healthy": False},
+        {"roles": ["worker", "code"]},
+    ],
+)
+def test_validate_work_packet_rejects_unqualified_thinking_seat(tamper):
+    diagnosis = _valid_diagnosis()
+    diagnosis["execution_mode"] = "think"
+    packet = routing.build_work_packet(
+        diagnosis, _full_pool(), "opus-primary", "sess-opus"
+    )["packet"]
+    packet["seats"]["planner_primary"].update(tamper)
+    body = {key: value for key, value in packet.items() if key != "packet_id"}
+    packet["packet_id"] = routing._content_id("packet", body)
+    report = routing.validate_work_packet(packet)
+    assert report["ok"] is False
+    assert any(
+        "healthy" in error or "must support" in error
+        for error in report["errors"]
+    )
+
+
+def test_validate_work_packet_rejects_team_mode_mismatch():
+    packet = _valid_packet()
+    packet["team"]["execution_mode"] = "think"
+    body = {key: value for key, value in packet.items() if key != "packet_id"}
+    packet["packet_id"] = routing._content_id("packet", body)
+    report = routing.validate_work_packet(packet)
+    assert report["ok"] is False
+    assert any("packet.team" in error for error in report["errors"])
+
+
 # ---------------------------------------------------------------------------
 # Work Receipt validation
 # ---------------------------------------------------------------------------
 
-def _valid_receipt():
+def _valid_packet():
+    return routing.build_work_packet(
+        _valid_diagnosis(), _full_pool(), "opus-primary", "sess-opus"
+    )["packet"]
+
+
+def _valid_receipt(packet=None):
+    packet = packet or _valid_packet()
+    seat_evidence = {
+        name: {
+            "provider_id": seat["provider_id"],
+            "session_id": seat["session_id"],
+            "output_ref": f"session-output://{seat['session_id']}",
+        }
+        for name, seat in packet["seats"].items()
+    }
     return {
-        "packet_id": "packet_abc",
-        "seats": {
-            "planner_primary": {"provider_id": "opus-a", "session_id": "s1"},
-            "planner_challenger": {"provider_id": "grok-b", "session_id": "s2"},
-            "worker": {"provider_id": "codex-c", "session_id": "s3"},
-            "reviewer": {"provider_id": "opus-d", "session_id": "s4", "read_only": True},
-        },
+        "packet_id": packet["packet_id"],
+        "execution_mode": packet["execution_mode"],
+        "seats": deepcopy(packet["seats"]),
+        "seat_evidence": seat_evidence,
+        "synthesis": "primary and challenger findings reconciled",
         "skills_used": [],
         "gate_results": [],
         "candidate_links": ["95-Inbox-Lab/review/candidate.md"],
         "created_at": "2026-07-18",
-        "version": "1.0",
+        "version": policies.RECEIPT_SCHEMA_VERSION,
     }
 
 
 def test_validate_work_receipt_success():
-    report = policies.validate_work_receipt(_valid_receipt())
+    packet = _valid_packet()
+    report = policies.validate_work_receipt(
+        _valid_receipt(packet), expected_packet=packet
+    )
     assert report["ok"] is True
     assert report["code"] == "receipt_valid"
-    assert report["packet_id"] == "packet_abc"
+    assert report["packet_id"] == packet["packet_id"]
+
+
+def test_validate_work_receipt_rejects_receipt_without_packet():
+    receipt = _valid_receipt()
+    assert policies.validate_work_receipt(receipt)["code"] == "receipt_packet_required"
+
+
+def test_validate_work_receipt_rejects_legacy_schema_version():
+    packet = _valid_packet()
+    receipt = _valid_receipt(packet)
+    receipt["version"] = "1.0"
+    report = policies.validate_work_receipt(receipt, expected_packet=packet)
+    assert report["ok"] is False
+    assert any("version" in error for error in report["errors"])
+
+
+def test_validate_work_receipt_rejects_build_seats_in_think_mode():
+    packet = _valid_packet()
+    receipt = _valid_receipt()
+    receipt["execution_mode"] = "think"
+    report = policies.validate_work_receipt(receipt, expected_packet=packet)
+    assert report["ok"] is False
+    assert any("inactive or unknown" in error for error in report["errors"])
 
 
 def test_validate_work_receipt_rejects_non_dict():
@@ -633,35 +822,67 @@ def test_validate_work_receipt_rejects_non_dict():
 
 
 def test_validate_work_receipt_rejects_duplicate_sessions():
-    receipt = _valid_receipt()
-    receipt["seats"]["reviewer"]["session_id"] = "s3"  # collide with worker
-    report = policies.validate_work_receipt(receipt)
+    packet = _valid_packet()
+    receipt = _valid_receipt(packet)
+    receipt["seats"]["reviewer"]["session_id"] = packet["seats"]["worker"]["session_id"]
+    report = policies.validate_work_receipt(receipt, expected_packet=packet)
     assert report["ok"] is False
     assert any("unique" in e for e in report["errors"])
 
 
 def test_validate_work_receipt_rejects_same_family_planners():
+    packet = _valid_packet()
     receipt = _valid_receipt()
     receipt["seats"]["planner_challenger"]["provider_id"] = "claude-b"  # opus family
-    report = policies.validate_work_receipt(receipt)
+    report = policies.validate_work_receipt(receipt, expected_packet=packet)
     assert report["ok"] is False
     assert any("planner pair must be cross-provider" in e for e in report["errors"])
 
 
 def test_validate_work_receipt_requires_reviewer_read_only():
+    packet = _valid_packet()
     receipt = _valid_receipt()
     receipt["seats"]["reviewer"].pop("read_only")
-    report = policies.validate_work_receipt(receipt)
+    report = policies.validate_work_receipt(receipt, expected_packet=packet)
     assert report["ok"] is False
     assert any("read_only" in e for e in report["errors"])
 
 
 def test_validate_work_receipt_rejects_unsafe_candidate_link():
+    packet = _valid_packet()
     receipt = _valid_receipt()
     receipt["candidate_links"] = ["../escape.md"]
-    report = policies.validate_work_receipt(receipt)
+    report = policies.validate_work_receipt(receipt, expected_packet=packet)
     assert report["ok"] is False
     assert any("candidate_links" in e for e in report["errors"])
+
+
+def test_validate_work_receipt_requires_evidence_for_every_active_seat():
+    packet = _valid_packet()
+    receipt = _valid_receipt(packet)
+    receipt["seat_evidence"].pop("planner_challenger")
+    report = policies.validate_work_receipt(receipt, expected_packet=packet)
+    assert report["ok"] is False
+    assert any("planner_challenger" in error for error in report["errors"])
+
+
+def test_validate_work_receipt_binds_seat_evidence_identity():
+    packet = _valid_packet()
+    receipt = _valid_receipt(packet)
+    receipt["seat_evidence"]["planner_challenger"]["session_id"] = "fake-session"
+    report = policies.validate_work_receipt(receipt, expected_packet=packet)
+    assert report["ok"] is False
+    assert any("seat_evidence" in error for error in report["errors"])
+
+
+def test_validate_work_receipt_requires_unique_output_per_active_seat():
+    packet = _valid_packet()
+    receipt = _valid_receipt(packet)
+    duplicate = receipt["seat_evidence"]["planner_primary"]["output_ref"]
+    receipt["seat_evidence"]["planner_challenger"]["output_ref"] = duplicate
+    report = policies.validate_work_receipt(receipt, expected_packet=packet)
+    assert report["ok"] is False
+    assert any("unique" in error for error in report["errors"])
 
 
 # ---------------------------------------------------------------------------
@@ -841,14 +1062,37 @@ def test_tool_validate_packet_only():
 
 def test_tool_validate_receipt_only():
     out = _tool(tools.agent_center_validate, receipt=_valid_receipt())
-    assert out["ok"] is True
-    assert out["code"] == "receipt_valid"
-
-
-def test_tool_validate_rejects_both_packet_and_receipt():
-    out = _tool(tools.agent_center_validate, packet={}, receipt={})
     assert out["ok"] is False
-    assert out["code"] == "validate_ambiguous"
+    assert out["code"] == "receipt_packet_required"
+
+
+def test_tool_validate_binds_packet_and_receipt():
+    packet = _valid_packet()
+    out = _tool(
+        tools.agent_center_validate,
+        packet=packet,
+        receipt=_valid_receipt(packet),
+    )
+    assert out["ok"] is True
+    assert out["code"] == "packet_receipt_valid"
+
+
+def test_tool_validate_rejects_receipt_mode_spoofing():
+    packet = _valid_packet()
+    receipt = _valid_receipt(packet)
+    receipt["execution_mode"] = "think"
+    receipt["seats"] = {
+        name: seat
+        for name, seat in receipt["seats"].items()
+        if name in policies.PLANNER_SEAT_NAMES
+    }
+    out = _tool(tools.agent_center_validate, packet=packet, receipt=receipt)
+    assert out["ok"] is False
+    assert out["code"] == "packet_receipt_invalid"
+    assert any(
+        "execution_mode" in error
+        for error in out["receipt_report"]["errors"]
+    )
 
 
 def test_tool_outputs_are_sorted_json_strings():
@@ -939,6 +1183,48 @@ def test_plugin_registers_exactly_six_agent_center_tools():
     assert all(callable(entry["handler"]) for entry in registered)
 
 
+def test_use_agent_thinking_only_route_needs_no_build_seats():
+    diagnosis = {
+        "project_id": "strategy-review",
+        "goal": "วิเคราะห์เป้าหมายและวางแผนโดยยังไม่ลงมือเขียนโค้ด",
+        "phase": "discovery",
+        "execution_mode": "think",
+        "domains": ["business-product", "discovery"],
+        "risk_tags": ["wrong-goal"],
+        "signals": ["analysis-only"],
+        "deliverables": ["cross-checked analysis", "recommended decision"],
+        "evidence_gates": ["planner challenger findings resolved"],
+    }
+    thinking_pool = [
+        _seat("opus-primary", "think-1", roles=["planner"]),
+        _seat("codex-challenger", "think-2", roles=["analysis"]),
+    ]
+    out = _tool(
+        tools.agent_center_route,
+        diagnosis=diagnosis,
+        seats=thinking_pool,
+        current_provider_id="opus-primary",
+        current_session_id="think-1",
+    )
+
+    assert out["ok"] is True
+    packet = out["packet_report"]["packet"]
+    assert packet["execution_mode"] == "think"
+    assert set(packet["seats"]) == set(policies.PLANNER_SEAT_NAMES)
+    assert routing.validate_work_packet(packet)["code"] == "packet_valid"
+
+    receipt = _valid_receipt(packet)
+    receipt["skills_used"] = [skill["name"] for skill in out["team"]["skills"]]
+    receipt["gate_results"] = ["planner challenger findings resolved"]
+    receipt["candidate_links"] = []
+    receipt["created_at"] = "2026-07-19"
+    receipt["version"] = policies.RECEIPT_SCHEMA_VERSION
+    assert (
+        policies.validate_work_receipt(receipt, expected_packet=packet)["code"]
+        == "receipt_valid"
+    )
+
+
 def test_use_agent_creative_web_design_pilot():
     diagnosis = {
         "project_id": "sample-web",
@@ -968,16 +1254,14 @@ def test_use_agent_creative_web_design_pilot():
     packet = out["packet_report"]["packet"]
     assert packet["packet_id"].startswith("packet_")
     assert routing.validate_work_packet(packet)["ok"] is True
-    receipt = {
-        "packet_id": packet["packet_id"],
-        "seats": packet["seats"],
-        "skills_used": [skill["name"] for skill in out["team"]["skills"]],
-        "gate_results": ["visual review required before a UI completion claim"],
-        "candidate_links": [],
-        "created_at": "2026-07-18",
-        "version": "1.0",
-    }
-    assert policies.validate_work_receipt(receipt)["code"] == "receipt_valid"
+    receipt = _valid_receipt(packet)
+    receipt["skills_used"] = [skill["name"] for skill in out["team"]["skills"]]
+    receipt["gate_results"] = ["visual review required before a UI completion claim"]
+    receipt["candidate_links"] = []
+    assert (
+        policies.validate_work_receipt(receipt, expected_packet=packet)["code"]
+        == "receipt_valid"
+    )
 
 
 def test_use_agent_web_engine_pilot_selects_web_engine_as_core_team():
@@ -1014,16 +1298,14 @@ def test_use_agent_web_engine_pilot_selects_web_engine_as_core_team():
     packet = out["packet_report"]["packet"]
     assert packet["domains"] == ["web-engine", "engineering"]
     assert routing.validate_work_packet(packet)["code"] == "packet_valid"
-    receipt = {
-        "packet_id": packet["packet_id"],
-        "seats": packet["seats"],
-        "skills_used": sorted(selected_skills),
-        "gate_results": ["targeted tests", "catalog validation"],
-        "candidate_links": [],
-        "created_at": "2026-07-18",
-        "version": "1.0",
-    }
-    assert policies.validate_work_receipt(receipt)["code"] == "receipt_valid"
+    receipt = _valid_receipt(packet)
+    receipt["skills_used"] = sorted(selected_skills)
+    receipt["gate_results"] = ["targeted tests", "catalog validation"]
+    receipt["candidate_links"] = []
+    assert (
+        policies.validate_work_receipt(receipt, expected_packet=packet)["code"]
+        == "receipt_valid"
+    )
 
 
 def test_use_agent_shortcut_and_skill_are_connected():
@@ -1040,7 +1322,16 @@ def test_use_agent_shortcut_and_skill_are_connected():
     assert skill.startswith("---\nname: agent-center\n")
     assert "Use Agent" in skill
     assert "`Use AI Relay` as optional" in skill
+    assert "must accept thinking-only, analysis-only" in skill
+    assert "BUILD_REVIEW passes only when mode is `build`" in skill
+    assert "THINK_PAIR_EXECUTION_UNAVAILABLE" in skill
+    assert "original packet and its receipt together" in skill
     assert "Use AI Relay เฉพาะเมื่อเจ้าของเรียกชัดเจน" in prompt
+    assert "ไม่ได้จำกัดเฉพาะงานเขียนโค้ด" in prompt
+    assert "ห้ามแต่งกฎว่า Use Agent ใช้กับงานคิดไม่ได้" in prompt
+    assert "AGENT_CENTER_UNAVAILABLE" in prompt
+    assert "THINK_PAIR_EXECUTION_UNAVAILABLE" in prompt
+    assert "seat_evidence" in prompt
     assert shortcut_skill.count("Use Agent") >= 3
     assert shortcut_skill.count("| `Use Agent` |") == 1
     assert shortcut_index.count("| `Use Agent` |") == 1

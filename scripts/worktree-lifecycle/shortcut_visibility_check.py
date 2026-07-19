@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 
 
@@ -30,17 +31,6 @@ DIRECT_FILES = {
     "Use Viber Audit": "use-viber-audit.md",
 }
 
-ALL_SHORTCUTS = [
-    "Use Act-As", "Use Comply", "Use Summary", "Use Scan Feature", "Use AI Relay",
-    "Use Viber Structure", "Use Viber Audit", "Use Impeccable", "Use Blog Auto",
-    "Use WOW Resource", "Use Flow Guardian", "Use New Chat", "Use Close Chat",
-    "Use Save Git", "Use Merge to Production", "Use Continue", "Use Move Folder",
-    "Review Chat", "Use AI Pair", "Use Business Plan", "Use SaaS Opus Master Prompt",
-    "Use BusinessPlan", "Use OverviewProgress", "Use FeatureSpec", "Use DesignSystem",
-    "Use Create Design System", "Use Hermes Structure", "Use Create Content",
-    "Use QA QC", "Use SonarQube", "Use Migrate Web", "Use Migrate 0",
-]
-
 ACTIVE_CONFLICTS = [
     "งานเขียนใหม่ต้องเรียก `hermes-new-chat open`",
     "การเรียก Shortcut คือคำอนุมัติให้สร้างจริง",
@@ -52,6 +42,16 @@ OWNER_BRANCH_POLICY = "OWNER_EXPLICIT_BRANCH_ONLY"
 
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def shortcut_names(markdown: str) -> list[str]:
+    """Read canonical shortcut names from the first column of a map table."""
+    names = []
+    for line in markdown.splitlines():
+        match = re.match(r"^\| `([^`]+)`", line)
+        if match:
+            names.append(match.group(1))
+    return names
 
 
 def validate(vault: Path, payload: Path) -> dict:
@@ -70,10 +70,24 @@ def validate(vault: Path, payload: Path) -> dict:
     contract_text = contract.read_text(encoding="utf-8") if contract.is_file() else ""
     policy_text = policy.read_text(encoding="utf-8") if policy.is_file() else ""
     skill_text = skill.read_text(encoding="utf-8") if skill.is_file() else ""
+    registry_text = registry.read_text(encoding="utf-8") if registry.is_file() else ""
+    registry_shortcuts = shortcut_names(registry_text)
+    skill_shortcuts = shortcut_names(skill_text)
+    all_shortcuts = sorted(set(registry_shortcuts))
+
+    if len(registry_shortcuts) != len(set(registry_shortcuts)):
+        errors.append("duplicate_shortcut:registry")
+    if len(skill_shortcuts) != len(set(skill_shortcuts)):
+        errors.append("duplicate_shortcut:skill")
+    for shortcut in sorted(set(registry_shortcuts) - set(skill_shortcuts)):
+        errors.append("skill_missing_shortcut:{}".format(shortcut))
+    for shortcut in sorted(set(skill_shortcuts) - set(registry_shortcuts)):
+        errors.append("registry_missing_shortcut:{}".format(shortcut))
+
     for label, text in (("policy", policy_text), ("skill", skill_text), ("contract", contract_text)):
         if OWNER_BRANCH_POLICY not in text:
             errors.append("owner_branch_policy_missing:{}".format(label))
-    for shortcut in ALL_SHORTCUTS:
+    for shortcut in all_shortcuts:
         if shortcut not in contract_text:
             errors.append("contract_missing_shortcut:{}".format(shortcut))
 
@@ -111,10 +125,10 @@ def validate(vault: Path, payload: Path) -> dict:
     return {
         "ok": not errors,
         "mode": "CURRENT_WORKSPACE_ONLY",
-        "shortcut_visibility": "{}/{}".format(len(ALL_SHORTCUTS), len(ALL_SHORTCUTS)),
+        "shortcut_visibility": "{}/{}".format(len(all_shortcuts), len(all_shortcuts)),
         "direct_integrations": "{}/{}".format(len(DIRECT_FILES), len(DIRECT_FILES)),
-        "worktree_auto_create": "0/{}".format(len(ALL_SHORTCUTS)),
-        "owner_branch_policy": "{}/{}".format(len(ALL_SHORTCUTS), len(ALL_SHORTCUTS)),
+        "worktree_auto_create": "0/{}".format(len(all_shortcuts)),
+        "owner_branch_policy": "{}/{}".format(len(all_shortcuts), len(all_shortcuts)),
         "parity_files": len(parity_files) + 1,
         "errors": errors,
     }

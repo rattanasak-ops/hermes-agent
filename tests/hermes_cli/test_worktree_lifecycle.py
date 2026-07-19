@@ -107,6 +107,18 @@ class WorktreeLifecycleTests(unittest.TestCase):
         with self.assertRaisesRegex(wtl.WorktreeLifecycleError, "ครบ 3 งาน"):
             wtl.command_open(self.open_args("TASK-4", "work-4"))
 
+    def test_disk_policy_at_85_percent_blocks_open(self) -> None:
+        self.disk_patcher.stop()
+        try:
+            with mock.patch.object(
+                wtl, "disk_policy",
+                return_value={"percent": 85.0, "level": "stop_new", "message": "พื้นที่ใช้ถึง 85% จึงหยุดสร้าง Worktree ใหม่"},
+            ):
+                with self.assertRaisesRegex(wtl.WorktreeLifecycleError, "85"):
+                    wtl.command_open(self.open_args("TASK-DISK", "disk"))
+        finally:
+            self.disk_patcher.start()
+
     def test_two_people_and_tasks_get_distinct_paths_branches_and_runtime(self) -> None:
         one = wtl.command_open(self.open_args("TASK-1", "alpha", staff="staff-1"))["task"]
         two = wtl.command_open(self.open_args("TASK-2", "beta", staff="staff-2"))["task"]
@@ -147,6 +159,39 @@ class WorktreeLifecycleTests(unittest.TestCase):
         close = wtl.command_close(argparse.Namespace(task_id="TASK-1", registry=str(self.registry), merged=False, merge_sha=None))
         self.assertEqual("WTL_BLOCKED", handoff["decision"])
         self.assertEqual("WTL_BLOCKED", close["decision"])
+
+    def test_missing_remote_task_ref_counts_only_commits_outside_base_branch(self) -> None:
+        wtl.command_open(self.open_args())
+        worktree = Path(self.task()["worktree_path"])
+        (worktree / "local-only.txt").write_text("local\n", encoding="utf-8")
+        run(worktree, "git", "add", "local-only.txt")
+        run(worktree, "git", "commit", "-m", "local only")
+
+        inspected = wtl.inspect_git(self.task())
+
+        self.assertEqual(1, inspected["unpushed"])
+
+    def test_close_merged_works_after_remote_task_branch_is_deleted(self) -> None:
+        wtl.command_open(self.open_args())
+        task = self.task()
+        worktree = Path(task["worktree_path"])
+        (worktree / "merged.txt").write_text("merged\n", encoding="utf-8")
+        run(worktree, "git", "add", "merged.txt")
+        run(worktree, "git", "commit", "-m", "merged task")
+        run(worktree, "git", "push", "-u", "origin", task["branch"])
+        task_head = run(worktree, "git", "rev-parse", "HEAD")
+        run(self.repo, "git", "merge", "--no-ff", task["branch"], "-m", "merge task")
+        run(self.repo, "git", "push", "origin", "main")
+        run(self.repo, "git", "push", "origin", "--delete", task["branch"])
+        run(worktree, "git", "fetch", "--prune", "origin")
+
+        inspected = wtl.inspect_git(self.task())
+        closed = wtl.command_close(argparse.Namespace(
+            task_id="TASK-1", registry=str(self.registry), merged=True, merge_sha=task_head,
+        ))
+
+        self.assertEqual(0, inspected["unpushed"])
+        self.assertEqual("MERGED", closed["task"]["state"])
 
     def test_handoff_accept_moves_single_writer_to_new_machine(self) -> None:
         wtl.command_open(self.open_args())

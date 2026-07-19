@@ -349,29 +349,44 @@ def worktree_manager_ok(tokens: list[str]) -> bool | None:
 
 
 def git_segment_ok(tokens: list[str], branch: str, payload: dict | None = None) -> bool:
-    args = tokens[1:]
-    if any("!" in item or item.startswith("alias.") for item in args):
+    raw_args = tokens[1:]
+    if any("!" in item or item.startswith("alias.") for item in raw_args):
         return False
     if any(
-        item == "-C"
-        or item in {"--git-dir", "--work-tree", "--namespace"}
+        item in {"--git-dir", "--work-tree", "--namespace"}
         or item.startswith(("--git-dir=", "--work-tree=", "--namespace="))
-        for item in args
+        for item in raw_args
     ):
         return False
-    sub = ""
+
+    args: list[str] = []
     index = 0
-    while index < len(args):
-        item = args[index]
-        if item == "-c" and index + 1 < len(args):
+    safe_global_flags = {
+        "--no-pager", "--paginate", "-p", "--no-replace-objects",
+        "--literal-pathspecs", "--glob-pathspecs", "--noglob-pathspecs",
+        "--icase-pathspecs",
+    }
+    while index < len(raw_args):
+        item = raw_args[index]
+        if item == "-C":
+            if index + 1 >= len(raw_args):
+                return False
             index += 2
             continue
-        if item.startswith("-"):
+        if item.startswith("-C") and len(item) > 2:
             index += 1
             continue
-        sub = item
+        if item in safe_global_flags:
+            index += 1
+            continue
+        if item.startswith("-"):
+            return False
+        args = raw_args[index:]
         break
-    create_target = branch_creation_target(tokens)
+
+    sub = args[0] if args else ""
+    normalized_tokens = [tokens[0]] + args
+    create_target = branch_creation_target(normalized_tokens)
     if create_target:
         return owner_requested_branch(payload, create_target)
     if not sub or sub in GIT_BLOCKED_SUBCOMMANDS:

@@ -13,10 +13,34 @@ SKILL="$ROOT/skills/prompt-shortcuts/SKILL.md"
 INDEX="$ROOT/skills/prompt-shortcuts/Prompt Shortcuts.md"
 REFS="$ROOT/skills/prompt-shortcuts/references"
 CODEX="$HOME/.codex/skills/prompt-shortcuts"
+AGENT_SKILL="$ROOT/skills/agent-center/SKILL.md"
+CODEX_AGENT="$HOME/.codex/skills/agent-center"
 CLAUDE="$HOME/.claude/CLAUDE.md"
 INSTALLED_VERSION="$ROOT/.shortcut-version"
 HOOK_DOCTOR="$HOME/.local/bin/hermes-hook-doctor"
 WRITE_PERMIT="$HOME/.local/bin/hermes-write-permit"
+
+resolve_hermes_runtime_home() {
+  if [ -n "${HERMES_HOME:-}" ]; then
+    printf '%s\n' "$HERMES_HOME"
+    return 0
+  fi
+  if command -v hermes >/dev/null 2>&1; then
+    local reported
+    reported="$(hermes dump 2>/dev/null | sed -n 's/^hermes_home:[[:space:]]*//p' | head -n 1)"
+    case "$reported" in
+      "~") printf '%s\n' "$HOME"; return 0 ;;
+      "~/"*) printf '%s/%s\n' "$HOME" "${reported#\~/}"; return 0 ;;
+      /*) printf '%s\n' "$reported"; return 0 ;;
+    esac
+  fi
+  printf '%s/.hermes\n' "$HOME"
+}
+
+HERMES_RUNTIME_HOME="$(resolve_hermes_runtime_home)"
+HERMES_AGENT_SKILL="$HERMES_RUNTIME_HOME/skills/agent-center/SKILL.md"
+AGENT_PLUGIN="$HERMES_RUNTIME_HOME/plugins/agent-center/plugin.yaml"
+HERMES_CONFIG="$HERMES_RUNTIME_HOME/config.yaml"
 
 pass=true
 
@@ -72,14 +96,47 @@ exists_check() {
   fi
 }
 
+same_tree_check() {
+  local label="$1"
+  local expected="$2"
+  local actual="$3"
+  if [ -d "$expected" ] && [ -d "$actual" ] \
+    && diff -qr "$expected" "$actual" >/dev/null 2>&1; then
+    printf 'PASS %-28s %s\n' "$label" "$actual"
+  else
+    printf 'FAIL %-28s %s\n' "$label" "เนื้อหาไม่ตรงกับ $expected"
+    pass=false
+  fi
+}
+
 echo "══ ตรวจ Prompt Shortcut บนเครื่องนี้ ══"
 exists_check "registry_exists" "$REGISTRY"
 exists_check "skill_exists" "$SKILL"
 exists_check "index_exists" "$INDEX"
 exists_check "codex_link_exists" "$CODEX"
+exists_check "agent_center_skill_exists" "$AGENT_SKILL"
+exists_check "codex_agent_link_exists" "$CODEX_AGENT"
+exists_check "hermes_agent_skill_exists" "$HERMES_AGENT_SKILL"
+exists_check "agent_center_plugin_exists" "$AGENT_PLUGIN"
+same_tree_check "agent_center_codex_match" "$(dirname "$AGENT_SKILL")" "$CODEX_AGENT"
+same_tree_check "agent_center_hermes_match" "$(dirname "$AGENT_SKILL")" "$(dirname "$HERMES_AGENT_SKILL")"
 exists_check "hook_doctor_exists" "$HOOK_DOCTOR"
 exists_check "write_permit_exists" "$WRITE_PERMIT"
 exists_check "installed_version_exists" "$INSTALLED_VERSION"
+
+if [ -f "$HERMES_CONFIG" ] && awk '
+  /^plugins:[[:space:]]*$/ { in_plugins=1; in_enabled=0; next }
+  in_plugins && /^[^[:space:]]/ { in_plugins=0; in_enabled=0 }
+  in_plugins && /^  enabled:[[:space:]]*$/ { in_enabled=1; next }
+  in_plugins && in_enabled && /^  [[:alnum:]_-]+:/ { in_enabled=0 }
+  in_plugins && in_enabled && /^[[:space:]]*-[[:space:]]*agent-center([[:space:]]*(#.*)?)?$/ { found=1 }
+  END { exit(found ? 0 : 1) }
+' "$HERMES_CONFIG"; then
+  printf 'PASS %-28s %s\n' "agent_center_enabled" "$HERMES_CONFIG"
+else
+  printf 'FAIL %-28s %s\n' "agent_center_enabled" "ไม่พบ agent-center ใน plugins.enabled"
+  pass=false
+fi
 
 migrate_phase_count=0
 for phase in $(seq 0 13); do

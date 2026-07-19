@@ -86,6 +86,8 @@ def test_old_session_and_relay_role_are_not_required(workspace, monkeypatch):
         "npm run typecheck",
         "pytest -q",
         "python3 -m pytest tests -q",
+        "python3 design-system-standard-v2/tools/ds-gate.py --layer all",
+        "bash design-system-standard-v2/ds-adopt.sh check .",
         "ruff check .",
         "tsc --noEmit",
     ],
@@ -208,6 +210,38 @@ def test_shortcut_cannot_create_or_enter_worktree_through_manager_commands(works
     ],
 )
 def test_worktree_mutation_cannot_hide_behind_wrappers(workspace, command):
+    assert GATE.run(payload(workspace, "Bash", {"command": command})) == 2
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git -C . status --short",
+        "git -C. log --oneline -3",
+        "git --no-pager -C . diff --stat",
+        "git -C . -C .. status --short",
+    ],
+)
+def test_git_c_allows_read_only_subcommands(workspace, command):
+    assert GATE.run(payload(workspace, "Bash", {"command": command})) == 0
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git -C . checkout -- README.md",
+        "git -C . reset --hard HEAD",
+        "git -C . clean -fd",
+        "git -C . stash push",
+        "git -C . worktree add /tmp/hidden -b task/nat/hidden",
+        "git --no-pager -C . checkout -- README.md",
+        "git -C . -C .. reset --hard HEAD",
+        "git -C . push --force origin main",
+        "git -C . -c alias.erase=reset erase --hard HEAD",
+        "git -C",
+    ],
+)
+def test_git_c_cannot_hide_dangerous_subcommands(workspace, command):
     assert GATE.run(payload(workspace, "Bash", {"command": command})) == 2
 
 

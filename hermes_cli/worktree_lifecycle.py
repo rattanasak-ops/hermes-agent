@@ -551,7 +551,14 @@ def inspect_git(task: Dict[str, Any]) -> Dict[str, Any]:
         if ref_exists(path, remote_ref):
             result["unpushed"] = int(git_text(path, "rev-list", "--count", "{}..HEAD".format(remote_ref)))
         else:
-            result["unpushed"] = int(git_text(path, "rev-list", "--count", "HEAD"))
+            base_branch = task.get("base_branch", "main")
+            base_ref = "{}/{}".format(remote, base_branch)
+            if ref_exists(path, base_ref):
+                result["unpushed"] = int(
+                    git_text(path, "rev-list", "--count", "{}..HEAD".format(base_ref))
+                )
+            else:
+                result["unpushed"] = int(git_text(path, "rev-list", "--count", "HEAD"))
     except (WorktreeLifecycleError, subprocess.CalledProcessError, ValueError):
         pass
     return result

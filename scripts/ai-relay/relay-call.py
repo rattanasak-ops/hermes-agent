@@ -587,6 +587,24 @@ def _kill_process_group(p):
     try: p.wait(timeout=1)
     except Exception: pass
 
+
+def git_head(cwd: Path):
+    """คืน SHA ของ HEAD ในพื้นที่งาน หรือ None ถ้าไม่ใช่ Git workspace."""
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "--verify", "HEAD"],
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    value = proc.stdout.strip()
+    return value or None
+
 def run_once(spec, prompt, cwd, model, timeout=900, silence_timeout=None):
     cmd = [a.replace("{prompt}",prompt).replace("{cwd}",str(cwd)).replace("{model}",model or "") for a in spec["cmd"]]
     workdir = str(cwd) if spec.get("run_in_cwd") else None
@@ -734,7 +752,7 @@ def check_plan_anchor(cwd: Path, task_id: str, no_plan: bool) -> tuple[str, str 
 def record_fail(cwd: Path, tool: str, cd: dict, now: float):
     # อ่าน-แก้-เขียน ใต้ล็อกเดียว กันสองโปรเซสทับสถานะกัน
     lockf = cfg_dir(cwd)/".cooldown.lock"; lockf.parent.mkdir(parents=True, exist_ok=True)
-    with open(lockf, "w") as lk:
+    with open(lockf, "w", encoding="utf-8") as lk:
         if fcntl: fcntl.flock(lk, fcntl.LOCK_EX)
         state = load_cooldown(cwd)
         e = state.setdefault(tool, {"fails": [], "until": 0})
@@ -915,11 +933,22 @@ def main():
         active_prompt = prompt
         timeout_retry = 0
         while True:
+            head_before = git_head(cwd) if a.role == "code" else None
             code, out, err = run_once(
                 active_spec, active_prompt, cwd, model,
                 timeout=call_timeout, silence_timeout=silence_timeout,
             )
             st = classify(code, out, err)
+            head_after = git_head(cwd) if head_before else None
+            committed_after_crash = bool(
+                st == "crash" and head_before and head_after and head_before != head_after
+            )
+            if committed_after_crash:
+                st = "ok"
+                out = (
+                    out.rstrip()
+                    + f"\n[relay] coder advanced Git HEAD: {head_before[:12]} -> {head_after[:12]}"
+                ).lstrip()
             tried.append(f"{tool}:{st}")
             if not (st == "timeout" and tool == "codex" and a.role == "review" and timeout_retry == 0):
                 break
@@ -957,6 +986,9 @@ def main():
                 err = (err or "") + "\nCodex JSONL ended without a final agent_message"
 
         if st == "ok":
+            success_reason = REASON["ok"]
+            if committed_after_crash:
+                success_reason = "เรียกสำเร็จ และพบว่า coder ขยับ HEAD พร้อม commit แล้ว"
             ofile = cfg_dir(cwd)/f"out-{re.sub(r'[^A-Za-z0-9]', '_', a.task_id)}.txt"
             ofile.write_text(redact(out), encoding="utf-8")
             relay_now("clear")
@@ -964,7 +996,7 @@ def main():
                 "issue_id":ledger_issue_id,"tool":tool,"account_used":tool,"rotated_from":rotated_from,
                 "status":"ok","calls_used":calls,"output_ref":str(ofile)})
             emit({"status":"ok","tool":tool,"account_used":tool,"rotated_from":rotated_from,
-                "reason_human":REASON["ok"],"output_ref":str(ofile),"ledger_written":True,"calls_used":calls,
+                "reason_human":success_reason,"output_ref":str(ofile),"ledger_written":True,"calls_used":calls,
                 "rounds_used":rounds,"base_issue_id":base_issue_id,
                 "role":a.role,"review_rounds_used":review_rounds,
                 "timeout_retries":timeout_retry,"tried":tried}, 0)
