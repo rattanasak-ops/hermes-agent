@@ -9,7 +9,7 @@
     "ไม่ลบไฟล์จาก main โดยไม่ได้ตั้งใจ"
   ],
   "branch": "codex/scg-shortcut-rollout",
-  "base_sha": "0c7089ec2f5232842d20286626f4d09e282cc82e",
+  "base_sha": "247bf0006e2bff7b8870222be6d36d34b489e580",
   "allowed_paths": [
     ".project/active-task.json",
     ".project/active-task.md",
@@ -33,6 +33,7 @@
     "team-shortcuts/payload/skills/prompt-shortcuts/references/use-save-git.md",
     "team-shortcuts/sync-from-vault.sh",
     "team-shortcuts/BUNDLE-MANIFEST.json",
+    "tests/run_agent/test_run_agent.py",
     "tests/team_shortcuts/test_bundle_manifest.py",
     "tests/team_shortcuts/test_goal_contract_distribution.py",
     "tests/team_shortcuts/test_goal_drift_real_incidents.py",
@@ -65,5 +66,5 @@
   "next_prompt": "AUTO_CONTINUE: ตรวจและรวมกิ่ง codex/scg-shortcut-rollout",
   "frozen_at": null,
   "merge_sha": null,
-  "goal_hash": "449a724fd979c5ba9a41ebbdeba282368ba9d307a6a467e3e85a6adcb93e0750"
+  "goal_hash": "c9779b16874b8cd84585837c1ab538fc534dc3beb46b83a4ea72e8aca4c22556"
 }

@@ -1,5 +1,5 @@
 {
-  "aggregate_sha256": "e918453b757ab99e5de4716d06acdab0f33f38df02cf11276d1259b1ebce95d2",
+  "aggregate_sha256": "f688b257c3704bf592fa82c8ca875cc9a7621b51d757704c8739b847a756b790",
   "file_count": 93,
   "files": [
     {
@@ -545,8 +545,8 @@
     {
       "kind": "package",
       "path": "sync-from-vault.sh",
-      "sha256": "889c583e35788d764de292d982b4a362c23a8607f16ac8372de4d9bc4d61e5ab",
-      "size": 1768
+      "sha256": "0fb0a87c77e31c0937c8a093dfa0afbaa5d1e6f00dd4b0f87b0a0c3913e89bef",
+      "size": 1726
     },
     {
       "kind": "package",
