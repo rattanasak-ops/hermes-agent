@@ -50,7 +50,11 @@ def active_hermes_home() -> Path:
     except (OSError, subprocess.TimeoutExpired):
         return default
     candidate = Path(result.stdout.strip()).expanduser()
-    return candidate.resolve().parent if result.returncode == 0 and candidate.name == "config.yaml" else default
+    if result.returncode == 0 and candidate.name == "config.yaml":
+        parent = candidate.resolve().parent
+        if parent.exists() and os.access(parent, os.W_OK):
+            return parent
+    return default
 
 
 def config_hook_section(text: str) -> tuple[list[str], int, int]:
