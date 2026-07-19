@@ -140,8 +140,8 @@ _DEFAULT_PAYLOADS = {
         "platform": "cli",
     },
     "transform_llm_output": {
+        "response_text": "ให้เจ้าของเปิด workspace ใหม่ก่อน แล้วค่อยส่งมาให้ผมทำต่อ",
         "session_id": "test-session",
-        "response_text": "Synthetic assistant response",
         "model": "gpt-4",
         "platform": "cli",
     },
