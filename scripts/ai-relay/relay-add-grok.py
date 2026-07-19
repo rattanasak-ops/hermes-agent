@@ -12,6 +12,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import stat
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -22,19 +25,81 @@ except ImportError:  # pragma: no cover - system Python may not have PyYAML
     yaml = None
 
 
-GROK_ADAPTER = {
-    "cmd": [
-        "grok",
-        "-p",
-        "{prompt}",
-        "--cwd",
-        "{cwd}",
-        "--output-format",
-        "json",
-        "--always-approve",
-    ],
-    "note": "Grok ใช้บัญชีที่ login ไว้ในเครื่องนี้ ไม่เก็บรหัสลับในไฟล์ AI Relay",
-}
+def resolve_grok_bin(home: Path = None) -> str:
+    """เลือก Grok CLI ตัวที่รองรับบัญชี local จริง โดยไม่พึ่ง PATH ที่อาจชี้ไป Homebrew."""
+
+    base = home if home is not None else Path.home()
+    trusted_dirs = [
+        base / ".local" / "bin",
+        base / ".grok" / "bin",
+        Path("/opt/homebrew/bin"),
+        Path("/usr/local/bin"),
+    ]
+
+    env_value = os.environ.get("RELAY_GROK_BIN")
+    if env_value:
+        env_path = Path(env_value).expanduser()
+        if is_trusted_grok_bin(env_path, trusted_dirs):
+            return str(env_path)
+
+    for candidate in (
+        base / ".local" / "bin" / "grok",
+        base / ".grok" / "bin" / "grok",
+    ):
+        if is_trusted_grok_bin(candidate, trusted_dirs):
+            return str(candidate.expanduser().resolve())
+
+    on_path = shutil.which("grok")
+    if on_path and is_trusted_grok_bin(Path(on_path), trusted_dirs):
+        return str(Path(on_path).resolve())
+    return "grok"
+
+
+def is_trusted_grok_bin(path: Path, trusted_dirs: list[Path]) -> bool:
+    try:
+        resolved = path.expanduser().resolve()
+    except OSError:
+        return False
+    if resolved.name != "grok" or not resolved.exists():
+        return False
+    mode = resolved.stat().st_mode
+    if not mode & stat.S_IXUSR:
+        return False
+    return any(resolved.parent == candidate.expanduser().resolve() for candidate in trusted_dirs)
+
+
+def grok_cwd_args(grok_bin: str) -> list[str]:
+    """คืน argument ตั้งโฟลเดอร์งานให้ตรงกับ Grok CLI ที่พบในเครื่องนี้."""
+
+    try:
+        proc = subprocess.run(
+            [grok_bin, "--help"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=5,
+            check=False,
+        )
+        help_text = proc.stdout or ""
+    except Exception:
+        help_text = ""
+
+    if "--directory" in help_text and "--cwd" not in help_text:
+        return ["-d", "{cwd}"]
+    return ["--cwd", "{cwd}"]
+
+
+def grok_adapter(home: Path = None) -> dict:
+    grok_bin = resolve_grok_bin(home)
+    return {
+        "cmd": [
+            grok_bin,
+            *grok_cwd_args(grok_bin),
+            "-p",
+            "{prompt}",
+        ],
+        "note": "Grok ใช้บัญชีที่ login ไว้ในเครื่องนี้ ไม่เก็บรหัสลับในไฟล์ AI Relay",
+    }
 
 DEFAULT_CHAIN = ["grok", "codex", "gemini", "ollama"]
 
@@ -93,17 +158,16 @@ def ensure_grok_text_mode(relay_dir: Path) -> dict:
     if "tools:" not in adapters_text:
         adapters_text = "tools:\n" + adapters_text.rstrip() + "\n"
     if not has_top_level_or_nested_key(adapters_text, "grok"):
-        adapters_text = adapters_text.rstrip() + """
+        grok_bin = resolve_grok_bin()
+        cwd_flag, cwd_value = grok_cwd_args(grok_bin)
+        adapters_text = adapters_text.rstrip() + f"""
   grok:
     cmd:
-      - grok
+      - {json.dumps(grok_bin)}
+      - {json.dumps(cwd_flag)}
+      - {json.dumps(cwd_value)}
       - -p
-      - "{prompt}"
-      - --cwd
-      - "{cwd}"
-      - --output-format
-      - json
-      - --always-approve
+      - "{{prompt}}"
     note: "Grok ใช้บัญชีที่ login ไว้ในเครื่องนี้ ไม่เก็บรหัสลับในไฟล์ AI Relay"
 """
         adapter_added = True
@@ -178,9 +242,16 @@ def ensure_grok(root: Path) -> dict:
     adapters = read_yaml(adapters_path)
     tools = adapters.setdefault("tools", {})
     adapter_changed = False
+    desired_grok = grok_adapter()
+    existing_grok = tools.get("grok")
     if "grok" not in tools:
-        tools["grok"] = GROK_ADAPTER
+        tools["grok"] = desired_grok
         adapter_changed = True
+    elif isinstance(existing_grok, dict):
+        current_cmd = list(existing_grok.get("cmd") or [])
+        if current_cmd and Path(str(current_cmd[0])).name == "grok":
+            tools["grok"] = {**existing_grok, **desired_grok}
+            adapter_changed = True
 
     accounts = read_yaml(accounts_path)
     account_map = accounts.setdefault("accounts", {})

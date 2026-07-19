@@ -8,9 +8,9 @@
 
 tools:
   grok:
-    # grok -p <prompt> --cwd <worktree> --output-format json --always-approve
-    cmd: ["grok", "-p", "{prompt}", "--cwd", "{cwd}", "--output-format", "json", "--always-approve"]
-    note: "-p/--single = โหมด headless · --output-format = รูปแบบผลลัพธ์ · --always-approve = ไม่ถามยืนยันทีละขั้น"
+    # grok --cwd <worktree> -p <prompt>
+    cmd: ["grok", "--cwd", "{cwd}", "-p", "{prompt}"]
+    note: "--cwd = โฟลเดอร์งาน · -p = โหมด headless · ไม่มี flag อนุมัติเขียนไฟล์อัตโนมัติ"
 
   gemini:
     # gemini ไม่มี --cwd → relay-call ต้อง cd เข้า {cwd} ก่อนรัน
