@@ -17,6 +17,7 @@ import logging
 import os
 import re
 import secrets
+import shutil
 import subprocess
 import sys
 import threading
@@ -118,6 +119,7 @@ app.add_middleware(
 # only truly non-sensitive, read-only endpoints belong here.
 # ---------------------------------------------------------------------------
 _PUBLIC_API_PATHS: frozenset = frozenset({
+    "/api/health",
     "/api/status",
     "/api/config/defaults",
     "/api/config/schema",
@@ -126,6 +128,46 @@ _PUBLIC_API_PATHS: frozenset = frozenset({
     "/api/dashboard/plugins",
     "/api/dashboard/plugins/rescan",
 })
+
+
+def _runtime_commit_sha() -> str:
+    """Return HEAD only while tracked runtime files still match that commit."""
+
+    git_binary = shutil.which("git")
+    if not git_binary or not Path(git_binary).is_absolute():
+        return ""
+    try:
+        result = subprocess.run(
+            [git_binary, "rev-parse", "--show-toplevel", "HEAD"],
+            cwd=PROJECT_ROOT,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+        clean = subprocess.run(
+            [git_binary, "diff-index", "--quiet", "HEAD", "--"],
+            cwd=PROJECT_ROOT,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=2,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    lines = result.stdout.splitlines() if result.returncode == 0 else []
+    if len(lines) != 2 or clean.returncode != 0:
+        return ""
+    try:
+        resolved_root = Path(lines[0]).resolve(strict=True)
+    except OSError:
+        return ""
+    if resolved_root != PROJECT_ROOT:
+        return ""
+    commit_sha = lines[1].strip().lower()
+    return commit_sha if re.fullmatch(r"[0-9a-f]{40,64}", commit_sha) else ""
 
 
 def _has_valid_session_token(request: Request) -> bool:
@@ -1242,6 +1284,22 @@ async def get_knowledge_global_graph(limit: int = 180, edge_limit: int = 700):
         "nodes": nodes,
         "edges": edges,
     }
+
+
+@app.get("/api/health")
+async def get_health():
+    """Minimal deployment proof for liveness and exact source revision."""
+
+    commit_sha = _runtime_commit_sha()
+    payload = {
+        "ok": bool(commit_sha),
+        "service": "hermes-dashboard",
+        "version": __version__,
+        "commitSha": commit_sha,
+    }
+    if not commit_sha:
+        return JSONResponse(status_code=503, content=payload)
+    return payload
 
 
 @app.get("/api/status")

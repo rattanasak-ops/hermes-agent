@@ -4,21 +4,22 @@
   "default_target": "main",
   "stack": "python",
   "checks": {
-    "lint": "python3 -m compileall -q scripts/ai-relay",
-    "test": "python3 scripts/ai-relay/relay-call.py --help > /dev/null && python3 scripts/ai-relay/gate-run.py --help > /dev/null && python3 scripts/ai-relay/relay-report.py --help > /dev/null"
+    "lint": "python3 -m compileall -q hermes_cli plugins/agent_center",
+    "test": "scripts/run_tests.sh tests/hermes_cli/test_web_server.py::TestWebServerEndpoints::test_get_health_exposes_runtime_commit_without_auth tests/hermes_cli/test_web_server.py::TestWebServerEndpoints::test_runtime_commit_sha_reads_valid_project_head tests/hermes_cli/test_web_server.py::TestWebServerEndpoints::test_runtime_commit_sha_rejects_invalid_git_output tests/hermes_cli/test_web_server.py::TestWebServerEndpoints::test_runtime_commit_sha_rechecks_unstaged_changes tests/hermes_cli/test_web_server.py::TestWebServerEndpoints::test_get_health_fails_closed_without_runtime_commit tests/plugins/test_agent_center.py tests/plugins/test_agent_center_execution.py tests/team_shortcuts/test_team_shortcut_distribution.py"
   },
   "test_timeout_sec": 300,
   "forbidden_paths": [".env", "*.key", "*.pem", ".hermes/*", "*.secret"],
   "scope_guard": {
     "max_commits": 5,
-    "max_files": 30,
-    "allowed_dirty_paths": [
-      "hermes_cli/worktree_lifecycle.py",
-      "tests/hermes_cli/test_worktree_lifecycle.py"
-    ]
+    "max_files": 30
   },
   "ci": {
     "enabled": false,
     "skip_reason": "workflow ใน .github เป็นของ upstream (NousResearch) · สายส่งจริงคือ push ไป fork แล้ว VPS ดึงด้วย git pull fork main · ไม่มี pipeline บังคับกับ push นี้"
+  },
+  "deploy": {
+    "branch_only": "origin/main",
+    "health_url": "http://127.0.0.1:9119/api/health",
+    "health_commit_field": "commitSha"
   }
 }
