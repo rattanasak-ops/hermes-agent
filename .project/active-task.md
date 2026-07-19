@@ -1,7 +1,7 @@
 ---
 task_id: UAG-P0-I1
 goal_id: UAG-P0-I1-CODEX-20260719
-status: gate_passed_git_pending
+status: pull_request_open_owner_merge_pending
 owner_decision_at: 2026-07-19
 writer: codex-current-chat
 external_ai_relay: disabled
@@ -54,8 +54,9 @@ plan: .project/plan.md
 - Python compile ผ่าน 2/2 ไฟล์
 - `git diff --check` ผ่าน 1/1
 - `gate-run` ผ่าน 40/40 ที่ commit `bb3901c7a1a251b2c85b1869b8f69caf22d9f178` และเขียนหลักฐานครบ 1/1 แถว
+- `save-git` คืน `SAFE_TO_MERGE`, ส่งกิ่งสำเร็จ 1/1 และเปิด PR #83 สำเร็จ 1/1
 - ยังไม่มีผู้ตรวจ AI คนละตัวตามข้อยกเว้นที่เจ้าของสั่ง จึงไม่อ้างว่าผ่านกฎ 2 สมอง
 
 ## ขั้นตอนถัดไปเพียงหนึ่งขั้น
 
-บันทึกหลักฐาน Git, ผ่านด่าน `save-git`, ส่งกิ่ง และเปิด PR แยกจาก Agent Center
+เจ้าของตรวจและรวม PR #83: https://github.com/rattanasak-ops/hermes-agent/pull/83
