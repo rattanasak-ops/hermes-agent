@@ -757,15 +757,25 @@ def test_codex_review_adapter_is_read_only_json_and_no_silence_cut():
     assert prepared["silence_timeout"] == 0
 
 
-def test_grok_review_adapter_removes_write_approval_and_uses_plan_mode():
-    local_grok = {"cmd": ["grok", "-p", "prompt", "--always-approve"]}
+def test_grok_review_adapter_removes_write_approval_and_disables_tool_rounds():
+    local_grok = {"cmd": ["grok", "--cwd", "cwd", "-p", "prompt", "--always-approve"]}
     prepared = relay_call.prepare_adapter_for_role(
         "grok", local_grok, "review"
     )
     assert "--always-approve" not in prepared["cmd"]
-    mode_pos = prepared["cmd"].index("--permission-mode")
-    assert prepared["cmd"][mode_pos + 1] == "plan"
+    assert "--permission-mode" not in prepared["cmd"]
+    assert "--no-plan" in prepared["cmd"]
     assert "--no-subagents" in prepared["cmd"]
+
+
+def test_grok_api_cli_review_adapter_disables_tool_rounds():
+    api_grok = {"cmd": ["grok", "-d", "cwd", "-p", "prompt", "--always-approve"]}
+    prepared = relay_call.prepare_adapter_for_role("grok", api_grok, "review")
+
+    assert "--always-approve" not in prepared["cmd"]
+    rounds_pos = prepared["cmd"].index("--max-tool-rounds")
+    assert prepared["cmd"][rounds_pos + 1] == "0"
+    assert "--permission-mode" not in prepared["cmd"]
 
 
 def test_gemini_review_adapter_replaces_yolo_with_plan_mode():
@@ -818,8 +828,25 @@ def test_resolve_grok_bin_prefers_local_subscription_cli(tmp_path, monkeypatch):
     homebrew_bin.parent.mkdir(parents=True)
     local_bin.write_text("#!/bin/sh\n", encoding="utf-8")
     homebrew_bin.write_text("#!/bin/sh\n", encoding="utf-8")
+    local_bin.chmod(0o755)
+    homebrew_bin.chmod(0o755)
     monkeypatch.setattr(relay_call.Path, "home", lambda: tmp_path)
     monkeypatch.setattr(relay_call.shutil, "which", lambda _name: str(homebrew_bin))
+
+    assert relay_call.resolve_grok_bin() == str(local_bin)
+
+
+def test_resolve_grok_bin_ignores_untrusted_env_path(tmp_path, monkeypatch):
+    local_bin = tmp_path / ".local" / "bin" / "grok"
+    evil_bin = tmp_path / "repo" / "grok"
+    local_bin.parent.mkdir(parents=True)
+    evil_bin.parent.mkdir(parents=True)
+    local_bin.write_text("#!/bin/sh\n", encoding="utf-8")
+    evil_bin.write_text("#!/bin/sh\n", encoding="utf-8")
+    local_bin.chmod(0o755)
+    evil_bin.chmod(0o755)
+    monkeypatch.setattr(relay_call.Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("RELAY_GROK_BIN", str(evil_bin))
 
     assert relay_call.resolve_grok_bin() == str(local_bin)
 
@@ -828,7 +855,29 @@ def test_relay_add_grok_writes_absolute_local_grok_bin(tmp_path, monkeypatch):
     local_bin = tmp_path / ".local" / "bin" / "grok"
     local_bin.parent.mkdir(parents=True)
     local_bin.write_text("#!/bin/sh\n", encoding="utf-8")
+    local_bin.chmod(0o755)
     monkeypatch.setattr(relay_add_grok.Path, "home", lambda: tmp_path)
+
+    out = relay_add_grok.ensure_grok(tmp_path)
+    adapters = relay_add_grok.read_yaml(Path(out["adapters_path"]))
+
+    assert adapters["tools"]["grok"]["cmd"][0] == str(local_bin)
+    assert adapters["tools"]["grok"]["cmd"][1:5] == ["--cwd", "{cwd}", "-p", "{prompt}"]
+    assert "-d" not in adapters["tools"]["grok"]["cmd"]
+    assert "--always-approve" not in adapters["tools"]["grok"]["cmd"]
+
+
+def test_relay_add_grok_ignores_untrusted_env_path(tmp_path, monkeypatch):
+    local_bin = tmp_path / ".local" / "bin" / "grok"
+    evil_bin = tmp_path / "repo" / "grok"
+    local_bin.parent.mkdir(parents=True)
+    evil_bin.parent.mkdir(parents=True)
+    local_bin.write_text("#!/bin/sh\n", encoding="utf-8")
+    evil_bin.write_text("#!/bin/sh\n", encoding="utf-8")
+    local_bin.chmod(0o755)
+    evil_bin.chmod(0o755)
+    monkeypatch.setattr(relay_add_grok.Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("RELAY_GROK_BIN", str(evil_bin))
 
     out = relay_add_grok.ensure_grok(tmp_path)
     adapters = relay_add_grok.read_yaml(Path(out["adapters_path"]))

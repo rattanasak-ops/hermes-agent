@@ -13,7 +13,7 @@
 """
 from __future__ import annotations
 
-import argparse, glob, json, os, re, shutil, signal, socket, subprocess, sys, threading, time
+import argparse, glob, json, os, re, shutil, signal, socket, stat, subprocess, sys, threading, time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -370,13 +370,38 @@ def resolve_codex_bin():
 
 def resolve_grok_bin():
     """เลือก Grok CLI ตัว subscription local ก่อน PATH เพื่อเลี่ยง Homebrew grok ที่เรียกคนละระบบ."""
+    trusted_dirs = [
+        Path.home()/".local"/"bin",
+        Path.home()/".grok"/"bin",
+        Path("/opt/homebrew/bin"),
+        Path("/usr/local/bin"),
+    ]
     for env in (os.environ.get("RELAY_GROK_BIN"), os.environ.get("XC_GROK_BIN")):
-        if env and Path(env).expanduser().exists():
-            return str(Path(env).expanduser())
+        if env and is_trusted_grok_bin(Path(env), trusted_dirs):
+            return str(Path(env).expanduser().resolve())
     for candidate in (Path.home()/".local"/"bin"/"grok", Path.home()/".grok"/"bin"/"grok"):
-        if candidate.exists():
-            return str(candidate)
-    return shutil.which("grok") or "grok"
+        if is_trusted_grok_bin(candidate, trusted_dirs):
+            return str(candidate.expanduser().resolve())
+    on_path = shutil.which("grok")
+    if on_path and is_trusted_grok_bin(Path(on_path), trusted_dirs):
+        return str(Path(on_path).resolve())
+    return "grok"
+
+
+def is_trusted_grok_bin(path: Path, trusted_dirs: list[Path]) -> bool:
+    try:
+        resolved = path.expanduser().resolve()
+    except OSError:
+        return False
+    if resolved.name != "grok" or not resolved.exists():
+        return False
+    try:
+        mode = resolved.stat().st_mode
+    except OSError:
+        return False
+    if not mode & stat.S_IXUSR:
+        return False
+    return any(resolved.parent == candidate.expanduser().resolve() for candidate in trusted_dirs)
 
 def prefer_portal_adapters(adapters: dict) -> dict:
     """บังคับ Claude/Codex/Grok ผ่าน AI Portal เว้นแต่ผู้ดูแลตั้งใจเปิด local CLI."""
@@ -486,15 +511,32 @@ def prepare_adapter_for_role(tool: str, spec: dict, role: str) -> dict:
             cmd.insert(-1 if cmd else 0, "--json")
         prepared["silence_timeout"] = 0
     elif tool == "grok":
-        cmd[:] = [part for part in cmd if part != "--always-approve"]
-        if "--permission-mode" in cmd:
-            pos = cmd.index("--permission-mode")
-            if pos + 1 < len(cmd):
-                cmd[pos + 1] = "plan"
-        else:
-            cmd.extend(["--permission-mode", "plan"])
-        if "--no-subagents" not in cmd:
-            cmd.append("--no-subagents")
+        # Grok มี CLI สองตระกูล:
+        # - subscription CLI ใช้ --cwd และรองรับ permission-mode/no-subagents
+        # - API CLI ใช้ -d/--directory และรองรับ --max-tool-rounds
+        cleaned = []
+        skip_next = False
+        for part in cmd:
+            if skip_next:
+                skip_next = False
+                continue
+            if part == "--permission-mode":
+                skip_next = True
+                continue
+            if part in {"--always-approve", "--no-subagents"}:
+                continue
+            cleaned.append(part)
+        cmd[:] = cleaned
+        if "--cwd" in cmd:
+            if "--no-plan" not in cmd:
+                prompt_pos = cmd.index("-p") if "-p" in cmd else len(cmd)
+                cmd[prompt_pos:prompt_pos] = ["--no-plan"]
+            if "--no-subagents" not in cmd:
+                prompt_pos = cmd.index("-p") if "-p" in cmd else len(cmd)
+                cmd[prompt_pos:prompt_pos] = ["--no-subagents"]
+        elif "--max-tool-rounds" not in cmd:
+            insert_at = cmd.index("-p") if "-p" in cmd else len(cmd)
+            cmd[insert_at:insert_at] = ["--max-tool-rounds", "0"]
     elif tool == "gemini":
         cmd[:] = [part for part in cmd if part not in ("--yolo", "-y")]
         if "--approval-mode" in cmd:
