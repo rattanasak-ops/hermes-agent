@@ -94,6 +94,29 @@ def test_normal_development_commands_pass(workspace, command):
     assert GATE.run(payload(workspace, "Bash", {"command": command})) == 0
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "sort -o src/app.py /etc/hosts",
+        "sort -osrc/app.py /etc/hosts",
+        "sort --output=src/app.py /etc/hosts",
+        "curl --output=src/app.py https://example.com",
+        "curl -osrc/app.py https://example.com",
+        "curl -OJ https://example.com/file",
+        "find . -fprint0 src/app.py",
+        "diff --output=src/app.py a b",
+        "ruff check --fix .",
+        "ruff check --fix-only .",
+        "ruff check --add-noqa .",
+        "ruff check --unsafe-fixes .",
+        "tsc --build",
+        "gh pr merge 1",
+    ],
+)
+def test_read_only_allowlist_blocks_write_or_mutating_flags(workspace, command):
+    assert GATE.run(payload(workspace, "Bash", {"command": command})) == 2
+
+
 @pytest.mark.parametrize("branch", ["main", "master", "develop", "development", "production", "prod"])
 def test_shared_or_production_branches_block_writes(tmp_path, monkeypatch, branch):
     home = tmp_path / "home"

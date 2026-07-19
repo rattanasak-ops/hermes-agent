@@ -491,7 +491,7 @@ def main() -> int:
     )
     install_hermes_allowlist(
         hermes_home / "shell-hooks-allowlist.json",
-        shlex.quote(str(hermes_hooks / "team-stop-gates.py")),
+        f"{shlex.quote(sys.executable)} {shlex.quote(str(hermes_hooks / 'team-stop-gates.py'))}",
         event="transform_llm_output",
     )
     print("ติดตั้ง Hook พื้นที่ปัจจุบันให้ Claude Code, Codex, Cursor และ Hermes Agent แล้ว")

@@ -18,6 +18,7 @@ def load_module(name, filename):
 
 relay_call = load_module("relay_call", "relay-call.py")
 gate_run = load_module("gate_run", "gate-run.py")
+relay_add_grok = load_module("relay_add_grok", "relay-add-grok.py")
 
 
 def load_relay_status():
@@ -807,6 +808,40 @@ def test_local_vendor_adapters_are_upgraded_to_portal_unless_explicitly_allowed(
 
     monkeypatch.setenv("AI_RELAY_ALLOW_LOCAL_CLI", "1")
     assert relay_call.prefer_portal_adapters(adapters) == adapters
+
+
+def test_resolve_grok_bin_prefers_local_subscription_cli(tmp_path, monkeypatch):
+    local_bin = tmp_path / ".local" / "bin" / "grok"
+    homebrew_bin = tmp_path / "homebrew" / "bin" / "grok"
+    local_bin.parent.mkdir(parents=True)
+    homebrew_bin.parent.mkdir(parents=True)
+    local_bin.write_text("#!/bin/sh\n", encoding="utf-8")
+    homebrew_bin.write_text("#!/bin/sh\n", encoding="utf-8")
+    monkeypatch.setattr(relay_call.Path, "home", lambda: tmp_path)
+    monkeypatch.setattr(relay_call.shutil, "which", lambda _name: str(homebrew_bin))
+
+    assert relay_call.resolve_grok_bin() == str(local_bin)
+
+
+def test_relay_add_grok_writes_absolute_local_grok_bin(tmp_path, monkeypatch):
+    local_bin = tmp_path / ".local" / "bin" / "grok"
+    local_bin.parent.mkdir(parents=True)
+    local_bin.write_text("#!/bin/sh\n", encoding="utf-8")
+    monkeypatch.setattr(relay_add_grok.Path, "home", lambda: tmp_path)
+
+    out = relay_add_grok.ensure_grok(tmp_path)
+    adapters = relay_add_grok.read_yaml(Path(out["adapters_path"]))
+
+    assert adapters["tools"]["grok"]["cmd"][0] == str(local_bin)
+
+
+def test_grok_noise_stderr_does_not_turn_short_success_into_auth():
+    stderr = "\n".join([
+        "\x1b[2m2026-07-19T02:49:01Z\x1b[0m \x1b[33m WARN\x1b[0m Failed to spawn MCP server: MCP server 'Notion': Auth required (non-interactive session; authenticate in TUI or set an Authorization header)",
+        "\x1b[2m2026-07-19T02:49:01Z\x1b[0m \x1b[33m WARN\x1b[0m MCP server spawn failed, removing from initializing set",
+    ])
+
+    assert relay_call.classify(0, "OK\n", stderr) == "ok"
 
 
 def test_extract_codex_final_output_ignores_progress_events():

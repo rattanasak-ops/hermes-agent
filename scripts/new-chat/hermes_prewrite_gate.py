@@ -41,10 +41,13 @@ SECRET_SUFFIXES = {".pem", ".key", ".p12", ".pfx", ".jks"}
 SECRET_FILENAMES = {"id_rsa", "id_ed25519", "id_ecdsa", "id_dsa"}
 SAFE_REDIRECT_TARGETS = {"/dev/null", "/dev/stdout", "/dev/stderr"}
 READ_ONLY_BINS = {
-    "rg", "grep", "find", "ls", "pwd", "test", "head", "tail", "cat", "sed", "awk",
-    "wc", "stat", "du", "df", "ps", "which", "diff", "sort", "uniq", "date", "jq",
-    "basename", "dirname", "realpath", "file", "gh", "curl", "env", "printenv",
+    "rg", "grep", "ls", "pwd", "test", "head", "tail", "cat",
+    "wc", "stat", "du", "df", "ps", "which", "uniq", "date", "jq",
+    "basename", "dirname", "realpath", "file", "env", "printenv",
+    "pytest", "ruff", "tsc",
 }
+PYTHON_READ_ONLY_MODULES = {"pytest", "py_compile", "compileall"}
+RUFF_WRITE_FLAGS = {"--fix", "--fix-only", "--add-noqa", "--unsafe-fixes"}
 NEUTRAL_BINS = {"export", "cd", "echo", "printf", "true", ":", "set", "unset"}
 BLOCKED_BINS = {
     "rm", "rmdir", "shred", "dd", "mkfs", "truncate", "tee", "chmod", "chown", "sudo",
@@ -59,12 +62,16 @@ GIT_BLOCKED_SUBCOMMANDS = {
     "filter-branch", "update-ref", "reflog",
 }
 GIT_PROTECTED_MUTATIONS = {"add", "commit", "push", "merge", "tag"}
+GIT_READ_SUBCOMMANDS = {
+    "status", "diff", "log", "show", "rev-parse", "ls-files", "grep", "describe", "remote",
+}
 WORKTREE_READ_ACTIONS = {"list", "status", "doctor"}
 PACKAGE_WRITE_ACTIONS = {
     "add", "install", "i", "remove", "rm", "uninstall", "update", "upgrade", "publish",
     "link", "unlink", "import", "patch", "deploy", "exec", "dlx", "create", "init",
 }
-SPEC_INTERVIEW_OWNER_ACTIONS = {"record-answer", "approve"}
+SPEC_INTERVIEW_OWNER_ACTIONS = {"record-answer", "approve", "waive"}
+SPEC_INTERVIEW_READ_ACTIONS = {"verify", "manifest"}
 SPEC_INTERVIEW_TOOL = Path(__file__).resolve().parents[1] / "spec-interview" / "spec_interview.py"
 MAX_OWNER_PROMPT_CHARS = 500
 BRANCH_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
@@ -343,6 +350,8 @@ def worktree_manager_ok(tokens: list[str]) -> bool | None:
 
 def git_segment_ok(tokens: list[str], branch: str, payload: dict | None = None) -> bool:
     args = tokens[1:]
+    if any("!" in item or item.startswith("alias.") for item in args):
+        return False
     if any(
         item == "-C"
         or item in {"--git-dir", "--work-tree", "--namespace"}
@@ -350,7 +359,18 @@ def git_segment_ok(tokens: list[str], branch: str, payload: dict | None = None) 
         for item in args
     ):
         return False
-    sub = next((item for item in args if not item.startswith("-")), "")
+    sub = ""
+    index = 0
+    while index < len(args):
+        item = args[index]
+        if item == "-c" and index + 1 < len(args):
+            index += 2
+            continue
+        if item.startswith("-"):
+            index += 1
+            continue
+        sub = item
+        break
     create_target = branch_creation_target(tokens)
     if create_target:
         return owner_requested_branch(payload, create_target)
@@ -363,6 +383,8 @@ def git_segment_ok(tokens: list[str], branch: str, payload: dict | None = None) 
     if sub == "branch":
         allowed = {"--show-current", "--list", "-l", "-a", "--all", "-r", "--remotes", "-v", "-vv"}
         return all(item.startswith("-") and item in allowed for item in args[1:])
+    if sub not in GIT_READ_SUBCOMMANDS:
+        return False
     if branch in PROTECTED_BRANCHES and sub in GIT_PROTECTED_MUTATIONS:
         return False
     return True
@@ -375,11 +397,51 @@ def package_segment_ok(tokens: list[str]) -> bool:
     return args[0].lower() not in PACKAGE_WRITE_ACTIONS
 
 
+def shell_c_command_index(tokens: list[str], start: int = 1) -> int | None:
+    """คืน index ของ command string หลัง -c / short flag cluster เช่น -lc; ไม่สับสนกับ --norc."""
+
+    index = start
+    while index < len(tokens):
+        item = tokens[index]
+        if item == "-c":
+            return index + 1 if index + 1 < len(tokens) else None
+        if item.startswith("-") and not item.startswith("--") and len(item) > 1 and "c" in item[1:]:
+            return index + 1 if index + 1 < len(tokens) else None
+        if item in {"--rcfile", "--init-file", "-o", "-O"} and index + 1 < len(tokens):
+            index += 2
+            continue
+        index += 1
+    return None
+
+
 def shell_segment_ok(tokens: list[str], branch: str) -> bool:
-    for index, item in enumerate(tokens[1:], start=1):
-        if item == "-c" or (item.startswith("-") and "c" in item[1:]):
-            return index + 1 < len(tokens) and bash_allowed(tokens[index + 1], branch)
-    return True
+    command_index = shell_c_command_index(tokens)
+    return command_index is not None and bash_allowed(tokens[command_index], branch)
+
+
+def shell_read_only_segment_ok(tokens: list[str], branch: str, payload: dict | None = None) -> bool:
+    command_index = shell_c_command_index(tokens)
+    return command_index is not None and bash_read_only_allowed(tokens[command_index], branch, payload)
+
+
+def read_only_bin_ok(first: str, tokens: list[str], *, strict: bool = False) -> bool | None:
+    if first in {"find", "curl", "sort", "diff"}:
+        return False
+    if first == "gh":
+        return False
+    if first == "tsc":
+        return "--noEmit" in tokens
+    if first == "ruff":
+        return len(tokens) >= 2 and tokens[1] == "check" and not any(
+            item in RUFF_WRITE_FLAGS for item in tokens[2:]
+        )
+    if strict and first == "pytest":
+        return False
+    if first in {"awk", "sed"}:
+        return False
+    if first in READ_ONLY_BINS:
+        return True
+    return None
 
 
 def segment_ok(segment: str, branch: str, payload: dict | None = None) -> bool:
@@ -418,24 +480,18 @@ def segment_ok(segment: str, branch: str, payload: dict | None = None) -> bool:
         return package_segment_ok(tokens)
     if first in {"pip", "pip3", "uv"} and any(item in PACKAGE_WRITE_ACTIONS for item in tokens[1:]):
         return False
-    if first == "find":
-        return not any(item in FIND_WRITE_FLAGS for item in tokens)
-    if first == "curl":
-        return not any(item in CURL_WRITE_FLAGS for item in tokens)
-    if first == "sed":
-        for item in tokens[1:]:
-            if item.startswith("--in-place"):
-                return False
-            if item.startswith("-") and item != "-" and not item.startswith("--") and "i" in item[1:]:
-                return False
-            if SED_WRITE_CMD.search(item):
-                return False
-        return True
-    if first in READ_ONLY_BINS:
-        return True
-    if first.startswith("python") and "-c" in tokens:
+    if first.startswith("python"):
+        if "-m" in tokens:
+            index = tokens.index("-m")
+            return index + 1 < len(tokens) and tokens[index + 1] in PYTHON_READ_ONLY_MODULES
         return False
-    return True
+    read_only_result = read_only_bin_ok(first, tokens)
+    if read_only_result is not None:
+        return read_only_result
+    action = _spec_interview_action(tokens)
+    if action in SPEC_INTERVIEW_READ_ACTIONS:
+        return True
+    return False
 
 
 def bash_allowed(command: str, branch: str = "", payload: dict | None = None) -> bool:
@@ -458,14 +514,94 @@ def bash_invokes_owner_intent(command: str) -> bool:
 
 
 def bash_invokes_spec_owner_record(command: str) -> bool:
+    lowered = command.lower()
+    if "from-hook" in lowered:
+        return True
+    if (
+        ("spec_interview.py" in lowered or "spec-interview" in lowered)
+        and any(action in lowered for action in SPEC_INTERVIEW_OWNER_ACTIONS)
+    ):
+        return True
+    parts = [part for part in SEGMENT_SPLIT.split(command) if part.strip()]
+    if len(parts) > 1:
+        return any(bash_invokes_spec_owner_record(part) for part in parts)
     try:
         tokens = shlex.split(command)
     except ValueError:
         return True
     for index, token in enumerate(tokens):
+        first = Path(token).name
+        if first in SHELL_BINS:
+            command_index = shell_c_command_index(tokens, index + 1)
+            if command_index is not None and bash_invokes_spec_owner_record(tokens[command_index]):
+                return True
+    for index, token in enumerate(tokens):
         if Path(token).name in {"spec-interview", "spec_interview.py"}:
-            return any(item in SPEC_INTERVIEW_OWNER_ACTIONS for item in tokens[index + 1 :])
+            tail = tokens[index + 1 :]
+            tail_text = " ".join(tail)
+            return (
+                "--from-hook" in tail
+                or any(item in SPEC_INTERVIEW_OWNER_ACTIONS for item in tail)
+                or "$" in tail_text
+                or "`" in tail_text
+            )
+    if "--from-hook" in tokens and any(item in SPEC_INTERVIEW_OWNER_ACTIONS for item in tokens):
+        return True
     return False
+
+
+def _spec_interview_action(tokens: list[str]) -> str:
+    for index, token in enumerate(tokens):
+        if Path(token).name in {"spec-interview", "spec_interview.py"}:
+            return next((item for item in tokens[index + 1 :] if not item.startswith("-")), "")
+        if resolve_loose(Path(token)) == resolve_loose(SPEC_INTERVIEW_TOOL):
+            return next((item for item in tokens[index + 1 :] if not item.startswith("-")), "")
+    return ""
+
+
+def segment_read_only_ok(segment: str, branch: str, payload: dict | None = None) -> bool:
+    segment = segment.strip()
+    if not segment:
+        return True
+
+    def check_substitution(match: re.Match) -> str:
+        inner = match.group(1) or match.group(2) or ""
+        return "__SUBST_OK__" if bash_read_only_allowed(inner, branch, payload) else "__SUBST_BAD__"
+
+    flattened = SUBSTITUTION.sub(check_substitution, segment)
+    if "__SUBST_BAD__" in flattened or "$(" in flattened or "`" in flattened:
+        return False
+    if not redirects_safe(flattened):
+        return False
+    try:
+        tokens = _unwrap(shlex.split(flattened))
+    except ValueError:
+        return False
+    if not tokens:
+        return True
+    first = Path(tokens[0]).name
+    if first in SHELL_BINS:
+        return shell_read_only_segment_ok(tokens, branch, payload)
+    if first in NEUTRAL_BINS:
+        return True
+    read_only_result = read_only_bin_ok(first, tokens, strict=True)
+    if read_only_result is not None:
+        return read_only_result
+    if first == "git":
+        args = tokens[1:]
+        sub = next((item for item in args if not item.startswith("-")), "")
+        return sub in {
+            "status", "diff", "log", "show", "rev-parse", "branch", "ls-files",
+            "grep", "describe", "remote", "config",
+        } and git_segment_ok(tokens, branch, payload)
+    action = _spec_interview_action(tokens)
+    if action in SPEC_INTERVIEW_READ_ACTIONS:
+        return True
+    return False
+
+
+def bash_read_only_allowed(command: str, branch: str = "", payload: dict | None = None) -> bool:
+    return all(segment_read_only_ok(part, branch, payload) for part in SEGMENT_SPLIT.split(command))
 
 
 def project_plan_id(root: Path) -> str:
@@ -585,10 +721,16 @@ def run(payload: dict) -> int:
             return block("ห้าม AI สร้างใบอนุญาตกิ่งแทนข้อความจากเจ้าของ")
         if bash_invokes_spec_owner_record(command):
             return block("ห้าม AI บันทึกคำตอบหรืออนุมัติสเปคแทนเจ้าของ")
-        if bash_hits_protected(command) and not bash_allowed(command, branch, payload):
+        if bash_hits_protected(command) and not bash_read_only_allowed(command, branch, payload):
             return block("คำสั่งพยายามแก้พื้นที่ Hook/Settings/เครื่องมือ Hermes")
         if not bash_allowed(command, branch, payload):
             return block("คำสั่งสร้าง/สลับพื้นที่ ติดตั้งของ ลบไฟล์ เขียนผ่าน shell หรือเป็นคำสั่งอันตราย")
+        plan_id, spec = spec_lifecycle(root)
+        if plan_id and spec is not None and not spec_approved(root, plan_id, spec):
+            if not bash_read_only_allowed(command, branch, payload):
+                return block(
+                    f"สเปค {plan_id} ยังไม่อนุมัติ; Bash ทำได้เฉพาะคำสั่งอ่านอย่างเดียวหรือ spec-interview verify/manifest"
+                )
         return 0
 
     targets = extract_targets(tool, tool_input, cwd)

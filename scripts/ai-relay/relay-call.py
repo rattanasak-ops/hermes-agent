@@ -265,7 +265,14 @@ STRONG_AUTH_RE = re.compile(r"you are not authenticated|organization has disable
 #  ทั้งที่งานหลักสำเร็จ — เคสจริง 2026-07-07: mcp.cloudflare.com token หมด แต่ codex ตอบงานปกติ)
 # หมายเหตุ (GPT-5 review): "warning:" เฉยๆ กว้างไป (จะกลืน "warning: not authenticated" จริง)
 # → จำกัดเป็นเฉพาะ warning เรื่อง skill-budget ของ codex ที่เจอจริงเท่านั้น
-NOISE_LINE_RE = re.compile(r"^\s*(hook:|mcp:|codex$|tokens used|warning: skill descriptions)|ERROR\s+rmcp::|AuthRequired\(AuthRequiredError", re.I)
+NOISE_LINE_RE = re.compile(
+    r"^\s*(?:\x1b\[[0-9;]*m)*"
+    r"(hook:|mcp:|codex$|tokens used|warning: skill descriptions|"
+    r".*WARN.*(?:plugin name collision|Failed to spawn MCP server|MCP server spawn failed|hook output truncated|hook failed)|"
+    r".*Auth required \(non-interactive session; authenticate in TUI or set an Authorization header\))|"
+    r"ERROR\s+rmcp::|AuthRequired\(AuthRequiredError",
+    re.I,
+)
 def _clean_stream(text):
     return "\n".join(l for l in (text or "").splitlines() if not NOISE_LINE_RE.search(l))
 
@@ -360,6 +367,16 @@ def resolve_codex_bin():
         return on_path
     fb = Path.home()/".codex"/"bin"/"codex"
     return str(fb) if fb.exists() else "codex"
+
+def resolve_grok_bin():
+    """เลือก Grok CLI ตัว subscription local ก่อน PATH เพื่อเลี่ยง Homebrew grok ที่เรียกคนละระบบ."""
+    for env in (os.environ.get("RELAY_GROK_BIN"), os.environ.get("XC_GROK_BIN")):
+        if env and Path(env).expanduser().exists():
+            return str(Path(env).expanduser())
+    for candidate in (Path.home()/".local"/"bin"/"grok", Path.home()/".grok"/"bin"/"grok"):
+        if candidate.exists():
+            return str(candidate)
+    return shutil.which("grok") or "grok"
 
 def prefer_portal_adapters(adapters: dict) -> dict:
     """บังคับ Claude/Codex/Grok ผ่าน AI Portal เว้นแต่ผู้ดูแลตั้งใจเปิด local CLI."""
@@ -781,6 +798,11 @@ def main():
         if ccmd and ccmd[0] == "codex":
             ccmd[0] = resolve_codex_bin()
             adapters["codex"] = {**adapters["codex"], "cmd": ccmd}
+    if "grok" in adapters:
+        gcmd = list(adapters["grok"].get("cmd", []))
+        if gcmd and gcmd[0] == "grok":
+            gcmd[0] = resolve_grok_bin()
+            adapters["grok"] = {**adapters["grok"], "cmd": gcmd}
     accounts = {**DEFAULT_ACCOUNTS, **load_yaml(cfg_dir(cwd)/"accounts.yaml")}
     limits = {**DEFAULT_ACCOUNTS["limits"], **(accounts.get("limits") or {})}
     cd_cfg = {**DEFAULT_ACCOUNTS["cooldown"], **(accounts.get("cooldown") or {})}

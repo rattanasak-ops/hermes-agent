@@ -225,6 +225,16 @@ def test_team_hook_installer_adds_current_workspace_gate_to_four_apps(tmp_path):
     assert any(row.get("event") == "pre_tool_call" for row in allowlist["approvals"])
     assert any(row.get("event") == "pre_llm_call" for row in allowlist["approvals"])
     assert any(row.get("event") == "transform_llm_output" for row in allowlist["approvals"])
+    transform_command = next(
+        line.split("command:", 1)[1].strip()
+        for line in hermes_config.splitlines()
+        if "team-stop-gates.py" in line and "command:" in line
+    )
+    assert any(
+        row.get("event") == "transform_llm_output"
+        and row.get("command") == transform_command
+        for row in allowlist["approvals"]
+    )
 
 
 def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:

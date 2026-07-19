@@ -21,6 +21,7 @@ SCHEMA = "hermes-spec-interview-evidence-v1"
 PLAN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,80}$")
 CHANNEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,80}$")
 DIFF_HASH = re.compile(r"^[a-f0-9]{64}$")
+OWNER_COMMANDS = {"record-answer", "approve", "waive"}
 
 
 def fail(message: str, code: int = 2) -> int:
@@ -80,6 +81,14 @@ def repo_key(root: Path) -> str:
 def evidence_dir(repo: Path, plan_id: str) -> Path:
     root = git_root(repo)
     return hermes_home() / "spec-evidence" / repo_key(root) / clean_plan_id(plan_id)
+
+
+def require_canonical_tool(repo: Path) -> None:
+    root = git_root(repo)
+    expected = (root / "scripts" / "spec-interview" / "spec_interview.py").resolve()
+    current = Path(__file__).resolve()
+    if expected.exists() and current != expected:
+        raise ValueError("owner action ต้องรันผ่าน spec_interview.py canonical ของ repo เท่านั้น")
 
 
 @contextmanager
@@ -345,6 +354,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         repo = Path(args.repo).expanduser()
         plan_id = clean_plan_id(args.plan_id)
+        if args.command in OWNER_COMMANDS:
+            require_canonical_tool(repo)
         if args.command == "record-question":
             result = write_record(repo, plan_id, "question", args.channel, args.question)
         elif args.command == "record-answer":
