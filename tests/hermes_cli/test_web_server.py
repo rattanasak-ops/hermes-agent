@@ -112,12 +112,14 @@ class TestWebServerEndpoints:
 
         import hermes_state
         from hermes_constants import get_hermes_home
+        from hermes_cli.csrf import generate_csrf_token
         from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
         monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
 
         self.client = TestClient(app)
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
+        self.client.headers["X-CSRF-Token"] = generate_csrf_token(_SESSION_TOKEN)
 
     def test_get_status(self):
         resp = self.client.get("/api/status")
@@ -522,9 +524,11 @@ class TestConfigRoundTrip:
             from starlette.testclient import TestClient
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
+        from hermes_cli.csrf import generate_csrf_token
         from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
         self.client = TestClient(app)
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
+        self.client.headers["X-CSRF-Token"] = generate_csrf_token(_SESSION_TOKEN)
 
     def test_get_config_no_internal_keys(self):
         """GET /api/config should not expose _config_version or _model_meta."""
@@ -658,12 +662,14 @@ class TestNewEndpoints:
 
         import hermes_state
         from hermes_constants import get_hermes_home
+        from hermes_cli.csrf import generate_csrf_token
         from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
         monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
 
         self.client = TestClient(app)
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
+        self.client.headers["X-CSRF-Token"] = generate_csrf_token(_SESSION_TOKEN)
 
     def test_get_logs_default(self):
         resp = self.client.get("/api/logs")
