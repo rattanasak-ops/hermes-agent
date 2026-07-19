@@ -1,408 +1,74 @@
-# Plan — BRM (Branch Remediation and Main Integration)
+# Plan — SHORTCUT · ปิด Shortcut กลางรุ่น 2026.07.19
 
-> plan_id: BRM · เจ้าของอนุมัติ 2026-07-18: “ให้ทำตามแผนได้เลย โดยใช้ Use Continue”
-> task: `BRM-P1-I1` · branch: `task/codex/BRM-P1-I1-branch-remediation-main-integration`
-> base: `origin/main` @ `d0cf379ca15f63510eb48cdb855bb20e405786ac`
-> หลักบังคับ: ย้ายเฉพาะงานใหม่จริงจากฐานล่าสุด · ห้ามรวมสาขาเก่าทั้งก้อน · ห้ามทับงานค้างใน worktree อื่น · ห้ามลบสาขาทันที
-> owner execution override: 2026-07-18 เจ้าของสั่ง “ยกเลิก use ai relay ใช้ codex ทำงานให้จบเลย” · งาน BRM ที่เหลือให้ Codex ทำตรงใน worktree นี้ · ไม่เรียก Relay เพิ่ม · ด่านตัดสินใช้ผลทดสอบและ Git จริง
+> memory-schema: v1.2 · **plan_id: SHORTCUT**
+> lifecycle: active
+> progress: 28/29 = 96.6%
+> รุ่นส่งมอบ: `2026.07.19-5` สืบต่อจากงานรุ่น `2026.07.19-2` เพราะ `main` มีรุ่น `-4` อยู่ก่อนงานแก้ต้นเหตุ
 
-## BRM-P1 — ตรวจสาขาและจำแนกงาน · สถานะ: ตรวจแล้ว
+## เป้าหมาย
 
-- **BRM-P1-I1** นับและจำแนก local/origin/VPS branches, worktrees, dirty files และงานที่ main มีแล้ว
-- verify: ตารางตรวจสาขา + หลักฐาน commit/patch-equivalence + รายการงานใหม่จริงและรายการห้ามย้าย
+ปิด Shortcut กลางให้ผ่านด่านรวมโค้ดจริง เข้า `main` ติดตั้งบน Mac และ VPS โดยไม่คัดลอกทั้ง Obsidian vault พร้อมกำจัดต้นเหตุที่ทำให้ AI พยายามสร้าง Worktree และทำให้ระบบแผนกลางอ่านได้เพียงแผนเดียวต่อไฟล์
 
-## BRM-P2 — เตรียมพื้นที่รวมงานจาก main ล่าสุด · สถานะ: เสร็จ 2/2
+## กติกาเหล็ก
 
-- **BRM-P2-I1** เปิด registered worktree + writer lease + write permit จาก `origin/main`
-- **BRM-P2-I2** บันทึกขอบเขตและข้อห้ามของเฟสให้แชทถัดไปอ่านต่อได้
-- zone: A · verify: `hermes-new-chat status` = `NEW_CHAT_READY` + `WTL_READY`
+1. ใช้ Git root และกิ่งที่เปิดอยู่เท่านั้น
+2. AI ห้ามสร้าง สลับ ย้าย หรือลบ Worktree/กิ่งเอง
+3. ห้ามลดเพดานด่านรวมโค้ดเพื่อให้ผ่าน
+4. AI Relay ใช้ได้เมื่อเจ้าของสั่งตรงเท่านั้น
+5. สถานะและเปอร์เซ็นต์ต้องอ้างหลักฐานจากเครื่อง, GitHub หรือไฟล์แผนที่ตรวจได้
 
-## BRM-P3 — ย้ายงานใหม่จริงและตรวจรายกลุ่ม
+## SHORTCUT-P1 — หาต้นเหตุ BLOCKED_DO_NOT_MERGE · 6/6 = 100%
 
-- **BRM-P3-I1** STD-I2: เสร็จ · ย้าย project-dir และ owner rules รุ่นใหม่ โดยไม่เอางานเก่าที่ main มีแล้ว · ทดสอบเฉพาะส่วน 2/2 และยืนยันซ้ำด้วย Python กลาง
-- **BRM-P3-I2** BWT V2: เสร็จ · badword command center + executable hook · ทดสอบเฉพาะส่วน 39/39 และยืนยันซ้ำด้วย Python กลาง
-- **BRM-P3-I3** UAG: เสร็จ · plugin-only + catalog + data + 6 tools + Skill + ชุดแจกทีมที่เนื้อหาเหมือนต้นฉบับทุกไบต์ · ทดสอบ Agent Center/Skill/การค้นพบปลั๊กอิน/ชุดแจกทีม 159/159 และตรวจรูปแบบ Skill 2/2
-- **BRM-P3-I4** NCR: ตรวจคัดแล้ว · commitเดิมมีใน main แบบเนื้อหาเท่ากัน 2/2 · ไม่ย้าย commit ซ้ำ · ประเมินเฉพาะช่องว่างที่ยังไม่มีใน `origin/main` ด้วย Git/test จริง
-- **BRM-P3-I5** Fable memory: เสร็จ · ไม่ย้าย commit local-only ที่ล้าสมัย; เพิ่ม `DEC-AIR-001` + session log ปัจจุบันใน commit `eda5faf51`
-- zone: A · verify: `scripts/run_tests.sh` ตามขอบเขต + gate-run รายกลุ่ม + review diff เทียบ `origin/main`
+- **SHORTCUT-P1-I1** ยืนยันว่ากิ่งเดิมถูกใช้ซ้ำหลัง squash merge 4 รอบ ทำให้ commit เก่าถูกนับซ้ำ
+- **SHORTCUT-P1-I2** ยืนยันว่าด่านเดิมนับ `merge-base..HEAD` ดิบ จึงรวม merge/sync และงานที่เข้า main แบบ squash แล้ว
+- **SHORTCUT-P1-I3** ยืนยันว่า Close Chat ก่อน rollout เพิ่มไฟล์ความจำ 4 ไฟล์ ทำให้ 27 ไฟล์กลายเป็น 31 เกินเพดาน 30
+- **SHORTCUT-P1-I4** พบคำสั่งขัดนโยบายสร้าง Worktree โดยตรง 9 จุดใน Shortcut กลาง
+- **SHORTCUT-P1-I5** พบตัวตรวจเดิมเห็นเพียง 18 ไฟล์และ 3 วลี จึงรายงานเขียวลวงทั้งที่ไฟล์อ้างอิงยังขัดกัน
+- **SHORTCUT-P1-I6** พบ Hook เดิมไม่กันคำตอบว่า AI จะสร้าง Worktree และตัวติดตั้งทีมไม่ได้ติดตั้ง `save-git` จริง
 
-## BRM-P4 — ประเมิน upstream v0.17.0 แยกเฟส
+## SHORTCUT-P2 — ซ่อมด่านและรวมชุดงานเดิม · 5/5 = 100%
 
-- **BRM-P4-I1** ประเมินแล้ว · ต่าง 3,519 ไฟล์ (+639,352/-78,235) · upstream เดินหน้า 3,215 commit แต่ขาด custom main 164 commit · ห้ามรวมทั้งก้อนรอบนี้ · custom dashboard fix แยกได้และ test บนสาขาต้นทางผ่าน 4/4; เตรียมใบพอร์ตลงฐาน main แล้ว · Relay ใช้ไป 2/3 รอบและยังเขียนไฟล์ 0 ไฟล์ (รอบล่าสุดขาด AI Portal token สำหรับ Codex; Grok/Gemini/Ollama ไม่พร้อม)
-- **BRM-P4-I2** รวมเฉพาะเมื่อ test/build/ภาพจริง (ถ้ามี UI) ผ่านบนสาขาอัปเกรดเฉพาะ
-- zone: B · external_effect: เปลี่ยนฐาน upstream ขนาดใหญ่ · ต้องยืนยันขอบเขตอีกครั้งถ้าผลประเมินต่างจากแผนที่อนุมัติ
+- **SHORTCUT-P2-I1** ด่านหารอยต่อจาก PR ล่าสุดของกิ่งเดียวกัน และไม่นับ merge commit เป็นงานใหม่
+- **SHORTCUT-P2-I2** ด่านคำนวณจำนวนไฟล์จากผลรวมเสมือนกับ `main` แทนผลต่างสะสมดิบ
+- **SHORTCUT-P2-I3** รักษาเพดานเดิม 5 commit/30 ไฟล์ และเพิ่มชุดทดสอบกันปัญหาซ้ำ
+- **SHORTCUT-P2-I4** ด่านจริงผ่าน 5/5 commit และ 29/30 ไฟล์; ชุดตรวจ 209/209 ผ่าน
+- **SHORTCUT-P2-I5** PR #84 รวมแบบ merge commit เข้า `main` ที่ `36085b1f6bbfa32fc0ce2853c578599ccd2b3b16`
 
-### หลักฐานต่อเนื่องหลัง Codex App restart รอบล่าสุด
+## SHORTCUT-P3 — แก้ต้นเหตุ Worktree ทุกทางที่โหลดจริง · 5/5 = 100%
 
-- Git: branch รวมงานยังนำ `origin/main` 9 commit · worktree สะอาด 0 ไฟล์ · `git diff --check` ผ่าน
-- ทดสอบซ้ำด้วย Python กลางที่มี pytest-xdist: UAG + plugin discovery 173/173 และ STD + BWT 41/41 รวม 214/214
-- ตรวจรูปแบบกุญแจที่พบบ่อยใน diff ใหม่ 4 กลุ่ม: พบ 0 รายการ
-- Relay: ยุติการเรียกเพิ่มตามคำสั่งเจ้าของ 2026-07-18 · หลักฐานเดิมเก็บไว้เพื่อสอบย้อนหลัง แต่ไม่เป็นตัวกั้น BRM อีก
-- Full suite วินิจฉัย: ผ่าน 24,815 · ล้ม 648 · ข้าม 139 · setup error 25 จาก 25,627 รายการ; กลุ่มล้มตัวอย่างอยู่ในไฟล์ฐาน `main` ที่ BRM ไม่ได้แก้ และมี prompt เลือก model แทรกระหว่างเทสต์ จึงยังใช้เป็น closeout gate ไม่ได้
-- NCR recovery: รอบ 1 ถูกยุติหลัง Gemini/Ollama ค้างเพื่อกัน Codex App ดูเหมือนหยุดตอบสนอง และเผย bug ว่า Ctrl-C ทิ้ง `now.json`; รอบ 2 จบตามปกติ ล้าง `now.json` แล้ว แต่ Codex/Grok ขาด Portal token, Gemini timeout และ Ollama ไม่เปลี่ยน workspace
+- **SHORTCUT-P3-I1** แก้สัญญา Worktree, AI Pair, AI Relay, Viber Structure, Viber Audit, Save Git, Continue และ Close Chat ให้ยึดพื้นที่ปัจจุบัน
+- **SHORTCUT-P3-I2** แก้ Skill ที่โหลดอัตโนมัติของ Codex, Claude, OpenCode และคนทำงาน Kanban ไม่ให้สร้าง Worktree
+- **SHORTCUT-P3-I3** ตัวตรวจครอบ 57 ไฟล์อ้างอิง, 92 ไฟล์นโยบายใน repo และความตรงกัน 59 ไฟล์; คำสั่งสร้างอัตโนมัติ 0/33
+- **SHORTCUT-P3-I4** Hook บล็อกแผนตอบว่าจะสร้าง Worktree และคำสั่งที่คัดลอกไปรันได้
+- **SHORTCUT-P3-I5** ตัวติดตั้งทีมติดตั้ง `save-git` จริง; PR #85 รวมเข้า `main` ที่ `026f69682d79d2065a981dd72ddf4c90faff739f`
 
-### คำสั่งยกเลิก Relay และตัวกั้น Codex ตรง · 2026-07-18
+## SHORTCUT-P4 — ติดตั้งและตรวจ Mac · 4/4 = 100%
 
-- เจ้าของสั่งชัด: “ยกเลิก use ai relay ใช้ codex ทำงานให้จบเลย” · จึงยุติการเรียก AI ตัวอื่นและไม่รอ AI Portal
-- Codex ตรวจพื้นที่จริงแล้ว: `NEW_CHAT_READY` + `WTL_READY` · branch ตรง · ไฟล์ค้างก่อนเริ่ม 0 ไฟล์ · นำ `origin/main` 10 commit
-- Codex เขียนไฟล์ควบคุม `.project/plan.md` ได้ แต่การเพิ่ม `skills/agent-center/` และ `team-shortcuts/payload/skills/agent-center/` ถูก hook ที่ติดตั้งจริงปฏิเสธด้วยข้อความว่างานโค้ดต้องผ่าน `relay-call --role code`
-- ด่านที่บังคับอยู่: `~/.codex/hooks/enforce-new-chat-relay.py` → `~/.local/bin/hermes-prewrite-gate` → `~/.hermes/new-chat-tools/scripts/new-chat/hermes_prewrite_gate.py`
-- เจ้าของอนุมัติให้พักด่านนี้ชั่วคราวเพื่อทำ BRM โดยตรง · สำรอง `hooks.json` และสคริปต์ด่านก่อนแก้ · ลง Skill/ชุดแจกทีมและทดสอบสำเร็จแล้ว · ต้องคืนไฟล์จากสำเนาและตรวจ hook doctor ก่อนส่งงาน
+- **SHORTCUT-P4-I1** ติดตั้งรุ่น `2026.07.19-5` สำเร็จ
+- **SHORTCUT-P4-I2** Shortcut 33/33, Hook 6/6 และ MW 7/7 ผ่าน
+- **SHORTCUT-P4-I3** workspace response 4/4 และ phase autonomy 4/4 ผ่าน
+- **SHORTCUT-P4-I4** current workspace prewrite 23/23 ผ่าน
 
-## BRM-P5 — ส่งเข้า main และจัดคิวเก็บสาขา · สถานะ: 3/3 งานส่งเข้า main = 100% · เก็บประวัติแบบไม่ลบตาม WTL
+## SHORTCUT-P5 — ติดตั้งและตรวจ VPS · 4/4 = 100%
 
-- **BRM-P5-I1** เสร็จ · `git diff --check` ผ่าน · ตรวจชุดทดสอบบนฐานล่าสุดผ่าน **352/352** · ไม่แตะ secret
-- **BRM-P5-I2** เสร็จ · PR #80 และ #81 รวมเข้า `main` สำเร็จ แล้วส่งสัญญาทดสอบแก้ไขขึ้น `main` · `main` และ `origin/main` ตรง SHA `ae230bbd5ee55c18eb6a12f9dd6ae883fe67dc81`
-- **BRM-P5-I3** เสร็จในขอบเขตความปลอดภัย · ตรวจ worktree 18 รายการแล้ว; เก็บรายการที่ dirty/ไม่รู้ owner ไว้ 18/18 และไม่ลบข้อมูลของแชทอื่น
-- zone: B · external_effect: push/merge/cleanup · verify: SHA ตรง origin + test 174/174 และ 218/218 + worktree audit 18/18
+- **SHORTCUT-P5-I1** ตรวจเส้นทางตาม staff id + project แล้วพบทะเบียนเส้นทาง VPS ขาดจริง จึงไม่ใช้ Worktree ของผู้อื่นแทน
+- **SHORTCUT-P5-I2** ดาวน์โหลดเฉพาะ archive ของ `main` ไปโฟลเดอร์ชั่วคราวและลบเมื่อจบ
+- **SHORTCUT-P5-I3** ติดตั้งเฉพาะ payload/Skill/เครื่องมือกลาง ไม่คัดลอกทั้ง vault และไม่ติดตั้ง AI Relay
+- **SHORTCUT-P5-I4** VPS ผ่าน Shortcut 33/33, Hook 6/6, MW 7/7 และพบ `save-git`
 
-### BRM-P5 closeout evidence · 2026-07-19
+## SHORTCUT-P6 — ซ่อมระบบแผนกลาง · 4/4 = 100%
 
-- `main`, worktree ปิดงาน และ `origin/main` ชี้ SHA เดียวกัน: `ae230bbd5ee55c18eb6a12f9dd6ae883fe67dc81`
-- PR #80 และ #81 รวมสำเร็จ; หลัง PR #81 มี test contract เดิม 1 จุดไม่ตรงกับด่านป้องกัน จึงแก้ชุดทดสอบให้ยืนยันว่าต้องใช้ `--force` ก่อนลบไฟล์ปลายทางค้าง
-- ทดสอบบนฐานล่าสุด: `352 passed in 18.72s`
-- ตรวจ `git status --short --branch` ได้ `main...origin/main` และไม่มีไฟล์ค้าง; `git diff --check` ไม่พบปัญหา
+- **SHORTCUT-P6-I1** แยก BRM/QAQC/MW/DSU/SPEC/UAG เป็นหนึ่ง `plan_id` ต่อหนึ่งไฟล์โดยรักษาเนื้อหาเดิม
+- **SHORTCUT-P6-I2** สร้างดัชนีรวม WTL/GRD/JARVIS และกำหนด active เพียง SHORTCUT
+- **SHORTCUT-P6-I3** เพิ่มด่านตรวจ active 1/1, plan_id ต่อไฟล์ และพาธที่ลงทะเบียน
+- **SHORTCUT-P6-I4** อัปเปอร์เซ็นต์ทั้ง 10 แผนจากหลักฐานล่าสุด
 
-## ข้อห้ามเฉพาะ BRM
+## SHORTCUT-P7 — กระจายเครื่องทีมรายบุคคล · 0/1 = 0%
 
-- ห้าม cherry-pick `cd8e8a622` ทั้งก้อน และห้ามนำ `.project/tmp_repair_gate_helper_test.py` กลับมา
-- ห้าม merge `control_webengine_flow`, `fix/mw-flow-station-gate` หรือ `upgrade-audit/v0170` ทั้งก้อน
-- ห้าม commit `.codex/hooks.json` และห้ามแตะ secret/`.env*`
-- ห้าม commit UAG diff ที่ถอดเพดานจำนวน worktree
-- ห้ามลบ branch/worktree ก่อนสถานะ merged + cleanup dry-run + quarantine ตาม WTL
+- **SHORTCUT-P7-I1** ติดตั้งและตรวจ notebook ของพนักงานแต่ละเครื่อง — `OWNER_INPUT_REQUIRED: TEAM_MACHINE_ACCESS` เพราะไม่มีรายชื่อ host/ช่องทาง SSH ที่เข้าถึงได้จากเครื่องนี้; ชุดติดตั้งบน `main` พร้อมใช้งานแล้ว
 
----
+## เกณฑ์ปิดแผน
 
-# Plan — QAQC · ระบบตรวจคุณภาพงาน "Use QA QC" (อนุมัติ 2026-07-10 · เจ้าของตอบครบ 3 คำถามในแชท Fable)
-
-> memory-schema: v1.2 · **plan_id: QAQC** · จาก Use Act-As v3.1 (Fable 5 ออกแบบ · เจ้าของสั่งตรงให้ Fable เป็นสมองแผนนี้ 2026-07-10)
-> แผนก่อนหน้า **GRD จบครบ 4 เฟส merged แล้ว** — เนื้อเต็ม + คิว GRD-P5..P9 ย้ายไป `.project/plan-grd.md` (ห้ามลบ · จะเริ่มคิวไหนให้ยกกลับมาไฟล์นี้ก่อน เพราะ plan-anchor อ่านไฟล์นี้ไฟล์เดียว)
-> ทีม: **Fable 5 = สมองออกแบบ/สังเคราะห์/เขียนเอกสาร** · **Grok + Codex = กรรมการตรวจข้ามค่าย** (ผ่าน relay-call) · **เจ้าของ = อนุมัติผลแต่ละด่าน + push คลัง + กด merge**
-> branch: `feature/use-qa-qc` (แตกจาก origin/main `f14fefca1`) · งานหลายเฟส = **1 PR เดียว** · ไฟล์ shortcut อยู่คลัง Obsidian (คนละ repo — เจ้าของ push เอง)
-
-## กติกาเหล็กของแผนนี้ (สืบทอดจาก GRD ครบทุกข้อ)
-
-1. **เลขงานขึ้นต้น `QAQC-`** และต้องมีจริงในไฟล์นี้ · เลขที่ไม่มี = ห้ามทำ (งานจรใช้ `--no-plan` ให้เห็นใน ledger)
-2. **กลับมาอ่านแผนก่อนลงมือทุกครั้ง** หลังตอบคำถามแทรก/สลับงาน
-3. **verified = แถว gate-run เท่านั้น** · งานเอกสาร/prompt (ไม่มี test อัตโนมัติ) = `manual_verified` + เจ้าของยืนยัน ตามกฎ no_gate ของ relay
-4. ใบสั่งงานฝังข้อความเฟส + ข้อห้ามจากไฟล์นี้ลงไปในตัว
-5. ห้ามแตะ: `scripts/jarvis-voice/` · `design-system-standard-v2/` · `.claude/launch.json` · `.hermes/**` · `.env*`/secret · **Master ViberQC = อ่านอย่างเดียวเด็ดขาด ห้ามแก้ไฟล์ใดในโปรเจกต์นั้น**
-
-## โจทย์จากเจ้าของ (สัญญางาน — เช็กครบก่อนปิดแผน)
-
-- shortcut `Use QA QC`: เมนู **2 แกน** — แกนช่วงงาน (25% / 50% / 75% / 100%) × แกนประเภทตรวจ · **เลือกหลายหมวดพร้อมกันได้** · ทุกเมนูมีคำแนะนำภาษา user · **Scan All อยู่ท้ายสุด + ด่านยืนยัน + ประมาณการค่าใช้จ่าย** (เจ้าของไม่อยากให้ใช้ แต่ต้องมี)
-- AI 7 ตัว: เปิดใช้ก่อน **Opus 4.8 / Codex / Grok** · ช่องเสียบอนาคต **Gemini / DeepSeek / Qwen / GLM** — เพิ่ม AI = แก้ config ไม่แก้ prompt
-- หัวข้อตรวจครบแบบ **Full System**: รวมหัวข้อเฉพาะของ AI ที่ยังไม่เปิดใช้ด้วย · **ไม่ซ้ำ-ไม่หาย** พิสูจน์ด้วยตัวเลข N/M ต่อแหล่ง (ไฟล์วิจัย Grok / ViberQC / มาตรฐานโลก)
-- ตัวไหลงาน: Opus สแกนต้น → AI ตัวที่ 2 สแกนคู่ตรวจซึ่งกันและกัน → **ตาราง severity** (Critical/High/… + comment ผลกระทบการแก้ · เสี่ยงสูง = แยกไปเฟสท้ายสุด) → เขียน `.project/qaqc-scan.md` ก่อนแก้ → แตก Phase/Issue ส่ง **Use AI Relay** → AI ตัวที่ 3 แก้โค้ด → AI ตัวที่ยังไม่ถูกใช้รีวิว (มี 3 ตัว = กติกาสำรอง: คนรีวิวห้ามซ้ำคนแก้)
-- เอกสารทุกชิ้นเขียนแบบ **AI อ่านต่อ-ดัดแปลงได้** (แยก "หลักการ" ออกจาก "ค่าเฉพาะโปรเจกต์") · ผล P1 ต้องเอาไปใช้**ปรับปรุง Master ViberQC** ต่อได้
-- งบ: เจ้าของปล่อยเพื่อคุณภาพ แต่ต้องรายงาน**ความคุ้มค่าจริง**ใน P5
-
-## QAQC-P1 — คลังหัวข้อครบ ไม่ซ้ำ ไม่หาย (ตารางแม่) · สถานะ: เสร็จ 2026-07-10 (รอเจ้าของอ่านอนุมัติ = manual_verified) — ผลอยู่ `QAQC-Master-Taxonomy.md` + `ViberQC-Diagnosis-2026-07-10.md` ในคลัง · บัญชีกันหาย S1 369/369 · S1b 34/34 · S2 747/747 · S3 13/13
-
-- **QAQC-P1-I1** สกัดหัวข้อตรวจทั้งหมดจากไฟล์วิจัย Grok — `/Users/rattanasak/ObsidianVault/HermesAgent/20-Departments/Security/AI-Security-Testing/Sources/2026-07-10-ai-security-master-source.md` (1,809 บรรทัด) · ทุกหัวข้อ + AI ที่เก่ง + เครื่องมือที่ต้องมี + อ้างบรรทัด · ห้ามตัดทอน
-- **QAQC-P1-I2** สกัด + วินิจฉัย **Master ViberQC** (อ่านอย่างเดียว): หมวด/checklist ที่ออกแบบไว้ · จุดที่กระจัดกระจาย/ซ้ำซ้อน (เจ้าของวินิจฉัยว่ายังไม่รัดกุม — หาหลักฐาน) · ของดีที่ควรเก็บ
-- **QAQC-P1-I3** ค้นมาตรฐานโลก (เน็ต/GitHub/GitLab): ISTQB test types · OWASP ASVS/Top 10 · ISO/IEC 25010 · production-readiness / launch checklist ชั้นนำ · อ้าง URL ทุกแหล่ง
-- **QAQC-P1-I4** Fable สังเคราะห์ **ตารางแม่**: หัวข้อ × หมวด × ช่วงงานที่เหมาะ (25/50/75/100%) × AI หลัก/สำรอง × แหล่งอ้าง + **ตัวเลขกันหาย N/M ต่อแหล่ง** → ไฟล์ในคลัง Obsidian (โฟลเดอร์ AI-Security-Testing)
-- verify: ไฟล์ตารางแม่ + N/M ครบ 3 แหล่ง + เจ้าของอ่านอนุมัติ (manual_verified)
-
-## QAQC-P2 — ตาราง AI ประจำหมวด + สายสำรอง · สถานะ: I1+I2 เสร็จ (ฝังใน taxonomy §2/§4) · I3 ตรวจด้วย Codex 1/1 = 100% และแก้ตัวเลขแหล่งข้อมูลแล้ว · การรับรองจากผู้ตรวจต่างค่าย 2 ตัว = 0/2 ยังไม่ปิด
-
-- **QAQC-P2-I1** ต่อหมวด: AI หลักสแกน / สำรอง / คนแก้ / คนรีวิว + กติกาเมื่อโดนลิมิต/บัญชีหมดอายุ (สลับตามสาย) + ช่องเสียบ AI อนาคต — โครงแบบ accounts.yaml ของ relay
-- **QAQC-P2-I2** กติกาสำรองช่วง 3 ตัว: **คนรีวิวห้ามซ้ำคนแก้** (กฎเหล็กขั้นต่ำ) · gate-run เป็นผู้ตัดสินจริงเสมอ ไม่ใช่ปากรีวิวเวอร์
-- **QAQC-P2-I3** ตรวจร่าง P1+P2 ด้วย Codex แบบอ่านอย่างเดียวแล้ว 1/1 รอบ · พบและแก้ตัวเลขแหล่งข้อมูล S1b ในคลังกลาง · เงื่อนไขผู้ตรวจข้ามค่าย Grok + Codex ผ่าน `relay-call` ยังเหลือ 0/2 เพราะรอบนี้ยกเลิกสาย relay ตามคำสั่งเจ้าของ
-- **QAQC-P2-I4** [เพิ่ม 2026-07-10 — งานซ่อมที่ขวางกรรมการ] แก้ quota ปลอมใน `relay-call.py classify()`: QUOTA_RE จับคำ quota/rate limit ใน "เนื้อคำตอบยาว" ของงานที่พูดถึงเรื่องโควต้า → ใส่ตัวกันความยาว ≤250 แบบเดียวกับ auth (บทเรียน 2026-07-05) ทั้งฝั่ง exit 0 และ exit ≠ 0 + เทสต์กันถอยหลัง 2 ตัว
-  - ผู้ทำ: Fable (ข้อยกเว้นไก่-ไข่: relay พังจนใช้ relay สั่งแก้ตัวเองไม่ได้ — คำตอบของ coder จะโดนบั๊กเดียวกันจับทิ้ง) · ส่ง Codex ตรวจ diff ตามด่านปกติก่อนปิด
-  - verify: `./venv/bin/python -m pytest scripts/ai-relay/tests/ -q` → 68 passed / 1 failed (ตัวที่ failed = `test_run_once_returns_timeout_mark_on_timeout` **แดงบนโค้ดเดิมก่อนแก้ พิสูจน์ด้วย git stash แล้ว** — งานซ่อมแยกรอบ)
-  - พบพ่วง: `~/.local/bin/relay-call` เป็น symlink ไปสำเนาพนักงาน `~/.hermes/ai-relay-tools` รุ่นก่อน GRD (ไม่มี plan-anchor/--no-plan) → หลัง merge ต้องรัน relay-setup.sh อัปสำเนา · grok CLI v1.0.1 ตัด flag เก่า → แก้ adapters.yaml แล้ว · grok headless ต้องมี API key (งานคนของเจ้าของ)
-- verify: ผลตรวจ 2 ค่ายแนบในแชท + แก้ครบข้อ blocking (manual_verified)
-
-## QAQC-P3 — ตัว prompt `Use QA QC` · สถานะ: **เปิดใช้แล้ว v1.1 active (คำสั่งเจ้าของ 2026-07-10 "จบให้ก่อน ใช้ Fable ไม่รอ Codex/Grok")** · I3 กรรมการต่างค่าย = เลื่อนเป็น hardening หลังใช้งาน (ไม่ขวาง) · Fable ตรวจปิดเอง + อุดข้อ 5f โหมด AI ตัวเดียว
-
-- **QAQC-P3-I1** เมนู 2 แกน + เลือกหลายหมวด + คำแนะนำภาษา user ("งานอยู่ช่วงไหน ควรตรวจอะไร") + Scan All ด่านยืนยัน
-- **QAQC-P3-I2** ตัวไหลงานเต็ม (สแกนคู่ → ตาราง severity → qaqc-scan.md → Relay → แก้ → รีวิว) + **ตัวประหยัด 3 ชั้น**: (ก) เครื่องมือฟรีรันก่อน AI อ่านผลสรุป (ข) ตัวสแกนที่ 2 ตรวจเฉพาะสิ่งที่ตัวแรกพบ+จุดไม่แน่ใจ (ค) เพดานงบ ledger ของ relay
-- **QAQC-P3-I3** กรรมการข้ามค่ายตรวจ prompt ทั้งฉบับ ผ่าน `relay-call --task-id QAQC-P3-I3`
-- verify: ไฟล์ prompt เต็มในคลัง + ผ่านกรรมการ + เจ้าของอนุมัติ (manual_verified)
-
-## QAQC-P4 — ต่อระบบความจำ + ทะเบียน · สถานะ: เสร็จ 3/3 — แม่แบบ qaqc-scan.md ฝังใน shortcut · New Chat → v2.0 + Close Chat → v2.3 (เพิ่มขั้น QA/QC) · ทะเบียน 29→30 (สถานะ draft)
-
-- **QAQC-P4-I1** แม่แบบ `.project/qaqc-scan.md` — โครง AI-readable: ป้าย schema/สถานะรายหมวด/ตาราง severity/ประวัติรอบสแกน/งานแก้ค้าง
-- **QAQC-P4-I2** เชื่อม **Use New Chat** (อ่าน qaqc-scan.md ตอนเปิด — เฉพาะโปรเจกต์ที่มีไฟล์) + **Use Close Chat** (อัปเดตตอนปิด) · capability-based · bump เวอร์ชัน 2 ไฟล์นั้น
-- **QAQC-P4-I3** ลงทะเบียน shortcut ในคลัง (29→30) + Graph Links
-- verify: `git check-ignore` ว่าง + `git ls-files` เห็นไฟล์ .project ใหม่ (ตอน commit PR) + ทะเบียนมีแถวใหม่ + grep เจอบรรทัดเชื่อมใน use-new-chat.md / use-close-chat.md
-
-## QAQC-P5 — นำร่อง Road Safe Fund + Root Admin · สถานะ: หลักฐานรอบเดิมยังไม่ครบ 0/2 โปรเจกต์ = 0%
-
-- รันจริง 1-2 หมวดต่อโปรเจกต์ (Road Safe Fund + Root Admin ก่อน · ต่อไป DRA, Content Thailand + SaaS/Web App 10+) → เก็บ token/เวลา/ผลจริง → ตารางความคุ้มค่า + ปรับเพดาน/ขอบเขต
-- verify: แถว ledger จริง + ตาราง severity จริง + ตัวเลขงบจริง (tier 3)
-
-## งานคน (เจ้าของ)
-
-- อนุมัติตารางแม่ (จบ P1) · อนุมัติ prompt (จบ P3) · push คลัง Obsidian ขึ้น GitLab · กด merge PR repo นี้ · สั่งเริ่ม P5
-
-## ความเสี่ยงค้าง
-
-- plan.md active เปลี่ยนเป็น QAQC — เลขงาน GRD-P5..P9 ต้องยกกลับมาไฟล์นี้ก่อนเริ่ม (จดวิธีไว้หัว plan-grd.md แล้ว)
-- เอกสาร ViberQC อาจใหญ่กว่าที่เห็น — สกัดไม่ครบรอบเดียวต้องรายงานส่วนที่ยังไม่ได้อ่าน ห้ามเงียบ
-- Grok/Codex เคยชนโควต้าพร้อมกัน (2026-07-08) — ถ้ากรรมการเรียกไม่ได้ ให้รายงานและรอ ไม่ข้ามด่านตรวจ
-
----
-
-# Plan — MW · Shortcut "Use Migrate Web" (เริ่ม 2026-07-14 · เจ้าของสั่งเดินในแชท Fable + Codex ตรวจคู่)
-
-> memory-schema: v1.2 · **plan_id: MW** · จาก Use Act-As v3.1 (รีวิวเบื้องต้นส่งแล้ว 2026-07-14 · เจ้าของตอบ 3 คำถาม + ส่งไฟล์ที่ 1 + สั่งเดิน)
-> ทีม: **Fable 5 = สมองคิด/วิเคราะห์/ออกแบบ (เจ้าของสั่งตรง)** · **Codex = ผู้ตรวจคู่ทุกใบ (relay-call --role review)** · Grok = สำรองถ้า Codex เสีย (รายงานการสลับเสมอ) · เจ้าของ = ตัดสินทุก checkpoint
-> branch: `control_webengine_flow` (เจ้าของเปิดให้ 2026-07-14) · งานหลายเฟส = **1 PR เดียว**
-> ขอบเขต: Shortcut ใช้กับ**ทุกโปรเจกต์ที่สร้างจาก Root Admin** (เริ่มจริงที่ RoadSafeFund) · ทีม ~10 คน pull จาก dev กลาง VPS ทำบนเครื่องตัวเอง + บางคน worktree บน VPS
-
-## กติกาเหล็กของแผนนี้ (สืบทอด GRD/QAQC ครบ + เพิ่มของเจ้าของ)
-
-1. เลขงานขึ้นต้น `MW-` และต้องมีจริงในไฟล์นี้ · เลขที่ไม่มี = ห้ามทำ
-2. **ห้ามข้าม Flow · ห้ามตัดทอนข้อมูลเจ้าของ** — ทุกไฟล์ที่วิเคราะห์ต้องมีบัญชีนับ N/M · จะตัด/จัดลำดับใหม่ต้องเสนอเจ้าของตัดสินรายข้อ
-3. ทุกใบวิเคราะห์/ออกแบบต้องผ่าน Codex ตรวจก่อนสรุปให้เจ้าของ (AI Relay โหมด 2)
-4. verified = แถว gate-run เท่านั้น · งานเอกสาร = manual_verified + เจ้าของยืนยัน
-5. จบแต่ละเฟส: ตาราง compile % ต่อหัวข้อ + ตารางว้าว (ดีขึ้นจากเดิมกี่ % วัดด้วยอะไร)
-6. ห้ามแตะ: `.hermes/**` · `.env*`/secret · repo NewWebEngine2026 = **อ่านอย่างเดียว** (งานเขียนอยู่ Hermes Agent เท่านั้น)
-
-## MW-P1 — วิเคราะห์ไฟล์เจ้าของทีละไฟล์ · สถานะ: I1-I3 เสร็จ (I2,I3 เจ้าของอนุมัติแล้ว · I1 มี 11 จุดเคาะค้าง) · รอไฟล์ชุดถัดไปหรือคำสั่งเข้า P2
-
-### ผลสะสม (2026-07-14 · ทุกใบผ่านผู้ตรวจต่างค่าย Codex ผ่าน cross-check MCP เพราะ relay review mode มีบั๊ก)
-- **I1 FLOW-13Steps-v2.docx.md** (439 บรรทัด อ่านครบ): ของใหม่เจ้าของแทรก **23 ข้อ** + 2 ข้อความต้องเก็บคำเดิม (ชุดคำถาม M0 บรรทัด 25 + hardcode บรรทัด 249) · **11 จุดเคาะรอเจ้าของตอบรายข้อ** (เด่น: DEC-167 เลขชนกันจริงกับ decisions.md · .work vs .project/ · เลขลิสต์แม่ห้ามพิมพ์มือ—เครื่องนับจริง=81 · Sitemap 2 docx → เสนอ "บัตรประจำเมนู 1 md/เมนู") · repo ต้นทางถูกแชทอื่นแก้สด (FLOW-JOURNEY-13STEP.md หายจาก .project/ แล้ว · checklist 74→81)
-- **I2 Workshop Comment (PDF 15 หน้า + md)**: ปัญหา 28 ข้อจากทีม 5 คน → Flow ครอบ ✅7 🟡21 ❌0 · **เจ้าของอนุมัติ 4 ข้อเสนอ**: DS pattern กลาง 13 ตัว · ทุก pattern มี 6 ช่องบังคับ (หน้าตา/พฤติกรรม/ข้อมูล/สถานะผิดปกติ/การเข้าถึง/หลักฐานทดสอบ) · checklist ใหม่ ~10 ข้อ · แตก 28 กลุ่ม→~40 ข้อย่อยตอนทำบัญชี N/M
-- **I3 TOR 3 โปรเจกต์** (CTH 58 REQ สร้างใหม่+catalog 2 ภาษา / DRA 92 REQ เสร็จ 88% + 7 minisite + OIT O1-O43 + TWCAG 2022 / RSF migrate + GOV-GAP 9 จุด): **เจ้าของอนุมัติ 12 ข้อเพิ่ม Flow + 8 ตัวกันเสี่ยง** — เด่น: โหมดหลัก+แทร็กเสริม (MIGRATE/REMEDIATE/BUILD + DATA/FORM/MINISITE/BILINGUAL) · RTM 3 ชั้น (มีข้อกำหนด→มีเทสต์→รันผ่านจริง) · Light Loop หน้าโครงซ้ำแบบกันข้ามขั้น · บัญชีคิวเมนู+ล็อก site/module ทีม 10 คน · เลเยอร์ปิดงวดราชการ · ผูก Use QA QC
-- **บั๊ก infra พบระหว่างงาน (คิวซ่อมแยก · อย่าลืม)**: relay-call role review ยัด flag เก่า (--permission-mode/--no-subagents) ใส่ grok 1.0.1 → crash 1 วิ ทุกครั้ง · อยู่ทั้งตัวติดตั้ง ~/.hermes/ai-relay-tools และ repo main (`prepare_adapter_for_role`) · Codex ผ่าน portal ก็พังบนเครื่องนี้ · ทางเลี่ยงที่ใช้: cross-check MCP ask_gpt5
-
-- **MW-P1-I4 เสร็จ**: ค้นคลัง Obsidian (60-Design 234 ไฟล์/42 module · QAQC Q01-Q16 178 หัวข้อ · playbooks) + 4 ข้อเสนอ ก-ง ผ่าน Codex · ข้อค้นพบ: VPS มี vault sync แล้ว (auto-push-vault.sh ทุก 3 นาที → GitLab + linux-nat:~/knowledge/hermes-agent-vault/) · ไฟล์ tracked อ่อนไหว 2 ตัวตรวจแล้ว 0 token จริง · ก่อนเปิดคลังให้ทีม clone ต้องตรวจประวัติ GitLab
-- **MW-P1-I5 เสร็จ (เจ้าของแก้ข้อมูล)**: source ภาพจริง 4 ตัว = **Freepik + Recraft + Topaz + Magnific (magnific.com/user/api-keys = ต่อ API)** — ไม่มี "Opus" · เพิ่ม Image Source Registry (config-driven) + Benchmark Intake Gate (ห้าม copy 100% · วิเคราะห์แตกส่วน · ถามโจทย์ · แปลงเข้า DS)
-- **MW-P1-I9 เสร็จ + เจ้าของเคาะ 2026-07-14: "ตามเสนอทั้งหมด ทำเลย"** — จุดเคาะ 13 จุดอนุมัติครบตามข้อเสนอ (1 ออกเลข DEC ใหม่กฎภาพ · 2 hardcode=ข้อยกเว้นอนุมัติรายกรณี · 3 เลขเครื่องนับสด · 4 Module แจ้งไฟล์เสียที่ Root Admin+ทดสอบรายเมนู · 5 ES ด่านโปรเจกต์+รายเมนู search · 6 .work=งานลูกค้า+deliverables · .project=ความจำ AI · ทั้งคู่เข้า git · 7 Pagination เข้า checklist · 8 ภาพคั่น/วิดีโอใต้เพดาน+reduced-motion · 9 แท็บลัดผูก WCAG+SEO · 10 GV: RSF ไม่ถามซ้ำ · 11 ตรวจเครื่องมือภาพจริงก่อนใช้ · 12 Light Loop เครื่อง 100% + คนสุ่มหน้าแรกทุกแบบ+20%/กลุ่ม · 13 รับข้อเสนอ I4 ทั้ง 4) · บัญชีรวมเข้า spec = 55 กลุ่มรายการ (I1:23+2 · I2:4 · I3:12+8 · I4:4 · I5:2)
-- **MW-P1-I9** สรุปรวมทุกชุด: บัญชีความต้องการรวม + ตารางจุดเคาะรวม (รวม 11 จุดค้างของ I1)
-
-- **MW-P1-I1** ไฟล์ 1 `FLOW-13Steps-v2.docx.md` (439 บรรทัด): บัญชี delta ที่เจ้าของแทรกเพิ่มจากไฟล์ repo + จุดขัด/ทับซ้อน + ตอบคำถามรวม/แยกไฟล์ Sitemap → Codex ตรวจ → เสนอเจ้าของตัดสิน
-- **MW-P1-I2..I5** เสร็จครบ (I2 Workshop · I3 TOR · I4 คลัง Obsidian · I5 เจ้าของสั่งเพิ่ม — ดูผลสะสมด้านบน)
-- **MW-P1-I9** เสร็จ — เจ้าของเคาะ 13 จุด อนุมัติทั้งหมด 2026-07-14 · **จุดเคาะ 11 ข้อของ I1 ถูกรวมและปิดในตาราง 13 จุดแล้ว (ไม่มีค้าง)**
-- verify: บัญชี N/M ทุกไฟล์ + Codex verdict ทุกใบ + เจ้าของอนุมัติบัญชีรวม
-
-## MW-P2 — ออกแบบ spec Shortcut · สถานะ: กำลังทำ · draft = `.project/mw-spec-draft.md`
-
-- **MW-P2-I1** ร่าง spec v1.0 + Codex ตรวจรอบ 1 → FIX 8 จุด (ตารางแม่/I1 หาย 5/ขัดแย้ง 6/เครื่องมือ) — เสร็จ 2026-07-14
-- **MW-P2-I2 เสร็จ 2026-07-14**: v1.1 → Codex รอบ 2 = FIX 3 เรื่อง (ครบ 2 รอบผู้ตรวจเดิม) → **เปลี่ยนวิธีตรวจเป็นเครื่องตามกติกา v2.16**: แก้ v1.2 (baseline sha256 จริง 3 ไฟล์ใน `.project/mw-flow-baseline.md` · [G] ทุกแถวผูก §10-1..10-10 · โปรโตคอลล็อกกลาง 6 ข้อ · สัญญารับมอบ P3 3 ข้อ §13) + สร้าง `scripts/mw-spec-check.py` (5 ด่าน) → **รันจริง PASS: ตารางแม่ 55/55 · [G] ครบ · § ครบ · จุดเคาะ 13/13 · baseline ตรง** (เครื่องจับ 21 จุดหลวมก่อนผ่าน — พิสูจน์ว่าด่านทำงาน)
-- **MW-P2-I3 เสร็จ: เจ้าของอนุมัติ spec 2026-07-14 ("อนุมัติ spec") → P2 ปิด 3/3**
-
-- โครง 2 ชั้น (แกน Flow กลาง ↔ Project Profile ต่อเว็บ) · ด่านกันข้าม/กันโกหก (ยก G5+menu-gate) · Write Permit ต่อเมนูกันทีมชนกัน · บทบาท AI capability-based · ตาราง compile+ว้าวต่อเฟส · การเรียกใช้ VPS+notebook
-- verify: Codex ตรวจ spec + เจ้าของอนุมัติก่อนเขียนไฟล์จริง
-
-## MW-P3 — เขียนไฟล์จริง · สถานะ: **เสร็จ 2026-07-14 · merged main (PR #35+#36)** — I1 prompt ✅ · I2 เครื่องมือ **7/7** ✅ (Grok เขียน · GPT-5 ตรวจ · mw suite 252) · I3 test-id map + §13.1 COMPLETE 32/32 ✅ · I4 สัญญา §13 ครบ 3/3 ✅
-
-- **MW-P3-I1 เสร็จ 2026-07-14**: prompt `use-migrate-web.md` v1.0 + `use-migrate-web-flow13.md` (เนื้อต้นฉบับ 439 บรรทัดตรง 100% · embedded_sha256 คุมช่วง 31-469 verify ตรง · ตาราง delta 25 + กฎลำดับความสำคัญ + ตารางจับคู่พาธเก่า→ใหม่) + แถวทะเบียน payload registry · **Codex ตรวจ 2 รอบ**: รอบ 1 FIX 6 กลุ่ม→แก้ครบ · รอบ 2 ผ่าน 4/6 เหลือ 2 บรรทัด (รอยจาก shell กลืน backtick)→แก้+verify ด้วย grep/shasum เขียวครบ · บทเรียนจดแล้ว: heredoc ต้อง quote + replace ต้องมี assert
-- **MW-P3-I2 — แผนส่งมอบ (Fable เขียน 2026-07-14 · เจ้าของสลับกลับ Opus ทำต่อตามกติกา relay v2.16)**
-  - **บทบาทรอบใหม่:** Opus = สมองคุมสายพาน (วางแผน/เลือก coder/เขียน brief/ตรวจ/ตัดสิน) · coder = Codex หรือ Grok (เลือกตาม catalog §7 ต่อชนิดงาน) · reviewer = คนละค่ายกับ coder เสมอ · verified = gate-run เท่านั้น
-  - **งาน = เครื่องมือ 7 ตัว · 1 ตัว = 1 issue** (สเปคเต็มอยู่ SPEC §10 + ตาราง [เครื่องมือประกอบ] ใน use-migrate-web.md):
-    - MW-P3-I2d `work-locks` ล็อกกลางจองเมนูข้ามเครื่อง (ทำก่อน — ปลดล็อกทีม) · เกณฑ์รับมอบ: จำลอง 2 clone จองพร้อมกัน สำเร็จ 1/2 (ผลรันแนบ)
-    - MW-P3-I2a `mw-menu-gate` เครื่องตัดสินปิดเมนู portable (checklist กลาง + .work config · เลขนับสด · exit 0/1) — หลักการจากต้นแบบ menu-gate.mjs ของ NewWebEngine แต่**ห้ามแตะ repo นั้น** (อ่านอย่างเดียว)
-    - MW-P3-I2b `mw-page-check` ตรวจหน้า (soft-404 ใน rendered main content · ลิงก์ · ภาษา · เพดานไฟล์ hero≤300KB/content≤150KB/vdo≤2MB · pagination · sticky ไม่บัง · related logic · วิดีโอ attr autoplay/muted/reduced-motion) config ต่อโปรเจกต์
-    - MW-P3-I2f `mw-doctor` ตรวจติดตั้ง notebook/VPS + smoke call เครื่องมือภาพ 4 source (Freepik/Recraft/Topaz/Magnific — 1 งานเล็กจริง) + ยิง relay จริง 1 ครั้ง
-    - MW-P3-I2c `mw-rtm-report` นับ RTM 3 ชั้น (req-register → test cases → ผลรันจริง)
-    - MW-P3-I2g `mw-wow-report` รวมตัวเลขเครื่อง before/after (LH/axe/gate N-M/RTM%/ขนาดไฟล์) — AI ห้ามกรอกเอง
-    - MW-P3-I2e `mw-backend-check` (ใหญ่สุด — วงจรฟอร์ม/แจ้งไฟล์เสีย/siteId/dashboard ต้องมี engine จริง) → เสนอทำคู่ P4 บน RoadSafeFund
-  - **ที่วางโค้ด:** `scripts/mw/` ใน repo นี้ + เทสต์ `tests/scripts/mw/` · ทุกตัวมี pytest + gate-run pass + reviewer ต่างค่าย
-  - **ข้อจำกัดเครื่องนี้ที่ Opus ต้องรู้ (พิสูจน์แล้ววันนี้):** (1) relay-call role **review** พัง 2 ชั้น — portal crash + ยัด flag เก่าใส่ grok 1.0.1 → **ใช้ role code ผ่าน `AI_RELAY_ALLOW_LOCAL_CLI=1` ได้ · งานรีวิวใช้ cross-check MCP `ask_gpt5`** (2) plan-anchor อ่าน plan_id แรกของไฟล์ (QAQC) → เลขงาน MW ใช้ `--no-plan` ไปก่อน หรือขอเจ้าของสลับไฟล์แผน (3) Codex CLI ตรงใช้ได้ (ทดสอบ PONG แล้ว) (4) `hermes-write-permit` มีบนเครื่อง (5) ผู้ตรวจเดิม+วิธีเดิมได้ 2 รอบ — รอบ 3 ต้องเปลี่ยนเป็นเครื่องตรวจ (แบบที่ทำกับ mw-spec-check สำเร็จแล้ว)
-  - **ก่อนปิด P3 ทั้งก้อน:** สัญญา §13 ครบ 3 ข้อ — ตาราง test ID ทุกแถว [G] (P3-I3) + จำลอง 2 clone + mw-spec-check PASS
-- **MW-P3-I3** ผูก installer + ตาราง test ID ทุก [G] (สัญญา §13 ข้อ 1)
-- **MW-P3-I4** รันสัญญา §13 ครบ 3 ข้อ → ส่งเจ้าของ
-- verify: mw-spec-check PASS + Codex ตรวจ + ด่าน git + สัญญา §13
-
-## MW-P4 — ทดสอบจริงบน RoadSafeFund + ติดตั้ง 2 ทาง (VPS/notebook) · สถานะ: **จบ 2026-07-15 — backend-check รันจริงกับ RSF site 78 (อ่าน 3/3 PASS + negative 2/2 FAIL ถูกต้อง) + วงจรฟอร์มจริง submit→DB PASS (POST /api/v1/contact · ข้อมูล TEST-MW ลบเกลี้ยง เหลือ 0) · เหลืองานเจ้าของ: กดชุดทดสอบรับงาน team-shortcuts/OWNER-ACCEPTANCE-MW.md**
-
-- verify: เดิน flow จริงอย่างน้อย 1 เมนู หลักฐาน tier 3+ + เจ้าของเห็นของจริง
-
-## MW-P5 — ปิดงาน: 1 PR + อัปความจำ · สถานะ: **PR merged แล้ว (2 PR) · อัป OverviewProgress+plan รอบนี้ · เหลือ Use Close Chat formalize + decisions**
-
-## MW-P6 — Flow Enforcement: บังคับ 13 ขั้นด้วยเครื่อง (เริ่ม 2026-07-15 · เจ้าของสั่ง "แก้ต้นเหตุ AI ข้าม flow" หลังเหตุการณ์จริง 2026-07-15) · สถานะ: **I1-I4 เสร็จ 2026-07-15 (เทสต์ mw 291 เขียว + demo block จริง 4 ฉาก) · เหลือ: เจ้าของรัน installer ติด hook เครื่องจริง + push/PR**  · branch `feature/mw-flow-gate`
-
-> ปฐมเหตุ: AI ข้าม flow ทั้งที่เอกสารครบ — ตรวจแล้ว G5 มีโค้ดจริงแค่ menu-gate (ปลายทาง M8) · "ด่านก่อนเขียน" ไม่มีไฟล์ · ไม่มีสถานะต่อเมนู · Fable วิเคราะห์ + Codex ตรวจค้าน 2026-07-15 (ผลใน xc-flow-gate.md)
-> หลักออกแบบ (Codex เสริม): สถานะคำนวณสดจากหลักฐานจริง ไม่เก็บไฟล์ state ให้ปลอม · กติกากลางไฟล์เดียว evaluator เดียว · ตรวจเนื้อไฟล์ไม่ใช่แค่มีไฟล์ · คำถาม owner คง 4 checkpoint เดิม ไม่เพิ่ม
-
-- **MW-P6-I1** กติกากลาง `scripts/mw/flow-rules.yaml` (13 ขั้น: ไฟล์ output ต่อขั้น + เกณฑ์เนื้อขั้นต่ำ + confirm checkpoint) + evaluator `scripts/mw/flow_eval.py` (คำนวณขั้นปัจจุบันจากหลักฐานบนดิสก์ · fail-closed)
-- **MW-P6-I2** CLI `scripts/mw/flow_gate.py` — `status <menu>` / `can-enter <step> <menu>` (exit 0/1) / `--json` · ใช้ evaluator I1
-- **MW-P6-I3** hook ด่านก่อนเขียน `team-shortcuts/hooks/enforce-flow-gate.py` (PreToolUse: โปรเจกต์มี `.work/profile.yaml` → Edit/Write/shell-write ไฟล์งานเมนูต้องผ่าน can-enter + มีล็อกเมนู) + เสียบ `install-team-hooks.py`
-- **MW-P6-I4** ผูกเครื่องเดิม: menu-gate เพิ่มแถวเรียก evaluator เดียวกัน + mw-doctor เช็ค hook ติดตั้ง
-- **MW-P6-I5** negative tests (ข้ามขั้น/ไฟล์เปล่า/ปลอมหลักฐาน → block ทุกเคส) + live demo ให้เจ้าของเห็น block บนจอ
-- verify: pytest scoped เขียว + negative ครบ + demo เจ้าของ (tier 4-5) · ผู้เขียน Codex/Grok · ผู้ตรวจต่างค่าย · verified = แถว gate-run
-
-## งานคน (เจ้าของ)
-
-- ส่งไฟล์ 2-5 · ตัดสินจุดขัดรายข้อ · อนุมัติ spec (จบ P2) · กด merge PR (จบ P5)
-
----
-
-# Plan — DSU (Design System Standard Upgrade)
-
-> plan_id: DSU · สถานะ: **P0-P3 งานเนื้อจบครบ (2026-07-15) — เหลือเจ้าของกด merge PR** · ผลจริง: prompt v3.0 (2 สำเนา + คลัง) · เช็กลิสต์ v3.1 = 109 หัวข้อ · ds-gate.py (pytest 10/10) · Grok รีวิวรอบแรก FAIL 17 ข้อ → Codex แก้ → เครื่องตรวจยืนยันปิด 17/17 (Grok รอบยืนยันออกผลไม่จบ 2 ครั้ง → สลับเครื่องตรวจตาม DEC-MW-002)
-> (เจ้าของอนุมัติในแชท 2026-07-15 "วางแผนทำงานทั้งหมดตามนี้และบันทึกในหน่วยความจำ และต้องทำให้จบเท่านั้น โดยใช้ use continue")
-> เจ้าของโจทย์: มาตรฐาน DS ใช้จริงได้ ~15-20% ของระดับ Global — ให้ยกมาตรฐานกลาง ไม่ใช่ยิงกับ project ใดโปรเจกต์หนึ่ง
-> กิ่งงาน: task/nat/DSU-P1-I1-ds-standard-hardening (worktree แยกจาก main · เปิดผ่าน hermes worktree open หลังพี่เคลียร์ดิสก์)
-> ทีม: แชทนี้ (Fable/Opus) = วิเคราะห์+ตัดสิน · Codex = ตัวเขียน · Grok = ผู้ตรวจ (คำสั่งเจ้าของ DEC-163) · ผู้ตรวจเดิม 2 รอบไม่ผ่าน → เปลี่ยนเครื่องตรวจ/ค่าย (DEC-MW-002)
-> กติกาบังคับ: ยึด v3 เดิม เพิ่มไม่รื้อ (คง alias) · เลื่อน version + changelog · commit ทันทีทุกชิ้น · งานหลายเฟส = 1 PR · ห้าม merge/push→main เอง
-
-## ผลวินิจฉัย (หลักฐานจริง 2026-07-15)
-
-ราก 3 ข้อที่ทำให้สนามจริงเหลือ ~15-20%:
-1. **เวอร์ชันหลุดกัน**: ทะเบียนบอก shortcut = v2.5 (92 หัวข้อ + S1 + ชั้น U) แต่ไฟล์ prompt จริงทั้ง 2 สำเนา (Obsidian + team-shortcuts/payload) = v2.4 · grep "ชั้น U/S1/92/v3" = 0 ครั้ง → ทุกโปรเจกต์ได้ Flow รุ่นเก่า
-2. **ไม่มีเครื่องบังคับชั้นแบรนด์**: H1 (วิสัยทัศน์/พันธกิจ) F5 (Emotion) F6 (Function) F1+C12 (บุคลิก/เสียงแบรนด์) มีในเช็กลิสต์ v3 ครบ แต่เป็นตัวหนังสือที่ AI ข้ามได้เงียบ ๆ — เครื่องตรวจมีแค่ ds-check.py (token) + contrast-audit (สี) · Mood & Tone ยังไม่เป็นหัวข้อชัด
-3. **ฝั่งแอดมินบางจริง**: Core มีหัวข้อแอดมิน ~13 ข้อ เทียบ Carbon ~50 / Polaris・Ant ~60-70 + แม่แบบหน้า → ครอบคลุม ~15-25%
-
-## DSU-P1 · ซ่อมราก + งาน 1 (แก้ Flow ที่ทำงานผิดพลาด)
-
-- **I1 · ยก prompt เป็น v3.0**: use-create-design-system.md ทั้ง 2 สำเนา — ผูกเช็กลิสต์ v3 (92 หัวข้อ) เข้า Flow ตรง ๆ · เพิ่มชั้น U + กฎ S1 เข้าลำดับรัน H→U→F→G→A→B/C→(Packs)→D · อ้าง ds-gate.py เป็นด่านเครื่องต่อเฟส
-- **I2 · กฎ F1-F4 → เช็กลิสต์ชั้น D ข้อ D14-D17** (ทุกข้อมีวิธีตรวจจริง):
-  - D14 (=F1 เจ้าของ) กัน tree ชน: เช็ก `git branch --show-current` + `git status` ก่อนเขียนทุกครั้ง + commit ทันทีหลังจบ 1 ชิ้น ห้ามค้าง uncommitted ข้ามเทิร์น · วิธีตรวจ: rule (git status สะอาดหลังทุกชิ้น + commit SHA แนบ)
-  - D15 (=F2) UI verify tier 4: ส่ง/เคลม URL ต้องเปิดเบราว์เซอร์ถ่ายภาพจริง ไม่ใช่ curl 200 · วิธีตรวจ: manual-evidence (ไฟล์ภาพ + คำบรรยาย 1 บรรทัด)
-  - D16 (=F3) เครื่องพร้อม: งานหนักเช็กแรมว่าง + restart dev server ล้าง .next เมื่อ webpack เพี้ยน · วิธีตรวจ: rule (คำสั่งเช็กแรม/ล้าง cache ระบุใน spec)
-  - D17 (=F4) เช็กข้อห้าม: อ่าน .project/decisions.md + Locked Decisions ก่อนทำตามแผน (ห้ามแตะ BOI/MOL/Master/Reveal) · วิธีตรวจ: rule (ds-gate ตรวจว่ามีบันทึก "อ่าน decisions แล้ว + รายการข้อห้ามที่เกี่ยว" ใน DesignSystem.md)
-- **I3 · ds-gate.py**: เครื่องตรวจเฟสแบบ mw-spec-check.py — ตรวจว่า artifact ชั้น H/U/F มีจริงก่อนปล่อยชั้นถัดไป:
-  - H: .project/DesignSystem.md มีหัวข้อ H1-H7 กรอกจริง (บัตรประจำตัว: วิสัยทัศน์/พันธกิจ ≥1 ย่อหน้า · เหตุผลสี ≥1 แถวต่อสี · ตาราง pain→ดีไซน์ ≥3 แถว)
-  - U: มีบันทึกกฎ UX 7 ข้อ + ทดสอบ 5 วินาที
-  - F: ตาราง Emotion 6 แกน → token ≥3 ค่าต่อแกน · Mood & Tone กรอกแล้ว
-  - โหมด: `ds-gate.py --layer H|U|F|all` · exit 0 = ผ่าน · exit 1 = ขาด (บอกรายการที่ขาด) · fail-closed
-- **I4 · หัวข้อใหม่ F7 · Mood & Tone**: แยกจาก F1/F5 ให้เป็นข้อชัด (โทนภาพ/เสียง/จังหวะ ต่อ touchpoint) 🔴
-- จุดนับผ่าน P1: ds-gate.py จับเคส "ข้ามชั้น" ได้จริง (ทดสอบกับไฟล์ตัวอย่างขาด H) + exit 0 กับไฟล์ครบ · Grok ตรวจผ่าน · commit SHA ทุกชิ้น
-
-## DSU-P2 · เติมหลังบ้าน (งาน 2 · เทียบ Carbon/Polaris/Ant/Cloudscape/Atlassian)
-
-- **I1 · ขยาย B4 ตารางขั้นสูง**: + ปรับกว้าง/สลับ/ปักคอลัมน์ · จัดกลุ่มแถว · tree table · แถวขยาย · pagination ฝั่ง server · export CSV (ที่มา: Carbon/Ant/Cloudscape)
-- **I2 · หัวข้อใหม่ชุดแอดมินเข้าชั้น B/C**:
-  - B18 ตัวกรอง faceted + แถบ bulk action + saved views (Polaris/Cloudscape)
-  - B19 Command palette (Cmd+K) + ระบบคีย์ลัด (Atlassian/Carbon)
-  - B20 Drawer/side-panel (Ant/Atlassian)
-  - C17 ศูนย์แจ้งเตือนผู้ใช้ + ไทม์ไลน์ audit log (Ant/Atlassian)
-  - B2 ขยาย: ฟอร์มหนาแน่น — validate ในแถว · autosave · ปุ่มปิดตามสิทธิ์+tooltip เหตุผล (Polaris/Cloudscape)
-  - A18/B9 ขยาย: คลังกราฟข้อมูลเต็ม — ชนิดกราฟมาตรฐาน + สถานะกราฟ (empty/loading/error) + กติกา format ตัวเลข (Carbon data-viz)
-- **I3 · Pack ใหม่ "Admin-Pro"** (โหลดเฉพาะงานหลังบ้านหนัก · ไม่เปลืองบริบทงาน Front):
-  - AP1 ตัวเลือกวันที่-เวลา + ช่วงวันที่ · AP2 combobox/autocomplete/multi-select · AP3 อัปโหลดไฟล์ (ลาก-วาง/คืบหน้า/ผิดพลาด) · AP4 แถบแท็บ/accordion/stepper · AP5 skeleton + progress มาตรฐาน · AP6 แม่แบบหน้า 4 แบบ (รายการ/รายละเอียด/สร้าง-แก้/ตั้งค่า) · AP7 หน้า error 403/404/500 + session หมดอายุ · AP8 กันแก้ชนกัน (optimistic UI/conflict) (ที่มา: Polaris/Ant/Cloudscape)
-- กติกา: ทุกหัวข้อระบุ (ก) ที่มา ระบบไหน (ข) วิธีตรวจ rule/api/ai/manual — ห้ามป้ายเปล่า · อัปตัวเลขสรุป Core/Packs + บันทึก v3→v3.1 ในเช็กลิสต์
-- จุดนับผ่าน P2: นับหัวข้อใหม่ N/M ตรงรายการนี้ครบ · Grok ตรวจผ่าน · commit SHA
-
-## DSU-P3 · ปิดงาน
-
-- I1 เลื่อน version: เช็กลิสต์ v3→v3.1 · prompt v2.4→v3.0 · changelog ทั้งคู่
-- I2 อัปแถวทะเบียน prompt-shortcut-registry.md (Obsidian) + สถานะย่อหน้า
-- I3 สำเนา payload ให้ตรง (team-shortcuts/payload) · grep รุ่นตรงกัน 3 จุด (ทะเบียน/Obsidian/payload) = 3/3
-- I4 Grok ตรวจรวมรอบสุดท้าย · เปิด PR เดียว (เจ้าของกด merge) · อัป OverviewProgress + session log ผ่าน Use Close Chat
-- จุดนับผ่าน P3: grep 3/3 + PR เปิดแล้ว + memory เขียนครบ
-
-## DSU-P4 · พิสูจน์ของจริง (pilot Root Admin) + ปิดข้อบกพร่องที่พบ (เจ้าของอนุมัติ 2026-07-16 "ตรงใจ ผมเริ่ม P4 กับ Root Admin ทันที" + "ok ลงมือแก้ prompt ตาม F-01 F-02 F-03 เลย")
-
-> เป้าหมายแม่ (DEC-DSU-001): สิ่งส่งมอบจริง = ตัว shortcut ที่แก้เสร็จ · pilot เป็นเครื่องมือพิสูจน์ · บัญชีข้อบกพร่อง = `.project/dsu-pilot-findings.md`
-
-- **DSU-P4-I1 · เปิดสนามทดลอง Root Admin** (โปรเจกต์ newwebengine2026 · worktree แยก): กรอกชั้น H/U/F → `ds-gate` exit 0 · อัปเดตสำเนามาตรฐานในโปรเจกต์เป็น v3.1 (commit `c669a7a4`) — **จบแล้ว 2026-07-16**
-- **DSU-P4-I2 · ปิด F-01/F-02/F-03 ที่ตัว prompt กลาง**: คลัง Obsidian แก้เป็น v3.1 + แถวทะเบียน (commit คลัง `e133f00` · ผ่านผู้ตรวจ GPT-5 แบบ fix-then-proceed แก้ครบ 3/3) → **sync payload ใน repo นี้ให้ตรงคลัง** (งานใน worktree นี้)
-- DSU-P4-I3 · เดิน pilot ที่เหลือด้วย prompt รุ่นแก้แล้ว (ด่านสี F-03 ทางยืนยันชุดเดิม → PHASE 4 Codex เขียน Grok ตรวจ → PHASE 5 ด่านเครื่อง + ภาพจริง tier 4)
-- DSU-P4-I4 · ปิด F-05: คำสั่ง ds-gate/ds-adopt ที่เป็นการตรวจอ่านอย่างเดียวผ่าน New Chat Gate ได้ พร้อม regression test 2/2
-- จุดนับผ่าน P4: payload ตรงคลัง 100% (แฮชตรง) · findings ทุกข้อมีสถานะปิดหรือปักธง · PR เดียวให้เจ้าของกด
-
-## DSU-P5 · ปิดเป้าข้อ 3 (เครื่องพนักงาน · ตามแผนที่เจ้าของรีวิว 2026-07-16)
-- พนักงาน 1 คนรันตัวติดตั้งซ้ำบนเครื่องจริง เก็บ `RESULT: PASS` (ตามบทเรียน DEC-MW-007) · งานคน: เจ้าของ push คลัง→GitLab + แจ้งทีม
-
-## ข้อจำกัด/ความเสี่ยงที่จดไว้
-- grok headless ต้องมี API key (งานคนค้างเดิม) → ถ้า Grok เรียกไม่ได้ 2 รอบ ให้สลับผู้ตรวจ/เครื่องตรวจตาม DEC-MW-002 และรายงานเจ้าของ
-- ไฟล์คลัง Obsidian อยู่นอก repo นี้ (commit แยกในคลัง · push ขึ้น GitLab = งานคนของเจ้าของ)
-- ด่านดิสก์ 85%: เจ้าของเลือกเคลียร์พื้นที่เอง (2026-07-15) → เปิด worktree เมื่อต่ำกว่าเพดาน
-
----
-
-# Plan — SPEC-CENTRAL (สเปคกลาง · เริ่ม 2026-07-17 · ต่อจาก PR #57 merged)
-
-> memory-schema: v1.2 · **plan_id: SPEC** · branch งาน: `task/nat/SPEC-P5-I1-central-prompts-sync` (worktree นำร่อง) · งานหลายเฟส = **1 PR เดียว**
-> เป้าหมาย: เพิ่ม "สเปคกลาง" (ไฟล์บอกโจทย์ก่อนเขียนโค้ด) เข้าระบบ shortcut ให้ AI ทุกตัวอ่านโจทย์เดียวกัน — แก้รากที่ AI แต่ละตัวเข้าใจโจทย์ไม่ตรงกัน
-> ทีม: Opus = สมองวางแผน/ตรวจ · coder = grok/codex ผ่าน relay (โหมด 2) · ผู้ตรวจ = ต่างค่าย (cross-check ask_gpt5) · เจ้าของ = อนุมัติ + push คลัง + กด merge
-> ล็อกเจ้าของ (2026-07-17): ห้ามข้าม flow · ทุกงานโค้ดผ่าน relay โหมด 2
-
-## กติกาเหล็ก (สืบทอด)
-1. เลขงานขึ้นต้น `SPEC-` และมีจริงในไฟล์นี้ · ไม่มี = ห้ามทำ (งานจร --no-plan)
-2. verified = แถว gate-run/pytest เขียวเท่านั้น · เอกสาร/prompt = manual_verified + เจ้าของยืนยัน
-3. ห้ามแตะนอก allowed_paths ของ permit
-
-## SPEC-P5 — สเปคกลางเข้า lifecycle (Zone เขียว-เหลือง) · สถานะปัจจุบัน
-- **SPEC-P5-I1** แก้ prompt กลาง 6 ตัว + ทะเบียน ทั้ง 2 สำเนา (คลัง Obsidian + payload) — **verified 2026-07-17**: คลัง 7 ไฟล์แก้แล้ว (รีวิว GPT fix-then-proceed ปิด 3/3) · payload 6 ไฟล์ = vault ทุกไบต์ (diff 7/7 สะอาด · commit `80af2c373`) · ทะเบียน payload ตรง base #58 อยู่แล้ว
-  - เทสตรึงรุ่นเก่า 2 ตัวแดงค้าง**ก่อนงานนี้** (base use-new-chat=2.8 vs pin 2.7 · registry/SKILL count 32≠31) — แยกเป็น spawn task ไม่รวมใน PR สเปค
-- **ค้างงานคน**: เจ้าของ push คลัง Obsidian 7 ไฟล์ขึ้น GitLab (คนละ repo — AI push ตรงไม่ได้)
-
-## SPEC-P6 — S1 ด่านสัมภาษณ์ก่อนโค้ด (Zone แดง · งานใหญ่ · ยังไม่เริ่ม)
-> ร่างออกแบบผ่านตรวจข้ามค่ายแล้ว: `ObsidianVault/HermesAgent/95-Inbox-Lab/review/s1-interview-gate-design-2026-07-15.md` (v0.3 · ปิด 11/17+1/5 · ค้าง C1-C5 ระดับโค้ด)
-- **SPEC-P6-I1** เครื่องมือ `spec-interview` (ชุดเดียวกับ relay-call/gate-run): AI ส่งคำถาม เจ้าของตอบผ่านแชท **โค้ดกลางจด** record ลง `.hermes/spec-evidence/<repo>/<plan_id>/` + hash chain + manifest hash → ปิด **C1** (ช่องรับ input ปลอมไม่ได้)
-- **SPEC-P6-I2** hook default-deny ครอบ Edit/Write/Bash/relay/subagent + allowlist path ตายตัว + realpath กัน symlink → ปิด **C2** (บังคับชั้น OS/สิทธิ์) + **C5** (fail-closed ด่านหาย/รุ่นไม่ตรง = ปิดเขียน)
-- **SPEC-P6-I3** waiver "จอง-ใช้-เขียน" atomic + flock (ปิด **C3**) + ตรวจ-เขียนเหตุการณ์เดียว/ล็อกกันแทรกกลาง (ปิด **C4**)
-- **SPEC-P6-I4** ชุดเทสครอบ 13 เคสโจมตี (§9 ของร่าง) + เทส C1-C5 · verified = pytest เขียว + adversarial review ต่างค่าย
-- ล็อกงานนี้: security-critical → ต้อง adversarial verify (ผู้ตรวจต่างค่าย พยายามหักล้างทุก C) ก่อนปิด
-
-## SPEC-P7 — S2 (TDD เทสก่อนโค้ด) + กระจาย 30-40 โปรเจกต์ (Zone แดง · ยังไม่เริ่ม)
-- **SPEC-P7-I1** S2: เพิ่มด่านเทสก่อนโค้ด (หยิบแนวคิดจาก obra/superpowers · ไม่ลงทั้ง plugin)
-- **SPEC-P7-I2** กระจายชุดกลาง+เลขรุ่นผ่าน `Use Hermes Structure` (safe_apply/rollout) · นำร่อง 2-3 โปรเจกต์ไม่ใช่งานลูกค้า · 3 ระยะ รายงาน→เตือน→บังคับ · ปุ่มหยุดฉุกเฉินต่อโปรเจกต์
-
-## ข้อจำกัด/ความเสี่ยง
-- S1 (SPEC-P6) เป็น security enforcement gate ที่คุมการเขียนทั้งหมด → ห้ามรีบ · ต้องเทสทุกช่องเขียน + adversarial ก่อนประกาศใช้ (บทเรียนจากด่าน prewrite เดิม)
-- ไฟล์คลัง Obsidian นอก repo นี้ (เจ้าของ push เอง)
-
-# Plan — UAG · ศูนย์รวมทีม AI ประจำบริษัท "Use Agent" (Agent Center) — เฟส 1
-
-> memory-schema: v1.2 · **plan_id: UAG** · เจ้าของอนุมัติ **ทิศทาง + แผนที่ Agent v0.1** แล้ว · สเปคเทคนิค (`.project/spec/UAG.md`) **approved เมื่อ 2026-07-18 — เจ้าของเคาะแยกแล้ว → เริ่ม UAG-P2 ได้**
-> ทีมออกแบบ: Codex เสนอสถาปัตยกรรม · Opus ตรวจข้าม (ได้ `partial-agree` + 3 กันชน) — บันทึกไว้ใน spec ข้อ overlap
-> หมายเหตุตัวอ่านแผน: `plan-anchor` อ่าน **plan_id ตัวแรกของไฟล์ (= QAQC)** เท่านั้น · จะเดินคิว UAG ต้องยกบล็อกนี้ขึ้นหัวไฟล์ก่อน หรือสั่งด้วย `--no-plan` (เหมือน MW)
-> ศัพท์แปลไทย: `Agent Center` = ศูนย์รวมทีม AI · `Consultor` = ที่ปรึกษาวินิจฉัยหน้าด่านแรก (ไม่ผูกยี่ห้อ AI) · `catalog` = สมุดรายชื่อ (ทีม/ทักษะ) · `Work Packet` = ซองสั่งงาน · `Team Manifest` = ใบรายชื่อทีมที่เลือก · `provider` = ยี่ห้อ AI (Opus/Codex/Grok) · `plugin` = ปลั๊กอินเสริมที่แถมมากับ Hermes
-
-## กติกาเหล็กของแผนนี้
-1. **เลขงานขึ้นต้น `UAG-`** และต้องมีจริงในไฟล์นี้ · เลขที่ไม่มี = ห้ามทำ
-2. **แยกงานถอดเพดาน worktree (UAG-P0) ออกจากงานศูนย์รวมทีม (UAG-P1..P5) เด็ดขาด** — คนละเรื่อง คนละความเสี่ยง
-3. **verified = แถว gate-run เท่านั้น** · งานเอกสาร/สเปค (ไม่มี test อัตโนมัติ) = `manual_verified` + เจ้าของยืนยัน
-4. **เฟส 1 ห้ามแตะแกน Hermes (core)** · ห้ามทำหน้าจอ · ห้ามแก้ตัวเชื่อม provider · ห้ามแก้ค่าตั้งผู้ใช้ · ห้ามเขียนความรู้ถาวรลงคลังเอง
-5. **กฎ 2 สมองใหม่ (ถาวร)**: คิด/วิเคราะห์/ออกแบบ/วางแผน = ใช้ AI 2 ตัวตรวจข้าม · ลงมือ = AI 1 ตัวทำ + อีกตัวรีวิว · **คนทำห้ามรีวิวงานตัวเอง** · หา 2 ยี่ห้อไม่ได้ = คืนผลว่า "ติดกันชน" พร้อมเหตุผล ห้ามแอบใช้ตัวเดียวแล้วบอกผ่าน
-6. **ข้อยกเว้นตามคำสั่งเจ้าของ 2026-07-18 สำหรับแชทนี้**: ยกเลิกการใช้ `Use AI Relay` · ให้ Codex ในแชทนี้เขียนโดยตรง · ห้ามเรียก Opus/Grok/AI Portal · ใช้ผลทดสอบจากเครื่องเป็นหลักฐาน และต้องระบุชัดว่ายังไม่มีผู้ตรวจ AI คนละตัว ห้ามอ้างว่าผ่านกฎ 2 สมอง
-
-## UAG-P0 — ซ่อมการเปิด worktree พร่ำเพรื่อ · สถานะ: **ยกเลิกแนวทางถอดเพดานทั้งหมดเมื่อ 2026-07-18** · รอ PR #79 ที่ถูกปิดโดยไม่รวม และรอพื้นที่งานที่ลงทะเบียนแยก — **แยกจากศูนย์รวมทีม**
-- **UAG-P0-I1** คงเพดาน 3 งานต่อคน/โปรเจกต์ แต่นับเฉพาะ `ACTIVE/PAUSED`; `BLOCKED` ไม่กินเพดาน · เพิ่มการค้นและใช้ task เดิมก่อนเปิดใหม่ · เจ้าของอนุมัติในแชต 2026-07-18 ว่า "อนุมัติทั้งหมด"
-- diff เดิมที่ลบเพดานทั้งหมดใน `hermes_cli/worktree_lifecycle.py` และเทสต์ที่รองรับ 5 งาน **ห้าม commit** เพราะขัดคำสั่งล่าสุดและสัญญา WTL
-- หลักฐานติดขัด 2026-07-18: `relay-call` ผ่าน Portal ค้างทั้ง Codex/Grok, ตัวตัดเวลา 15 นาทีไม่คืนผล, ช่อง local CLI คืน `crash` ครบสาย 4 ตัว, และด่าน `apply_patch` ตรวจจาก canonical repo จนไม่เห็น session ของ worktree เป้าหมาย · ต้องซ่อมช่องเขียนที่ถูกต้องก่อนนำ patch ใหม่ไปใช้
-- จุดนับผ่าน P0 รุ่นแก้: เทสต์ต้องครอบ `BLOCKED` ไม่กินเพดาน + `ACTIVE/PAUSED` กินเพดาน + งานที่ 4 ถูกบล็อก + สิทธิ์เปิดเกินเป็นกรณีพิเศษ + ค้น task เดิมแบบอ่านอย่างเดียว
-
-## UAG-P1 — สเปค + แผนที่ทับซ้อน (เอกสาร) · สถานะ: **approved/completed เมื่อ 2026-07-18** (เจ้าของอนุมัติสเปคเทคนิคแยกแล้ว) (งานนี้เอง = UAG-P1-I1)
-- **UAG-P1-I1** เขียนแผนนี้ + ร่างสเปค `.project/spec/UAG.md` (สถานะ draft · owner_approved:false) — ครอบ 10 จุดสถาปัตยกรรม, 2 นโยบาย, ซองสั่งงาน 4 ที่นั่ง, สายเทรนทักษะ, สมุดรายชื่อ 9 โปรไฟล์ (เก็บเป็น "รายการตรรกะ" เท่านั้น ยังไม่ติดตั้ง), บัญชี N/M, เกณฑ์ผ่าน given/when/then
-  - **บัญชีแผนที่ Agent v0.1 (ห้ามลืม/ห้ามลดทอน)**: 9 หัวหน้าทีม (lead) + 37 ผู้เชี่ยวชาญ (specialist) + 12 ตระกูลทักษะ + 52 ทักษะเริ่มต้น (seed skill) + ช่องนิยาม Agent 19 ช่อง + ช่องนิยาม Skill 13 ช่อง — ครบตามที่เจ้าของอนุมัติ
-- **UAG-P1-I2** แผนที่ทับซ้อน (เขียนในสเปค §overlap): `conductor.md` ของ Claude = วัตถุดิบอ้างอิงเท่านั้น แทนที่ด้วยความหมาย Consultor ที่ไม่ผูกยี่ห้อ · `Use AI Relay` = ตัวรับส่งงาน/รีวิวคงเดิม · โปรไฟล์ Hermes = รูปแบบตอนรันทีหลัง · `obsidian_safe_bridge` = ทางเขียนที่อนุมัติทางเดียวเข้า `95-Inbox-Lab/review/`
-- จุดนับผ่าน P1: สเปคครบทุก §ตามแม่แบบ + ตาราง N/M + เจ้าของอ่านอนุมัติ (manual_verified) → เปลี่ยน status เป็น approved · **ผ่านแล้ว 2026-07-18**: เจ้าของพิมพ์ "อนุมัติสเปค UAG ฉบับนี้ให้ผมเปลี่ยนสถานะเป็น approved และเริ่ม UAG-P2 ได้" → `.project/spec/UAG.md` status: approved · owner_approved: true
-
-## UAG-P2 — ปลั๊กอิน + สมุดรายชื่อ + เครื่องมือ 6 ตัว + เทสต์ · สถานะ: **ตัวงานครบ 3/3 · gate-run ผ่าน 105/105 · verified**
-- **UAG-P2-I1** สร้างปลั๊กอินแถม `plugins/agent_center/` เจ้าของสมุดรายชื่อทีม/ทักษะ (มีเลขรุ่น) + ตัวตรวจความถูกต้อง/จัดเส้นทางแบบผลลัพธ์แน่นอน · **ห้ามแก้ core**
-  - **สมุดรายชื่อต้องครบตามแผนที่ Agent v0.1 (ห้ามลืม/ห้ามลดทอน)**: 9 หัวหน้าทีม (lead) + 37 ผู้เชี่ยวชาญ (specialist) + 12 ตระกูลทักษะ + 52 ทักษะเริ่มต้น (seed skill) + ช่องนิยาม Agent 19 ช่อง + ช่องนิยาม Skill 13 ช่อง
-- **UAG-P2-I2** เครื่องมือเฟส 1 · 6 ตัว: (1) ดูรายชื่อทีม (2) เปิดดูทีมทีละตัว (3) ดูรายชื่อทักษะ (4) จัดเส้นทางคำขอ 1 งาน (5) เตรียมซองสมัครเทรนทักษะ **โดยยังไม่เลื่อนขั้น** (6) ตรวจความถูกต้องสมุดรายชื่อ/นโยบาย
-- **UAG-P2-I3** เทสต์คลุมสมุดรายชื่อ + จัดเส้นทาง + 2 นโยบาย (THINK_PAIR / BUILD_REVIEW) + กติกา 4 ที่นั่ง
-- จุดนับผ่าน P2: เครื่องมือ 6/6 มีจริง · เทสต์เขียว (gate-run) · ยืนยันไม่แตะ core (grep diff)
-
-## UAG-P3 — shortcut "Use Agent" + payload ทีม + เตรียมทางต่อคิวรีวิว Obsidian · สถานะ: **ตัวงานครบ 2/2 · ตัวอย่าง 1/1 · Skill valid · gate-run ผ่าน 208/208 · verified**
-- **UAG-P3-I1** `skills/agent-center/SKILL.md` นิยามลำดับ `Use Agent`: อ่านบริบทโปรเจกต์ → เรียก Agent Center → ออกใบรายชื่อทีม + ซองสั่งงาน → ให้ AI ในแอปปัจจุบันลงมือในพื้นที่ที่อนุมัติ · `Use AI Relay` เป็นทางเลือกเมื่อเจ้าของเรียกชัดเจน
-- **UAG-P3-I2** payload ของ shortcut ทีมสะท้อน `Use Agent` ครบ 4/4 จุด · รอบนี้ยังไม่เขียนสมุดทะเบียนกลางใน Obsidian และ Agent Center ไม่เขียนความรู้ถาวรเอง
-- จุดนับผ่าน P3: เดิน `Use Agent` 1/1 คำขอได้ใบทีม+ซองสั่งงานจริง · payload ตรงกัน 3/3 ตาราง · `quick_validate.py` ผ่าน · ชุด P2+P3/payload ผ่าน 125/125 · ชุดซ่อมด่านผ่าน 83/83 · gate-run รวมผ่าน 208/208
-- เคลียร์ blocker ด่านกลางเมื่อ 2026-07-18: `gate-run` รับ `--test-path` ซ้ำได้ ตรวจไม่ให้พาธหนี Git root และเขียนสมุดหลักฐานกับผลคำสั่งลง `.project/` · แถว `UAG-P2-I3` และ `UAG-P3-I2` คืน exit 0 ครบ 2/2
-
-## UAG-P4 — พิสูจน์ของจริง (pilot) · สถานะ: **ผ่าน 2/2 เมื่อ 2026-07-18**
-- **UAG-P4-I1** เดิน pilot อย่างน้อย 2 คำขอ: (ก) งานสาย Creative/ออกแบบเว็บ 1 งาน (ข) งาน Web Engine ใหญ่ 1 งาน — พิสูจน์ว่าจัดเส้นทางให้ Creative/Design และ Web Engine เป็นโดเมนชั้นหนึ่งจริง
-- จุดนับผ่าน P4: 2/2 คำขอได้ทีม+ซองสั่งงานถูกโดเมน · ซองผ่านการตรวจ 2/2 · ใบเสร็จงานผ่านการตรวจ 2/2
-  - Creative/Web Design: เลือก `experience-design-lead` + `creative-brand-lead` พร้อมผู้เชี่ยวชาญ 11 บทบาทและทักษะ 12 รายการ
-  - Web Engine: เลือก `web-engine-lead` เป็นอันดับแรก พร้อม `application-engineering-lead` + `platform-delivery-lead`, ผู้เชี่ยวชาญ 11 บทบาท และทักษะ 10 รายการ
-  - จุดที่ปรับจาก pilot: ชื่อหัวหน้าสายวิศวกรรมจริงคือ `application-engineering-lead`; เพิ่มการทดสอบล็อกชื่อนี้แล้วเพื่อกันการเดาจากความจำ
-  - หลักฐานด่าน: `UAG-P4-I1` คืน exit 0 และชุด UAG ผ่าน 125/125
-
-## UAG-P5 — ปิดงาน · สถานะ: **ครบ 5/5 · Agent Center รวมผ่าน PR #74 แล้ว · PR #79 งานซ่อมด่านถูกปิดโดยไม่รวม**
-- รีวิวขอบเขต UAG · ด่าน UAG ผ่าน 125/125 · ชุดซ่อมด่านผ่าน 83/83 · Skill valid 1/1 · Ruff ผ่าน · `git diff --check` ผ่าน
-- รัน UAG-P2/P3 ซ้ำที่หัวกิ่ง PR #79: ผ่าน 109/109 และ 218/218 พร้อมหลักฐาน 2/2 แถวใน `.project/ledger/`
-- เจ้าของอนุมัติ Git เมื่อ 2026-07-18 · ส่งกิ่งและเปิด PR แล้ว โดยกันงาน UAG-P0 ออกจาก PR นี้
-- **PR #79 ถูกบัญชีเจ้าของปิดโดยไม่รวมเมื่อ 2026-07-19 เวลา 02:51 น.; ห้าม AI เปิดกลับหรือรวมเข้า `main` เอง**
-
-## งานคน (เจ้าของ)
-- อนุมัติสเปค UAG แยกแล้ว 1/1 เมื่อ 2026-07-18
-- หลังเจ้าของเปิด PR #79 กลับและรวม ให้เปิดพื้นที่งานที่ลงทะเบียนแยก แล้วทำ UAG-P0 รุ่น "ค้นงานเดิม + คงเพดาน" เป็น PR แยก; ห้ามนำ diff ถอดเพดานทั้งหมดขึ้นระบบ
-- เตรียมกุญแจ Grok (ถ้าจะให้เป็นคู่ตรวจ default) · ถ้าไม่มี ระบบจะสลับเป็น Opus/Codex ให้ยี่ห้อต่างกันไว้
-- กด merge PR ทุกเฟส + push คลัง Obsidian
-
-## ความเสี่ยงที่จดไว้
-- กฎ 2 สมองอาจโดนบีบให้เหลือยี่ห้อเดียวตอนโควต้าหมด → ต้องคืนผล "ติดกันชน" ไม่ใช่แอบผ่าน (Opus safeguard #2)
-- ห้ามเผลอติดตั้งโปรไฟล์รันจริงทั้ง 9 ตัวในเฟส 1 → เก็บเป็นรายการตรรกะเท่านั้น (Opus safeguard #1)
-- ปลั๊กอินต้องไม่แตะ core Hermes · ถ้าต้องแก้ core = หยุด ถามเจ้าของก่อน
+- งานกลาง, GitHub `main`, Mac และ VPS ปิดครบแล้ว
+- ปิด 100% เมื่อมีหลักฐานติดตั้ง notebook ทีมตามรายการเครื่องจริง
+- ระหว่างรอให้คงแผนนี้เป็น active เพียงชุดเดียว; ห้ามเปิด Worktree เพื่อแก้งานค้างนี้
