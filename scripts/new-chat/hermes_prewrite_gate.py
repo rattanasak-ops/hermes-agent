@@ -430,11 +430,15 @@ def shell_c_command_index(tokens: list[str], start: int = 1) -> int | None:
 
 
 def shell_segment_ok(tokens: list[str], branch: str) -> bool:
+    if len(tokens) >= 3 and tokens[1] == "design-system-standard-v2/ds-adopt.sh" and tokens[2] == "check":
+        return True
     command_index = shell_c_command_index(tokens)
     return command_index is not None and bash_allowed(tokens[command_index], branch)
 
 
 def shell_read_only_segment_ok(tokens: list[str], branch: str, payload: dict | None = None) -> bool:
+    if len(tokens) >= 3 and tokens[1] == "design-system-standard-v2/ds-adopt.sh" and tokens[2] == "check":
+        return True
     command_index = shell_c_command_index(tokens)
     return command_index is not None and bash_read_only_allowed(tokens[command_index], branch, payload)
 
@@ -496,6 +500,8 @@ def segment_ok(segment: str, branch: str, payload: dict | None = None) -> bool:
     if first in {"pip", "pip3", "uv"} and any(item in PACKAGE_WRITE_ACTIONS for item in tokens[1:]):
         return False
     if first.startswith("python"):
+        if len(tokens) >= 2 and tokens[1] == "design-system-standard-v2/tools/ds-gate.py":
+            return "--layer" in tokens
         if "-m" in tokens:
             index = tokens.index("-m")
             return index + 1 < len(tokens) and tokens[index + 1] in PYTHON_READ_ONLY_MODULES
