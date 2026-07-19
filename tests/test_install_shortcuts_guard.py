@@ -1,3 +1,4 @@
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -324,3 +325,52 @@ def test_installer_retries_hook_doctor_once(tmp_path: Path):
 
     assert result.returncode == 0, result.stderr + result.stdout
     assert "ลองตรวจ Hook ซ้ำอีก 1 ครั้ง" in result.stdout
+
+
+def test_save_git_scope_uses_merged_head_and_effective_target_diff(tmp_path: Path, monkeypatch):
+    gate_path = ROOT / "skills/devops/save-git/scripts/save_git_gate.py"
+    spec = importlib.util.spec_from_file_location("repo_save_git_gate", gate_path)
+    assert spec and spec.loader
+    gate = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = gate
+    spec.loader.exec_module(gate)
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=tmp_path, check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+    git("init", "-b", "feature/test")
+    git("config", "user.email", "test@example.com")
+    git("config", "user.name", "Test User")
+    (tmp_path / "base.txt").write_text("base\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-m", "base")
+    base = git("rev-parse", "HEAD")
+    (tmp_path / "old.txt").write_text("already merged\n", encoding="utf-8")
+    git("add", "old.txt")
+    git("commit", "-m", "old feature")
+    merged_head = git("rev-parse", "HEAD")
+
+    git("switch", "-c", "main", base)
+    (tmp_path / "old.txt").write_text("already merged\n", encoding="utf-8")
+    git("add", "old.txt")
+    git("commit", "-m", "squash old feature")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+    git("switch", "feature/test")
+    (tmp_path / "new.txt").write_text("new work\n", encoding="utf-8")
+    git("add", "new.txt")
+    git("commit", "-m", "new feature")
+    git("merge", "--no-edit", "main")
+
+    monkeypatch.setattr(
+        gate,
+        "merged_head_checkpoint",
+        lambda root, branch, target: (merged_head, "github"),
+    )
+
+    assert gate.effective_scope(tmp_path, "origin/main", "feature/test", "main") == (
+        1,
+        1,
+        "github",
+    )

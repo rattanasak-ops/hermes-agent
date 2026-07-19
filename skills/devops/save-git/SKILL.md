@@ -89,7 +89,7 @@ If a project has no `.savegit.json`, create one first (ask the owner for the sta
 1. **Local** — git clean, diff in scope, secret scan, forbidden paths, build/test/lint/typecheck/audit, test timeout split from fail, bundle not pointing to localhost.
 2. **MR sanity** — right project/remote, source/target branch correct (never guess GitLab default), branch synced with `origin/<target>`, commit + files within scope_guard (bloat ⇒ likely WRONG TARGET), no conflict.
 3. **CI** — latest-commit pipeline passed, not stuck/pending, migration/schema safe. Only enforced when `ci.enabled`.
-4. **VPS dry-run** — build candidate in a separate worktree, check env/port/service, run the real `container_health` command (e.g. `docker exec ... curl /health`) — not reading yaml. Do not restart production here.
+4. **VPS dry-run** — build the candidate from the current approved branch or a remote commit checkout already managed by the deployment system, check env/port/service, and run the real `container_health` command (e.g. `docker exec ... curl /health`) — not reading yaml. Never create or switch a Worktree/branch for this gate. Do not restart production here.
 5. **Production** — deploy from `origin/main` only, deployed SHA = origin SHA, health endpoint returns `commitSha` matching the latest commit (no 200-but-old-commit), service points to the right path, rollback exists.
 
 ## Decision tokens (answer with exactly one)
@@ -103,7 +103,7 @@ Pass the gate's Grid to the owner verbatim, then in Thai state: decision, the re
 
 ## Autonomous remediation (do not dead-end on BLOCKED)
 
-`BLOCKED_*` is not a final answer — it means stop the risky action and fix the root cause, then rerun the gate. If dirty files are the agent's own safety updates, classify, verify, commit on a separate branch, rerun. If they are someone else's work, do not touch them — isolate with a branch/worktree. Only stop to ask the owner for secret / permission / destructive / business decisions that the agent genuinely cannot make.
+`BLOCKED_*` is not a final answer — it means stop the risky action and fix the root cause in the current approved branch, then rerun the gate. If dirty files are the agent's own in-scope safety updates, classify, verify, and commit them on the current branch. If they are someone else's work, do not touch them; report the exact conflicting paths without creating or switching a Worktree/branch. For a reused branch after squash merge, find the latest merged PR/MR head and measure only later work plus the effective target merge. Only stop to ask the owner for secret / permission / destructive / business decisions that the agent genuinely cannot make.
 
 ## Notes
 
