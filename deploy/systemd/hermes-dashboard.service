@@ -1,0 +1,21 @@
+[Unit]
+Description=Hermes Agent Dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/linux-nat/SynerryTools/hermes-agent/main
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/home/linux-nat/SynerryTools/hermes-agent/main
+Environment=HERMES_DASHBOARD_TUI=1
+ExecStartPre=/usr/bin/git -C /home/linux-nat/SynerryTools/hermes-agent/main diff-index --quiet HEAD --
+ExecStart=/home/linux-nat/SynerryTools/hermes-agent/main/venv/bin/python -m hermes_cli.main dashboard --host 127.0.0.1 --port 9119 --no-open --skip-build --tui
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=default.target
