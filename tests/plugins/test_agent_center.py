@@ -4,7 +4,7 @@ Covers the catalog (counts, filters, negative cases), structured-diagnosis
 routing over domains, the mode-aware seat policy (THINK_PAIR + BUILD_REVIEW), the
 Grok challenger fallback ladder, provider aliases within a family, Work Packet
 build + validation, Work Receipt validation, training-candidate preparation,
-the six registered tool handlers, and their error paths.
+    the seven registered tool handlers, and their error paths.
 
 Standard library + pytest only. No writes, no network, no randomness.
 """
@@ -209,6 +209,9 @@ def test_list_skills_unknown_domain_raises():
         ("codex-mini", "codex"),
         ("gpt-5", "codex"),
         ("openai-o3", "codex"),
+        ("xai-oauth", "grok"),
+        ("anthropic", "opus"),
+        ("google/gemini-2.5-pro", "gemini"),
         ("  OPUS-Primary  ", "opus"),
         ("something-else", "something-else"),
         (None, "unknown"),
@@ -788,7 +791,7 @@ def test_validate_work_receipt_success():
         _valid_receipt(packet), expected_packet=packet
     )
     assert report["ok"] is True
-    assert report["code"] == "receipt_valid"
+    assert report["code"] == "receipt_structural_valid"
     assert report["packet_id"] == packet["packet_id"]
 
 
@@ -1074,7 +1077,7 @@ def test_tool_validate_binds_packet_and_receipt():
         receipt=_valid_receipt(packet),
     )
     assert out["ok"] is True
-    assert out["code"] == "packet_receipt_valid"
+    assert out["code"] == "packet_receipt_structural_valid"
 
 
 def test_tool_validate_rejects_receipt_mode_spoofing():
@@ -1149,6 +1152,7 @@ def test_agent_center_skill_frontmatter_and_tools():
         "agent_center_route",
         "agent_center_prepare_training_candidate",
         "agent_center_validate",
+        "agent_center_execute",
     ):
         assert tool_name in skill
 
@@ -1162,10 +1166,12 @@ def test_agent_center_skill_is_fail_closed_and_review_before_write():
     assert "Treat `Use AI Relay` as optional." in skill
 
 
-def test_plugin_registers_exactly_six_agent_center_tools():
+def test_plugin_registers_exactly_seven_agent_center_tools():
     registered = []
 
     class Context:
+        llm = object()
+
         def register_tool(self, **entry):
             registered.append(entry)
 
@@ -1178,9 +1184,16 @@ def test_plugin_registers_exactly_six_agent_center_tools():
         "agent_center_route",
         "agent_center_prepare_training_candidate",
         "agent_center_validate",
+        "agent_center_execute",
     ]
     assert all(entry["toolset"] == "agent_center" for entry in registered)
     assert all(callable(entry["handler"]) for entry in registered)
+    execute_entry = registered[-1]
+    assert execute_entry["is_async"] is True
+    execute_properties = execute_entry["schema"]["parameters"]["properties"]
+    assert set(execute_properties) == {"packet", "request", "timeout_seconds"}
+    assert "provider" not in execute_properties
+    assert "model" not in execute_properties
 
 
 def test_use_agent_thinking_only_route_needs_no_build_seats():
@@ -1221,7 +1234,7 @@ def test_use_agent_thinking_only_route_needs_no_build_seats():
     receipt["version"] = policies.RECEIPT_SCHEMA_VERSION
     assert (
         policies.validate_work_receipt(receipt, expected_packet=packet)["code"]
-        == "receipt_valid"
+        == "receipt_structural_valid"
     )
 
 
@@ -1260,7 +1273,7 @@ def test_use_agent_creative_web_design_pilot():
     receipt["candidate_links"] = []
     assert (
         policies.validate_work_receipt(receipt, expected_packet=packet)["code"]
-        == "receipt_valid"
+        == "receipt_structural_valid"
     )
 
 
@@ -1304,7 +1317,7 @@ def test_use_agent_web_engine_pilot_selects_web_engine_as_core_team():
     receipt["candidate_links"] = []
     assert (
         policies.validate_work_receipt(receipt, expected_packet=packet)["code"]
-        == "receipt_valid"
+        == "receipt_structural_valid"
     )
 
 

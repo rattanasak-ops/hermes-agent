@@ -16,7 +16,7 @@ import hashlib
 import json
 from typing import Any
 
-from plugins.agent_center import catalog, policies
+from . import catalog, policies
 
 
 CONSULTOR_ID = "consultor"

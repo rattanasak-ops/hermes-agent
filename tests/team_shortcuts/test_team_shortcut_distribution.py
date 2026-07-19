@@ -48,7 +48,7 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     installer = (TEAM / "install-shortcuts.sh").read_text(encoding="utf-8")
     checker = (TEAM / "check-shortcuts.sh").read_text(encoding="utf-8")
 
-    assert version == "2026.07.19-2"
+    assert version == "2026.07.19-4"
     assert "INSTALLED_VERSION" in installer
     assert "ไม่พบตัวตรวจสุขภาพ Hook" in installer
     assert installer.index('bash "$NEW_CHAT_INSTALLER"') < installer.index(
@@ -59,6 +59,8 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     assert 'HERMES_AGENT_SKILL_DEST="$HERMES_RUNTIME_HOME/skills/agent-center"' in installer
     assert 'AGENT_PLUGIN_SRC="$SCRIPT_DIR/../plugins/agent_center"' in installer
     assert 'hermes plugins enable agent-center' in installer
+    assert "plugins.entries.agent-center.llm.allow_provider_override" not in installer
+    assert "plugins.entries.agent-center.llm.allow_model_override" not in installer
     assert "registry_vs_skill" in checker
     assert "hermes_agent_skill_exists" in checker
     assert "agent_center_codex_match" in checker
