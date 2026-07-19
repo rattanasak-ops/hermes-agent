@@ -51,6 +51,9 @@ def build_fake_installer(
     (team_dir / "install-team-hooks.py").write_text("#!/usr/bin/env python3\n")
     (scripts_dir / "hermes_write_permit.py").write_text("#!/usr/bin/env bash\nexit 0\n")
     (scripts_dir / "hermes_hook_doctor.py").write_text(hook_doctor_script)
+    save_git = tmp_path / "skills/devops/save-git/scripts/save_git_gate.py"
+    save_git.parent.mkdir(parents=True)
+    save_git.write_text("#!/usr/bin/env python3\nraise SystemExit(0)\n")
     gate = scripts_dir / "new-chat/hermes_prewrite_gate.py"
     gate.parent.mkdir(parents=True)
     gate.write_text("#!/usr/bin/env python3\nraise SystemExit(2)\n")
@@ -139,7 +142,7 @@ def test_fresh_install_copies_payload_to_destination(tmp_path: Path):
     assert (tmp_path / "home/.hermes-active/plugins/agent-center/plugin.yaml").is_file()
     assert (tmp_path / "home/.hermes-active/agent-center-enabled").read_text() == "enabled\n"
     local_bin = tmp_path / "home/.local/bin"
-    for name in ("hermes-prewrite-gate", "hermes-new-chat", "hermes-worktree"):
+    for name in ("hermes-prewrite-gate", "hermes-new-chat", "hermes-worktree", "save-git"):
         assert (local_bin / name).is_file()
     gate = subprocess.run(
         [str(local_bin / "hermes-prewrite-gate")],

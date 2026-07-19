@@ -373,7 +373,7 @@
 
 ## 16. Use Flow Guardian
 
-**เป้าหมาย:** บังคับ AI ตรวจสภาพงานก่อนลงมือ (worktree/branch/dirty status) แก้ปัญหา AI หลายตัวทำงานทับกัน ให้ถามเจ้าของก่อนเลือก branch/worktree สำหรับฟีเจอร์ใหม่
+**เป้าหมาย:** บังคับ AI ตรวจสภาพงานก่อนลงมือ (Git root/กิ่ง/SHA/ไฟล์ค้าง) แก้ปัญหา AI หลายตัวทำงานทับกัน และทำต่อในพื้นที่ปัจจุบันโดยไม่สร้างหรือสลับ Worktree/กิ่ง
 
 **จุดแข็ง:**
 - ลำดับความปลอดภัยชัด: ตรวจสถานะ → audit ไม่เขียนไฟล์ → ขออนุมัติ → ทำเฉพาะ scope → ตรวจจริง → handoff
@@ -522,4 +522,3 @@ Codex + Claude เห็นตรงกันว่ามี 5 ปัญหา�
 | C | **% / คะแนนไม่มีสูตร** ตีความเอง | Comply, Continue, Impeccable, Blog Auto, Viber Audit | เพิ่ม scoring rubric + สูตร % ที่นับเฉพาะของที่ verified |
 | D | **หลักฐาน/สถานะไม่มีรูปแบบตายตัว** | Comply, Scan Feature, Save Git, Flow Guardian | กำหนด evidence schema + สถานะมาตรฐานกลาง |
 | E | **ไม่มี fallback เมื่ออ่านไฟล์/ระบบไม่ได้** AI เสี่ยงเดาว่าอ่านแล้ว | WOW Resource, Move Folder, Flow Guardian, Opus Plan | เพิ่มกฎ "อ่านไม่ได้ = หยุด/ติดป้าย ห้ามเดา" ทุกตัว
-

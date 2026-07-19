@@ -59,10 +59,10 @@ Spec → Plan → Tasks → Code → Test → Security → UAT → Release
 - งานเว็บ / แอป / server ต้องมีหลักฐาน build, lint, test, localhost, VPS หรือ endpoint ที่เกี่ยวข้อง
 - งานเอกสารต้องตรวจไฟล์จริง ความครบถ้วน ลิงก์ภายใน และความสอดคล้อง
 
-5. ถ้างานต้องใช้ AI หลายตัว ให้ใช้ Worktree-first Multi-Agent Workflow
-- ถ้าจะแบ่งงานให้หลาย agent / หลาย branch / หลาย worktree ต้องอ่าน [[50-Playbooks/worktree-first-multi-agent-coding-workflow|Worktree-first Multi-Agent Coding Workflow]]
-- ต้องแยก scope, worktree/branch, role, merge queue, quality gate และ PDCA log ก่อนเริ่มทำงานจริง
-- ห้ามปล่อย agent หลายตัวแก้ working tree เดียวกันโดยไม่มี owner และ merge plan
+5. ถ้างานต้องใช้ AI หลายตัว ให้ใช้ Current Workspace Multi-Agent Workflow
+- ใช้ Git root/กิ่ง/SHA ปัจจุบันชุดเดียว ห้ามสร้างหรือสลับ Worktree/กิ่งเพื่อแบ่งงาน
+- ต้องแยกขอบเขตไฟล์ บทบาท ลำดับรับงาน ด่านคุณภาพ และ PDCA log ก่อนเริ่มทำงานจริง
+- ให้ผู้เขียนเพียงหนึ่งตัวแก้ไฟล์ ส่วนผู้ตรวจทุกตัวอ่าน path/SHA เดียวกันแบบไม่เขียน
 
 ## ขั้นตอนทำงาน
 
@@ -98,7 +98,7 @@ Spec → Plan → Tasks → Code → Test → Security → UAT → Release
 - output ที่ต้องส่ง
 
 ถ้า role map นี้จะถูกใช้เพื่อทำงานแบบหลาย agent ให้เพิ่ม:
-- worktree/branch ของแต่ละ role
+- Git root/กิ่ง/SHA ปัจจุบันชุดเดียวของทุกบทบาท
 - area/file ที่รับผิดชอบ
 - area/file ที่ห้ามแตะ
 - merge order

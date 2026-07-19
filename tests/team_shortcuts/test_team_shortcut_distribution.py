@@ -48,13 +48,15 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     installer = (TEAM / "install-shortcuts.sh").read_text(encoding="utf-8")
     checker = (TEAM / "check-shortcuts.sh").read_text(encoding="utf-8")
 
-    assert version == "2026.07.19-4"
+    assert version == "2026.07.19-5"
     assert "INSTALLED_VERSION" in installer
     assert "ไม่พบตัวตรวจสุขภาพ Hook" in installer
     assert installer.index('bash "$NEW_CHAT_INSTALLER"') < installer.index(
         'python3 "$TEAM_HOOK_INSTALLER"'
     ) < installer.index('if ! "$HOOK_DOCTOR_BIN"')
     assert "ผ่าน 6/6" in installer
+    assert 'SAVE_GIT_BIN="$HOME/.local/bin/save-git"' in installer
+    assert "save_git_exists" in checker
     assert 'AGENT_SKILL_SRC="$DEST_ROOT/skills/agent-center"' in installer
     assert 'HERMES_AGENT_SKILL_DEST="$HERMES_RUNTIME_HOME/skills/agent-center"' in installer
     assert 'AGENT_PLUGIN_SRC="$SCRIPT_DIR/../plugins/agent_center"' in installer
@@ -323,6 +325,7 @@ def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     hook_doctor.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
     hook_doctor.chmod(0o755)
     (local_bin / "hermes-write-permit").touch()
+    (local_bin / "save-git").touch()
 
     env = os.environ.copy()
     env["HOME"] = str(home)

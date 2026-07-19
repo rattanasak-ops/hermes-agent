@@ -32,6 +32,8 @@ WRITE_PERMIT_SRC="$SCRIPT_DIR/../scripts/hermes_write_permit.py"
 WRITE_PERMIT_BIN="$HOME/.local/bin/hermes-write-permit"
 HOOK_DOCTOR_SRC="$SCRIPT_DIR/../scripts/hermes_hook_doctor.py"
 HOOK_DOCTOR_BIN="$HOME/.local/bin/hermes-hook-doctor"
+SAVE_GIT_SRC="$SCRIPT_DIR/../skills/devops/save-git/scripts/save_git_gate.py"
+SAVE_GIT_BIN="$HOME/.local/bin/save-git"
 INSTALLED_VERSION="$DEST_ROOT/.shortcut-version"
 TEAM_HOOK_INSTALLER="$SCRIPT_DIR/install-team-hooks.py"
 NEW_CHAT_INSTALLER="$SCRIPT_DIR/install-new-chat-tools.sh"
@@ -388,6 +390,15 @@ if ! cmp -s "$HOOK_DOCTOR_SRC" "$HOOK_DOCTOR_BIN"; then
 fi
 chmod 0755 "$HOOK_DOCTOR_BIN"
 say "      สำเร็จ: ติดตั้งตัวตรวจสุขภาพ Hook ที่ $HOOK_DOCTOR_BIN"
+if [ ! -f "$SAVE_GIT_SRC" ]; then
+  say "ผิดพลาด: ไม่พบด่าน Save Git ที่ $SAVE_GIT_SRC"
+  exit 1
+fi
+if ! cmp -s "$SAVE_GIT_SRC" "$SAVE_GIT_BIN"; then
+  cp "$SAVE_GIT_SRC" "$SAVE_GIT_BIN"
+fi
+chmod 0755 "$SAVE_GIT_BIN"
+say "      สำเร็จ: ติดตั้งด่าน Save Git ที่ $SAVE_GIT_BIN"
 if [ ! -f "$NEW_CHAT_INSTALLER" ]; then
   say "ผิดพลาด: ไม่พบตัวติดตั้ง New Chat ที่ $NEW_CHAT_INSTALLER"
   exit 1
