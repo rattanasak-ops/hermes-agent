@@ -60,6 +60,15 @@ def write_project(
     )
     (project / "OverviewProgress.md").write_text(overview, encoding="utf-8")
     (project / "plan.md").write_text(plan, encoding="utf-8")
+    (project / "plan-index.md").write_text(
+        "> memory-schema: v1.2\n"
+        "# Central Plan Index\n"
+        "active_plan_id: GRD\n\n"
+        "| plan_id | file | lifecycle | progress | evidence |\n"
+        "|---|---|---|---:|---|\n"
+        "| GRD | `.project/plan.md` | active | 1/1 = 100% | test fixture |\n",
+        encoding="utf-8",
+    )
     if include_decisions:
         (project / "decisions.md").write_text("# decisions\n", encoding="utf-8")
     return overview
@@ -181,6 +190,39 @@ def test_orphan_issue_id_exit_two(tmp_path: Path) -> None:
     result = run_audit(repo)
     assert result.returncode == 2
     assert "กำพร้า" in result.stdout or "P1-I1-orphan-test" in result.stdout
+
+
+def test_plan_index_rejects_multiple_active_rows(healthy_repo: Path) -> None:
+    index_path = healthy_repo / ".project" / "plan-index.md"
+    index_path.write_text(
+        index_path.read_text(encoding="utf-8")
+        + "| QAQC | `.project/plans/QAQC.md` | active | 0/1 = 0% | invalid fixture |\n",
+        encoding="utf-8",
+    )
+    plans_dir = healthy_repo / ".project" / "plans"
+    plans_dir.mkdir()
+    (plans_dir / "QAQC.md").write_text(
+        "# Plan — QAQC\n> memory-schema: v1.2 · plan_id: QAQC\n",
+        encoding="utf-8",
+    )
+    commit_all(healthy_repo, "add second active plan")
+
+    result = run_audit(healthy_repo)
+    assert result.returncode == 1
+    assert "active" in result.stdout.lower()
+
+
+def test_plan_index_rejects_multiple_plan_ids_in_one_file(healthy_repo: Path) -> None:
+    plan_path = healthy_repo / ".project" / "plan.md"
+    plan_path.write_text(
+        plan_path.read_text(encoding="utf-8") + "\n> plan_id: QAQC\n",
+        encoding="utf-8",
+    )
+    commit_all(healthy_repo, "add duplicate plan id")
+
+    result = run_audit(healthy_repo)
+    assert result.returncode == 1
+    assert "plan_id" in result.stdout
 
 
 def test_json_output(healthy_repo: Path) -> None:

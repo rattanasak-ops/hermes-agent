@@ -15,6 +15,7 @@ from typing import Literal
 Status = Literal["ok", "warn", "fail"]
 
 PLAN_ID_RE = re.compile(r"plan_id:\s*([A-Za-z0-9_-]+)")
+ACTIVE_PLAN_RE = re.compile(r"^active_plan_id:\s*([A-Za-z0-9_-]+)\s*$", re.MULTILINE)
 SHA_BACKTICK_RE = re.compile(r"`([0-9a-fA-F]{7,12})`")
 MEMORY_SCHEMA_RE = re.compile(r"^>\s*memory-schema:")
 EXTRA_PLAN_PREFIXES = ("jarvis",)
@@ -22,11 +23,13 @@ EXTRA_PLAN_PREFIXES = ("jarvis",)
 REQUIRED_PROJECT_FILES = (
     ".project/OverviewProgress.md",
     ".project/plan.md",
+    ".project/plan-index.md",
     ".project/decisions.md",
 )
 
 CHECK_LABELS = {
     "schema": "ป้าย schema / plan_id",
+    "plan_index": "ดัชนีแผนกลาง",
     "shas": "SHA ที่ความจำอ้าง",
     "git_tracking": "ไฟล์ความจำใน git",
     "orphan_ids": "เลขงานในสมุด relay",
@@ -124,6 +127,89 @@ def parse_md_table(path: Path) -> list[list[str]]:
             continue
         rows.append(cells)
     return rows
+
+
+def plan_index_entries(index_text: str | None) -> list[tuple[str, str, str]]:
+    if not index_text:
+        return []
+    entries: list[tuple[str, str, str]] = []
+    for raw_line in index_text.splitlines():
+        line = raw_line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if len(cells) < 3 or cells[0] == "plan_id":
+            continue
+        if all(set(cell) <= {"-", ":", " "} for cell in cells):
+            continue
+        plan_id = cells[0]
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", plan_id):
+            continue
+        entries.append((plan_id, cells[1].strip("`"), cells[2].lower()))
+    return entries
+
+
+def check_plan_index(repo: Path, index_text: str | None) -> CheckResult:
+    check_id = "plan_index"
+    if index_text is None:
+        return CheckResult(check_id, "fail", "ไม่พบไฟล์ .project/plan-index.md")
+
+    active_match = ACTIVE_PLAN_RE.search(index_text)
+    if not active_match:
+        return CheckResult(check_id, "fail", "ดัชนีไม่มี active_plan_id")
+    active_plan_id = active_match.group(1)
+    entries = plan_index_entries(index_text)
+    if not entries:
+        return CheckResult(check_id, "fail", "ดัชนีไม่มีรายการแผนที่อ่านได้")
+
+    plan_ids = [entry[0] for entry in entries]
+    duplicate_ids = sorted({plan_id for plan_id in plan_ids if plan_ids.count(plan_id) > 1})
+    if duplicate_ids:
+        return CheckResult(
+            check_id,
+            "fail",
+            f"ดัชนีมี plan_id ซ้ำ: {', '.join(duplicate_ids)}",
+        )
+
+    active_rows = [entry for entry in entries if entry[2] == "active"]
+    if len(active_rows) != 1:
+        return CheckResult(
+            check_id,
+            "fail",
+            f"ต้องมีแผน active เพียง 1 แผน แต่พบ {len(active_rows)} แผน",
+        )
+    if active_rows[0][0] != active_plan_id:
+        return CheckResult(
+            check_id,
+            "fail",
+            "active_plan_id ไม่ตรงกับแถว active ในดัชนี",
+        )
+
+    seen_files: set[str] = set()
+    for plan_id, rel_path, _lifecycle in entries:
+        if rel_path in seen_files:
+            return CheckResult(check_id, "fail", f"ไฟล์แผนถูกใช้ซ้ำในดัชนี: {rel_path}")
+        seen_files.add(rel_path)
+        if not rel_path.startswith(".project/"):
+            return CheckResult(check_id, "fail", f"พาธแผนอยู่นอก .project/: {rel_path}")
+        plan_path = repo / rel_path
+        plan_text = read_text(plan_path)
+        if plan_text is None:
+            return CheckResult(check_id, "fail", f"ไม่พบไฟล์แผน: {rel_path}")
+        file_plan_ids = extract_plan_ids(plan_text)
+        if file_plan_ids != [plan_id]:
+            found = ", ".join(file_plan_ids) if file_plan_ids else "ไม่พบ"
+            return CheckResult(
+                check_id,
+                "fail",
+                f"ไฟล์ {rel_path} ต้องมี plan_id เดียวคือ {plan_id}; พบ {found}",
+            )
+
+    return CheckResult(
+        check_id,
+        "ok",
+        f"แผน {len(entries)} ชุดแยกไฟล์ถูกต้อง และ active 1/1 คือ {active_plan_id}",
+    )
 
 
 def issue_id_allowed(issue_id: str, plan_ids: list[str]) -> bool:
@@ -348,12 +434,21 @@ def run_audit(repo: Path) -> tuple[list[CheckResult], Status, str | None]:
     project = repo / ".project"
     overview = read_text(project / "OverviewProgress.md")
     plan = read_text(project / "plan.md")
+    plan_index = read_text(project / "plan-index.md")
+
+    registered_plan_texts = [plan or ""]
+    for _plan_id, rel_path, _lifecycle in plan_index_entries(plan_index):
+        if rel_path == ".project/plan.md":
+            continue
+        registered_plan_texts.append(read_text(repo / rel_path) or "")
+    registered_plans = "\n".join(registered_plan_texts)
 
     checks = [
         check_schema(project, overview, plan),
+        check_plan_index(repo, plan_index),
         check_shas(git, overview, plan),
         check_git_tracking(git, project),
-        check_orphan_ids(repo, plan),
+        check_orphan_ids(repo, registered_plans),
     ]
     return checks, aggregate_status(checks), None
 

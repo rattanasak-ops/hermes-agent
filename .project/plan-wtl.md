@@ -1,13 +1,14 @@
 > memory-schema: v1.2
 > plan_id: WTL
 > owner-approved: 2026-07-14
-> อ่านไฟล์นี้ก่อนทำงาน Worktree Lifecycle ทุกครั้ง แล้วเปิด `.project/OverviewProgress.md` และ `.project/decisions.md` ประกอบ
+> lifecycle: historical · progress: 71/71 = 100%
+> นโยบายปัจจุบันแทนที่ส่วนสร้าง/สลับ Worktree แล้ว: AI อ่านสถานะได้ แต่การเปลี่ยน Worktree ต้องเป็นคำสั่งตรงของเจ้าของหรือผู้จัดการพื้นที่
 
 # Plan WTL — Hermes Worktree Lifecycle Standard v1.0
 
 ## เป้าหมาย
 
-สร้างมาตรฐานเดียวสำหรับการสร้าง ใช้งาน ส่งต่อ ปิด และเก็บกวาด Git worktree บน Notebook และ VPS เพื่อให้หลายแชท หลาย AI และหลายคนทำงานร่วมกันโดยไม่สลับ branch หรือเขียนทับไฟล์ของกันและกัน
+เก็บหลักฐานมาตรฐาน Worktree Lifecycle รุ่นเดิมที่ปิดครบแล้ว เนื้อหาด้านล่างเป็นประวัติ ไม่ใช่สิทธิ์ให้ AI สร้าง สลับ ย้าย หรือลบ Worktree
 
 ## กติกาป้องกัน AI หลงทาง
 
