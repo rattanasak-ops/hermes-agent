@@ -116,8 +116,15 @@ for pair in $TOOLS; do
   if "$bin" --help >/dev/null 2>&1; then
     echo "  ✅ $name"
   else
-    echo "  ❌ $name (เรียกตรง --help ไม่ผ่าน — เช็ก shebang/exec bit)"
-    smoke_fail=$((smoke_fail + 1))
+    # เครื่องที่หน่วยความจำตึงอาจปิด Python สั้น ๆ ระหว่างตรวจหลายตัวติดกัน
+    # ลองซ้ำเพียงครั้งเดียว และยังนับว่าล้มเหลวถ้ารอบสองไม่ผ่าน
+    echo "  ↻ $name: รอบแรกไม่ผ่าน ลองตรวจซ้ำอีก 1 ครั้ง"
+    if "$bin" --help >/dev/null 2>&1; then
+      echo "  ✅ $name (ผ่านรอบลองซ้ำ)"
+    else
+      echo "  ❌ $name (เรียกตรง --help ไม่ผ่าน 2 รอบ — เช็ก shebang/exec bit)"
+      smoke_fail=$((smoke_fail + 1))
+    fi
   fi
 done
 

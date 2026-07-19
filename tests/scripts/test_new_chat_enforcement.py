@@ -4,6 +4,7 @@ import importlib.util
 import json
 from pathlib import Path
 import subprocess
+import sys
 
 import pytest
 
@@ -95,18 +96,258 @@ def test_normal_development_commands_pass(workspace, command):
 
 
 @pytest.mark.parametrize("branch", ["main", "master", "develop", "development", "production", "prod"])
-def test_shared_or_production_branches_block_writes(tmp_path, monkeypatch, branch):
+def test_shared_or_production_branches_block_writes(tmp_path, monkeypatch, capsys, branch):
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
     repo = make_repo(tmp_path / f"repo-{branch}", branch=branch)
     data = {"repo": repo}
     assert GATE.run(payload(data, "Write", {"file_path": "src/a.py"}, cwd=repo)) == 2
+    message = capsys.readouterr().err
+    assert "PROTECTED_BRANCH_WRITE_BLOCKED" in message
+    assert "hermes-current-workspace-recover" not in message
 
 
-def test_detached_head_blocks_writes(workspace):
+def test_detached_head_blocks_with_machine_recovery_not_owner_request(workspace, capsys):
     subprocess.run(["git", "checkout", "--detach"], cwd=workspace["repo"], check=True, capture_output=True)
     assert GATE.run(payload(workspace, "Write", {"file_path": "src/a.py"})) == 2
+    message = capsys.readouterr().err
+    assert "RECOVERY_REQUIRED_REGISTERED_BRANCH" in message
+    assert "hermes-current-workspace-recover" in message
+    assert "เจ้าของต้อง" not in message
+    assert "ให้เจ้าของ" not in message
+    assert "เปิดกิ่ง" not in message
+
+
+def test_registered_detached_workspace_recovers_same_root_and_preserves_dirty_files(workspace):
+    repo = workspace["repo"]
+    subprocess.run(["git", "checkout", "--detach"], cwd=repo, check=True, capture_output=True)
+    dirty_file = repo / "src/in-progress.py"
+    dirty_file.parent.mkdir()
+    dirty_file.write_text("keep this work\n", encoding="utf-8")
+    registry = workspace["home"] / ".hermes/worktrees/registry.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        json.dumps(
+            {
+                "schema_version": "worktree-lifecycle-v1",
+                "tasks": {
+                    "TEST-1": {
+                        "task_id": "TEST-1",
+                        "state": "BLOCKED",
+                        "branch": "task/nat/TEST-1-recovered",
+                        "worktree_path": str(repo),
+                        "canonical_repo": str(repo),
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    before_count = len(subprocess.run(
+        ["git", "worktree", "list", "--porcelain"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.split("worktree ")) - 1
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts/new-chat/hermes_workspace_recover.py"),
+            "--cwd",
+            str(repo),
+            "--json",
+        ],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["code"] == "RECOVERED_REGISTERED_BRANCH"
+    assert subprocess.run(
+        ["git", "branch", "--show-current"], cwd=repo, check=True, capture_output=True, text=True
+    ).stdout.strip() == "task/nat/TEST-1-recovered"
+    assert dirty_file.read_text(encoding="utf-8") == "keep this work\n"
+    after_count = len(subprocess.run(
+        ["git", "worktree", "list", "--porcelain"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.split("worktree ")) - 1
+    assert after_count == before_count
+
+
+def test_recovery_refuses_a_different_attached_branch_even_at_same_head(workspace):
+    repo = workspace["repo"]
+    original_branch = "codex/in-progress"
+    subprocess.run(
+        ["git", "switch", "-c", original_branch],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    registry = workspace["home"] / ".hermes/worktrees/registry.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        json.dumps(
+            {
+                "tasks": {
+                    "TEST-ATTACHED": {
+                        "task_id": "TEST-ATTACHED",
+                        "state": "ACTIVE",
+                        "branch": "task/nat/TEST-ATTACHED-registered",
+                        "worktree_path": str(repo),
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts/new-chat/hermes_workspace_recover.py"),
+            "--cwd",
+            str(repo),
+            "--json",
+        ],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+
+    payload_out = json.loads(result.stdout)
+    assert result.returncode == 2
+    assert payload_out["code"] == "RECOVERY_NOT_DETACHED"
+    assert subprocess.run(
+        ["git", "branch", "--show-current"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip() == original_branch
+
+
+def test_recovery_stops_on_diverged_dirty_branch_without_owner_handoff(workspace):
+    repo = workspace["repo"]
+    branch = "task/nat/TEST-2-existing"
+    subprocess.run(["git", "switch", "-c", branch], cwd=repo, check=True, capture_output=True)
+    (repo / "README.md").write_text("branch moved\n", encoding="utf-8")
+    subprocess.run(["git", "commit", "-am", "move branch"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "--detach", "HEAD~1"], cwd=repo, check=True, capture_output=True
+    )
+    dirty_file = repo / "src/in-progress.py"
+    dirty_file.parent.mkdir()
+    dirty_file.write_text("keep this work\n", encoding="utf-8")
+    registry = workspace["home"] / ".hermes/worktrees/registry.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        json.dumps(
+            {
+                "tasks": {
+                    "TEST-2": {
+                        "task_id": "TEST-2",
+                        "state": "ACTIVE",
+                        "branch": branch,
+                        "worktree_path": str(repo),
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts/new-chat/hermes_workspace_recover.py"),
+            "--cwd",
+            str(repo),
+            "--json",
+        ],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+
+    payload_out = json.loads(result.stdout)
+    assert result.returncode == 2
+    assert payload_out["code"] == "RECOVERY_CONFLICT"
+    assert "เจ้าของ" not in payload_out["message"]
+    assert "ผู้ใช้" not in payload_out["message"]
+    assert subprocess.run(
+        ["git", "branch", "--show-current"], cwd=repo, check=True, capture_output=True, text=True
+    ).stdout.strip() == ""
+    assert dirty_file.read_text(encoding="utf-8") == "keep this work\n"
+
+
+def test_recovery_stops_on_diverged_clean_branch_to_preserve_detached_commit(workspace):
+    repo = workspace["repo"]
+    branch = "task/nat/TEST-3-existing"
+    subprocess.run(["git", "switch", "-c", branch], cwd=repo, check=True, capture_output=True)
+    (repo / "README.md").write_text("registered branch moved\n", encoding="utf-8")
+    subprocess.run(["git", "commit", "-am", "move branch"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "--detach", "HEAD~1"], cwd=repo, check=True, capture_output=True
+    )
+    detached_head = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=repo, check=True, capture_output=True, text=True
+    ).stdout.strip()
+    registry = workspace["home"] / ".hermes/worktrees/registry.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        json.dumps(
+            {
+                "tasks": {
+                    "TEST-3": {
+                        "task_id": "TEST-3",
+                        "state": "ACTIVE",
+                        "branch": branch,
+                        "worktree_path": str(repo),
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts/new-chat/hermes_workspace_recover.py"),
+            "--cwd",
+            str(repo),
+            "--json",
+        ],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert json.loads(result.stdout)["code"] == "RECOVERY_CONFLICT"
+    assert subprocess.run(
+        ["git", "branch", "--show-current"], cwd=repo, check=True, capture_output=True, text=True
+    ).stdout.strip() == ""
+    assert subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=repo, check=True, capture_output=True, text=True
+    ).stdout.strip() == detached_head
+
+
+def test_recovery_command_is_allowed_by_shell_gate_while_detached(workspace):
+    subprocess.run(["git", "checkout", "--detach"], cwd=workspace["repo"], check=True, capture_output=True)
+
+    assert GATE.run(payload(
+        workspace,
+        "Bash",
+        {"command": f"hermes-current-workspace-recover --cwd {workspace['repo']} --json"},
+    )) == 0
 
 
 def test_cross_root_write_is_blocked(workspace):

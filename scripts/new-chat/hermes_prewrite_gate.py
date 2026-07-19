@@ -498,9 +498,15 @@ def run(payload: dict) -> int:
     if not targets:
         return block("คำสั่งเขียนไม่มี path ให้ตรวจ")
     workspace = root or cwd
-    if root and (not branch or branch in PROTECTED_BRANCHES):
-        label = "detached HEAD" if not branch else f"กิ่ง {branch}"
-        return block(f"พื้นที่ปัจจุบันอยู่บน {label}; เจ้าของต้องเปิดกิ่งงานก่อนเขียน")
+    if root and not branch:
+        return block(
+            "RECOVERY_REQUIRED_REGISTERED_BRANCH: รัน "
+            f"hermes-current-workspace-recover --cwd {root} แล้วลองเขียนใหม่"
+        )
+    if root and branch in PROTECTED_BRANCHES:
+        return block(
+            f"PROTECTED_BRANCH_WRITE_BLOCKED: กิ่ง {branch} เป็นกิ่งร่วม จึงไม่เขียนโดยตรง"
+        )
     for target in targets:
         if protected_target(target):
             return block("ห้ามเขียนทับ Hook, Settings, session หรือเครื่องมือ Hermes")

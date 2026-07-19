@@ -48,14 +48,15 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     installer = (TEAM / "install-shortcuts.sh").read_text(encoding="utf-8")
     checker = (TEAM / "check-shortcuts.sh").read_text(encoding="utf-8")
 
-    assert version == "2026.07.18-2"
+    assert version == "2026.07.19-2"
     assert "INSTALLED_VERSION" in installer
     assert "ไม่พบตัวตรวจสุขภาพ Hook" in installer
     assert installer.index('bash "$NEW_CHAT_INSTALLER"') < installer.index(
         'python3 "$TEAM_HOOK_INSTALLER"'
     ) < installer.index('if ! "$HOOK_DOCTOR_BIN"')
-    assert "ผ่าน 4/4" in installer
+    assert "ผ่าน 6/6" in installer
     assert "registry_vs_skill" in checker
+    assert '"hook_health" "6/6"' in checker
     assert '"29"' not in checker
     assert '"33"' not in checker
 
@@ -78,6 +79,7 @@ def test_fresh_home_installs_new_chat_tools_and_fail_closed_gate(tmp_path):
     for name in (
         "hermes-prewrite-gate",
         "hermes-owner-intent",
+        "hermes-current-workspace-recover",
         "hermes-new-chat",
         "hermes-worktree",
         "hermes-hook-doctor",
@@ -134,11 +136,14 @@ def test_fresh_home_installs_new_chat_tools_and_fail_closed_gate(tmp_path):
     )
     assert doctor.returncode == 0, doctor.stdout + doctor.stderr
     health = json.loads(doctor.stdout)
-    assert len(health["gates"]) == 4
+    assert len(health["gates"]) == 6
     current = next(row for row in health["gates"] if row["gate"] == "current_workspace_prewrite")
     assert current["ok"] is True
-    assert current["checks"] == "18/18"
+    assert current["checks"] == "23/23"
     assert current["wiring"] == {"claude": True, "codex": True, "cursor": True, "hermes": True}
+    response = next(row for row in health["gates"] if row["gate"] == "workspace_response")
+    assert response["ok"] is True
+    assert response["checks"] == "4/4"
 
 
 def test_team_hook_installer_adds_current_workspace_gate_to_four_apps(tmp_path):
@@ -189,6 +194,7 @@ def test_team_hook_installer_adds_current_workspace_gate_to_four_apps(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     for root in (home / ".claude/hooks", home / ".codex/hooks", home / ".cursor/hooks", active_hermes / "hooks"):
         assert (root / "enforce-new-chat-relay.py").is_file()
+        assert (root / "enforce-workspace-response.py").is_file()
     data = json.loads(settings.read_text(encoding="utf-8"))
     entries = data["hooks"]["PreToolUse"]
     assert any(
@@ -205,6 +211,8 @@ def test_team_hook_installer_adds_current_workspace_gate_to_four_apps(tmp_path):
     )
     cursor_data = json.loads((home / ".cursor/hooks.json").read_text(encoding="utf-8"))
     assert any("enforce-new-chat-relay.py" in entry.get("command", "") for entry in cursor_data["hooks"]["preToolUse"])
+    assert any("enforce-workspace-response.py" in entry.get("command", "") for entry in cursor_data["hooks"]["afterAgentResponse"])
+    assert any("team-stop-gates.py" in entry.get("command", "") for entry in cursor_data["hooks"]["stop"])
     hermes_config = (active_hermes / "config.yaml").read_text(encoding="utf-8")
     assert "pre_tool_call:" in hermes_config
     assert "hermes-current-workspace-hook" in hermes_config
@@ -214,19 +222,62 @@ def test_team_hook_installer_adds_current_workspace_gate_to_four_apps(tmp_path):
     assert "hermes-owner-intent" in hermes_config
     assert "keep-hermes-prompt-hook" in hermes_config
     assert hermes_config.count("pre_llm_call:") == 1
+    assert "transform_llm_output:" in hermes_config
+    assert "enforce-workspace-response.py" in hermes_config
     assert "hermes-owner-intent" in settings.read_text(encoding="utf-8")
     assert "hermes-owner-intent" in (home / ".codex/hooks.json").read_text(encoding="utf-8")
     assert "hermes-owner-intent" in (home / ".cursor/hooks.json").read_text(encoding="utf-8")
     allowlist = json.loads((active_hermes / "shell-hooks-allowlist.json").read_text(encoding="utf-8"))
     assert any(row.get("event") == "pre_tool_call" for row in allowlist["approvals"])
     assert any(row.get("event") == "pre_llm_call" for row in allowlist["approvals"])
+    assert any(row.get("event") == "transform_llm_output" for row in allowlist["approvals"])
+
+
+def test_native_stop_bundle_keeps_native_gates_and_adds_workspace_response(tmp_path):
+    home = tmp_path / "home"
+    settings = home / ".codex/hooks.json"
+    settings.parent.mkdir(parents=True)
+    settings.write_text(
+        json.dumps(
+            {
+                "hooks": {
+                    "Stop": [
+                        {
+                            "hooks": [
+                                {"type": "command", "command": "/hooks/validate-all-stop.py"},
+                                {"type": "command", "command": "/hooks/enforce-codex-review.py"},
+                            ]
+                        }
+                    ]
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+
+    result = subprocess.run(
+        [sys.executable, str(TEAM / "install-team-hooks.py")],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    installed = settings.read_text(encoding="utf-8")
+    assert "validate-all-stop.py" in installed
+    assert "/hooks/enforce-codex-review.py" in installed
+    assert "enforce-workspace-response.py" in installed
+    assert "team-stop-gates.py" not in installed
 
 
 def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     home = tmp_path / "home"
     root = home / "ObsidianVault/HermesAgent"
     shutil.copytree(TEAM / "payload", root)
-    (root / ".shortcut-version").write_text("2026.07.18-2\n", encoding="utf-8")
+    (root / ".shortcut-version").write_text("2026.07.19-2\n", encoding="utf-8")
 
     # แยกการทดสอบไฟล์ Migrate ออกจากจำนวนรายการ Shortcut อื่นใน payload
     (root / "ai-context/prompt-shortcut-registry.md").write_text("| `fixture` |\n", encoding="utf-8")
@@ -254,7 +305,7 @@ def _installed_shortcut_home(tmp_path: Path) -> tuple[Path, dict[str, str]]:
 
     env = os.environ.copy()
     env["HOME"] = str(home)
-    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.18-2"
+    env["HERMES_SHORTCUT_EXPECTED_VERSION"] = "2026.07.19-2"
     return root, env
 
 
@@ -318,3 +369,15 @@ def test_team_installer_includes_real_stop_hooks_for_fresh_notebooks():
     assert (hook_dir / "enforce-codex-review.py").is_file()
     assert (hook_dir / "enforce-prompt-evidence.py").is_file()
     assert (hook_dir / "team-stop-gates.py").is_file()
+    assert (hook_dir / "enforce-workspace-response.py").is_file()
+    assert '"enforce-workspace-response.py"' in hook_installer
+    assert '"afterAgentResponse"' in hook_installer
+    assert '"stop"' in hook_installer
+    assert '"transform_llm_output"' in hook_installer
+
+
+def test_new_chat_tools_installer_includes_same_root_recovery_command():
+    installer = (TEAM / "install-new-chat-tools.sh").read_text(encoding="utf-8")
+
+    assert "hermes_workspace_recover.py" in installer
+    assert 'install_wrapper "hermes-current-workspace-recover"' in installer

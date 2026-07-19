@@ -66,6 +66,31 @@ def test_setup_installs_and_smokes_all_tools(tmp_path: Path):
     assert "mw-spec-check" not in installed
 
 
+def test_setup_retries_one_transient_smoke_failure(tmp_path: Path):
+    """A tool killed once by temporary machine pressure must get one honest retry."""
+    staging = tmp_path / "downloaded"
+    shutil.copytree(REPO_ROOT / "scripts" / "mw", staging / "scripts" / "mw")
+    marker = tmp_path / "backend-smoke-attempted"
+    backend = staging / "scripts" / "mw" / "backend_check.py"
+    backend.write_text(
+        "#!/usr/bin/env python3\n"
+        "from pathlib import Path\n"
+        f"marker = Path({str(marker)!r})\n"
+        "if not marker.exists():\n"
+        "    marker.write_text('first', encoding='utf-8')\n"
+        "    raise SystemExit(137)\n"
+        "print('usage: mw-backend-check')\n",
+        encoding="utf-8",
+    )
+    env = _env(tmp_path)
+
+    proc = _run(staging / "scripts" / "mw" / "mw-setup.sh", env)
+
+    assert proc.returncode == 0, (proc.stdout, proc.stderr)
+    assert "ลองตรวจซ้ำอีก 1 ครั้ง" in proc.stdout
+    assert "ทดสอบไม่ผ่าน 0" in proc.stdout
+
+
 def test_tools_survive_source_deletion(tmp_path: Path):
     """Regression 2026-07-15: การติดตั้งผ่าน curl รันจากโฟลเดอร์ /tmp ที่ถูกลบทิ้ง —
     เครื่องมือทุกตัวต้องยังรันได้หลังต้นทางหาย (เดิม symlink ชี้ต้นทางตรง ๆ = ตายยกชุด)"""

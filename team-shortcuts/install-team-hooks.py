@@ -21,6 +21,8 @@ HOOK_NAMES = (
     "team-stop-gates.py",
     "enforce-flow-gate.py",
     "enforce-new-chat-relay.py",
+    "enforce-workspace-response.py",
+    "enforce-phase-autonomy.py",
 )
 
 
@@ -144,6 +146,28 @@ def install_stop_entry(settings_path: Path, runner: Path) -> None:
                 cleaned.append(updated)
         hooks["Stop"] = cleaned
         stop = cleaned
+        for response_name in (
+            "enforce-workspace-response.py",
+            "enforce-phase-autonomy.py",
+        ):
+            response_command = str(runner.parent / response_name)
+            has_response_gate = any(
+                isinstance(entry, dict)
+                and any(
+                    isinstance(hook, dict)
+                    and response_name in str(hook.get("command", ""))
+                    for hook in entry.get("hooks", [])
+                )
+                for entry in stop
+            )
+            if not has_response_gate:
+                stop.append(
+                    {
+                        "hooks": [
+                            {"type": "command", "command": response_command, "timeout": 12}
+                        ]
+                    }
+                )
 
     command = str(runner)
     found = False
@@ -318,6 +342,37 @@ def install_cursor_owner_prompt_entry(settings_path: Path, runner: Path) -> None
     tmp.replace(settings_path)
 
 
+def install_cursor_response_entries(
+    settings_path: Path, response_runners: tuple[Path, ...], stop_runner: Path
+) -> None:
+    data = load_json(settings_path)
+    data.setdefault("version", 1)
+    hooks = data.setdefault("hooks", {})
+    if not isinstance(hooks, dict):
+        raise SystemExit(f"ช่อง hooks ผิดรูปแบบใน {settings_path}")
+    requested = [
+        *(("afterAgentResponse", runner, False) for runner in response_runners),
+        ("stop", stop_runner, True),
+    ]
+    for event, runner, fail_closed in requested:
+        entries = hooks.setdefault(event, [])
+        if not isinstance(entries, list):
+            raise SystemExit(f"ช่อง hooks.{event} ผิดรูปแบบใน {settings_path}")
+        command = str(runner)
+        marker = runner.name
+        found = False
+        for entry in entries:
+            if isinstance(entry, dict) and marker in str(entry.get("command", "")):
+                entry.update({"command": command, "timeout": 12, "failClosed": fail_closed})
+                found = True
+        if not found:
+            entries.append({"command": command, "timeout": 12, "failClosed": fail_closed})
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = settings_path.with_suffix(settings_path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(settings_path)
+
+
 def install_hermes_config_entry(config_path: Path, runner: Path) -> None:
     """Append one Hermes pre_tool_call hook without rewriting existing YAML."""
     command = str(runner)
@@ -387,6 +442,36 @@ def install_hermes_prompt_entry(config_path: Path, runner: Path) -> None:
     tmp.replace(config_path)
 
 
+def install_hermes_response_entry(config_path: Path, runner: Path) -> None:
+    command = str(runner)
+    text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+    if runner.name in text:
+        return
+    lines, hooks_index, section_end = config_hook_section(text)
+    event_index = next(
+        (
+            i
+            for i in range(hooks_index + 1, section_end)
+            if lines[i].strip() == "transform_llm_output:"
+        ),
+        None,
+    )
+    entry = [f"    - command: {command}", "      timeout: 12"]
+    if event_index is None:
+        lines[section_end:section_end] = ["  transform_llm_output:", *entry]
+    else:
+        insert_at = section_end
+        for i in range(event_index + 1, section_end):
+            if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].strip():
+                insert_at = i
+                break
+        lines[insert_at:insert_at] = entry
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = config_path.with_suffix(config_path.suffix + ".tmp")
+    tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    tmp.replace(config_path)
+
+
 def install_hermes_allowlist(path: Path, runner: Path, event: str = "pre_tool_call") -> None:
     data = load_json(path)
     approvals = data.setdefault("approvals", [])
@@ -436,10 +521,24 @@ def main() -> int:
         HOME / ".cursor" / "hooks.json", cursor_hooks / "enforce-new-chat-relay.py"
     )
     install_cursor_owner_prompt_entry(HOME / ".cursor" / "hooks.json", owner_intent)
+    install_cursor_response_entries(
+        HOME / ".cursor" / "hooks.json",
+        (
+            cursor_hooks / "enforce-workspace-response.py",
+            cursor_hooks / "enforce-phase-autonomy.py",
+        ),
+        cursor_hooks / "team-stop-gates.py",
+    )
     install_hermes_config_entry(
         hermes_home / "config.yaml", hermes_runner
     )
     install_hermes_prompt_entry(hermes_home / "config.yaml", owner_intent)
+    install_hermes_response_entry(
+        hermes_home / "config.yaml", hermes_hooks / "enforce-workspace-response.py"
+    )
+    install_hermes_response_entry(
+        hermes_home / "config.yaml", hermes_hooks / "enforce-phase-autonomy.py"
+    )
     install_hermes_allowlist(
         hermes_home / "shell-hooks-allowlist.json",
         hermes_runner,
@@ -448,6 +547,16 @@ def main() -> int:
         hermes_home / "shell-hooks-allowlist.json",
         owner_intent,
         event="pre_llm_call",
+    )
+    install_hermes_allowlist(
+        hermes_home / "shell-hooks-allowlist.json",
+        hermes_hooks / "enforce-workspace-response.py",
+        event="transform_llm_output",
+    )
+    install_hermes_allowlist(
+        hermes_home / "shell-hooks-allowlist.json",
+        hermes_hooks / "enforce-phase-autonomy.py",
+        event="transform_llm_output",
     )
     print("ติดตั้ง Hook พื้นที่ปัจจุบันให้ Claude Code, Codex, Cursor และ Hermes Agent แล้ว")
     return 0

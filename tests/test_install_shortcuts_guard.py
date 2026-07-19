@@ -20,6 +20,7 @@ def build_fake_installer(
     registry: str = "registry v1\n",
     ref: str = "ref v1\n",
     mw_setup_exit: int = 0,
+    hook_doctor_script: str = "#!/usr/bin/env python3\nraise SystemExit(0)\n",
 ):
     team_dir = tmp_path / "team-shortcuts"
     scripts_dir = tmp_path / "scripts"
@@ -36,10 +37,16 @@ def build_fake_installer(
     (team_dir / "VERSION").write_text("test-version\n")
     (team_dir / "install-team-hooks.py").write_text("#!/usr/bin/env python3\n")
     (scripts_dir / "hermes_write_permit.py").write_text("#!/usr/bin/env bash\nexit 0\n")
-    (scripts_dir / "hermes_hook_doctor.py").write_text("#!/usr/bin/env bash\nexit 0\n")
+    (scripts_dir / "hermes_hook_doctor.py").write_text(hook_doctor_script)
     gate = scripts_dir / "new-chat/hermes_prewrite_gate.py"
     gate.parent.mkdir(parents=True)
     gate.write_text("#!/usr/bin/env python3\nraise SystemExit(2)\n")
+    (gate.parent / "hermes_owner_intent.py").write_text(
+        "#!/usr/bin/env python3\nraise SystemExit(0)\n"
+    )
+    (gate.parent / "hermes_workspace_recover.py").write_text(
+        "#!/usr/bin/env python3\nraise SystemExit(0)\n"
+    )
     lifecycle = tmp_path / "hermes_cli/worktree_lifecycle.py"
     lifecycle.parent.mkdir(parents=True)
     lifecycle.write_text("def register_worktree_subparser(subparsers):\n    pass\n")
@@ -164,3 +171,22 @@ def test_failed_mw_setup_fails_installation(tmp_path: Path):
 
     assert result.returncode != 0
     assert "ติดตั้งเครื่องมือ Use Migrate Web (MW) ไม่สำเร็จ" in result.stdout
+
+
+def test_installer_retries_hook_doctor_once(tmp_path: Path):
+    marker = tmp_path / "hook-doctor-attempted"
+    doctor = (
+        "#!/usr/bin/env python3\n"
+        "from pathlib import Path\n"
+        f"marker = Path({str(marker)!r})\n"
+        "if not marker.exists():\n"
+        "    marker.write_text('first', encoding='utf-8')\n"
+        "    raise SystemExit(137)\n"
+        "raise SystemExit(0)\n"
+    )
+    team_dir = build_fake_installer(tmp_path, hook_doctor_script=doctor)
+
+    result = run_installer(team_dir, tmp_path)
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert "ลองตรวจ Hook ซ้ำอีก 1 ครั้ง" in result.stdout
