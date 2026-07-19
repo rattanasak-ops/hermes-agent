@@ -396,8 +396,11 @@ def test_executor_requires_non_empty_request_and_bounded_timeout():
 def test_subscription_commands_use_logins_and_never_api_overrides(tmp_path):
     binaries = {name: f"/bin/{name}" for name in ("codex", "claude", "hermes")}
     runner = execution.SubscriptionSeatRunner(which=binaries.get)
-    codex = runner._command(
+    codex_worker = runner._command(
         family="codex", prompt="p", cwd=str(tmp_path), writable=True
+    )
+    codex_read_only = runner._command(
+        family="codex", prompt="p", cwd=str(tmp_path), writable=False
     )
     claude = runner._command(
         family="opus", prompt="p", cwd=str(tmp_path), writable=False
@@ -405,8 +408,13 @@ def test_subscription_commands_use_logins_and_never_api_overrides(tmp_path):
     grok = runner._command(
         family="grok", prompt="p", cwd=str(tmp_path), writable=False
     )
-    joined = " ".join(codex + claude + grok).lower()
-    assert "workspace-write" in codex
+    joined = " ".join(codex_worker + codex_read_only + claude + grok).lower()
+    assert "workspace-write" in codex_worker
+    assert "--ignore-user-config" not in codex_worker
+    assert "--ignore-user-config" in codex_read_only
+    assert "--ignore-rules" not in codex_read_only
+    assert codex_read_only.count("--disable") == 1
+    assert "multi_agent" in codex_read_only
     assert "plan" in claude
     assert "https://api.anthropic.com" in joined
     assert "xai-oauth" in grok
