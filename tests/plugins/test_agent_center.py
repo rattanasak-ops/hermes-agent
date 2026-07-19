@@ -1190,6 +1190,10 @@ def test_plugin_registers_exactly_seven_agent_center_tools():
     assert all(callable(entry["handler"]) for entry in registered)
     execute_entry = registered[-1]
     assert execute_entry["is_async"] is True
+    execute_properties = execute_entry["schema"]["parameters"]["properties"]
+    assert set(execute_properties) == {"packet", "request", "timeout_seconds"}
+    assert "provider" not in execute_properties
+    assert "model" not in execute_properties
 
 
 def test_use_agent_thinking_only_route_needs_no_build_seats():

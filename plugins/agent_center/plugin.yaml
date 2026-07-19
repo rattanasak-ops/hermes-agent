@@ -1,6 +1,6 @@
 name: agent-center
 version: 0.3.0
-description: "Agent Center catalog, mode-aware routing, packet/receipt validation, owner-review training candidates, and bounded real two-model execution through Hermes-owned credentials. Never reads credentials, writes files, opens a terminal, or persists anything."
+description: "Agent Center catalog, mode-aware routing, packet/receipt validation, owner-review training candidates, and real planner/worker/reviewer execution through logged-in Codex, Claude, and xAI subscriptions without API keys or AI Relay."
 author: "Hermes Agent"
 kind: standalone
 provides_tools:

@@ -366,12 +366,7 @@ if ! hermes plugins enable agent-center >/dev/null; then
   exit 1
 fi
 say "      สำเร็จ: เปิดใช้ Agent Center ใน Hermes Agent"
-if ! hermes config set plugins.entries.agent-center.llm.allow_provider_override true >/dev/null \
-  || ! hermes config set plugins.entries.agent-center.llm.allow_model_override true >/dev/null; then
-  say "ผิดพลาด: เปิดสิทธิ์ให้ Agent Center เรียกคู่คิดผ่านบัญชี Hermes ไม่สำเร็จ"
-  exit 1
-fi
-say "      สำเร็จ: ให้ Agent Center เลือกผู้ให้บริการและรุ่นตาม Work Packet ที่ตรวจผ่าน"
+say "      สำเร็จ: Agent Center จะใช้บัญชี Subscription ที่ล็อกอินอยู่ โดยไม่เปิดสิทธิ์เลือก API"
 
 # ติดตั้งด่านล็อกงานเขียนให้ใช้ได้จากทุก project แม้ project นั้นไม่มี repo Hermes Agent
 if [ ! -f "$WRITE_PERMIT_SRC" ]; then

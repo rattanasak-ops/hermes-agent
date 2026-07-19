@@ -1,8 +1,8 @@
 """Agent Center bundled plugin: catalog, routing, policy, and execution tools.
 
-Registers six deterministic catalog/policy tools plus one bounded runtime tool.
-The runtime tool uses Hermes-owned model credentials through ``ctx.llm``. It
-never reads credentials, writes files, opens a terminal, or persists anything.
+Registers six deterministic catalog/policy tools plus one subscription runtime
+tool. The runtime invokes fresh Codex, Claude Code, or Hermes/xAI OAuth sessions
+without reading API keys or using AI Relay.
 """
 
 from __future__ import annotations
@@ -106,26 +106,17 @@ def register(ctx) -> None:
         schema={
             "name": "agent_center_execute",
             "description": (
-                "Execute a validated think, plan, review, or train Work Packet "
-                "through the real cross-family planner pair using Hermes-owned "
-                "model credentials, synthesize both outputs, and return a "
-                "packet-bound Work Receipt. Build mode fails closed because "
-                "plugin model completions have no file or terminal tools."
+                "Execute a validated Work Packet through logged-in AI "
+                "subscriptions. Every mode runs a cross-family planner pair. "
+                "Build mode then runs a writable worker and a separate "
+                "read-only reviewer in distinct sessions. Returns a "
+                "packet-bound Work Receipt without using API keys or AI Relay."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "packet": {"type": "object"},
                     "request": {"type": "string"},
-                    "provider": {
-                        "type": "string",
-                        "enum": sorted(execution.SUPPORTED_RUNTIME_PROVIDERS),
-                    },
-                    "max_tokens": {
-                        "type": "integer",
-                        "minimum": execution.MIN_MAX_TOKENS,
-                        "maximum": execution.MAX_MAX_TOKENS,
-                    },
                     "timeout_seconds": {
                         "type": "number",
                         "minimum": execution.MIN_TIMEOUT_SECONDS,
@@ -136,8 +127,6 @@ def register(ctx) -> None:
                 "additionalProperties": False,
             },
         },
-        handler=lambda args, _ctx=ctx, **kwargs: execution.agent_center_execute(
-            args, llm=_ctx.llm, **kwargs
-        ),
+        handler=lambda args, **kwargs: execution.agent_center_execute(args, **kwargs),
         is_async=True,
     )
