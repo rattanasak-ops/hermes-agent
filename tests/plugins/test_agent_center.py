@@ -604,6 +604,57 @@ def test_build_team_manifest_selects_leads_for_domain():
     assert manifest["skills"]
 
 
+def test_build_phase_workflow_selects_large_build_chain_and_domain_shortcuts():
+    diag = _valid_diagnosis()
+    diag["domains"] = ["ui-web-design", "quality", "graphic"]
+    norm = routing.validate_diagnosis(diag)["diagnosis"]
+    workflow = routing.build_team_manifest(norm)["workflow"]
+    names = [item["name"] for item in workflow["selected_shortcuts"]]
+
+    assert workflow["entry_shortcut"] == "Use Agent"
+    assert workflow["phase_policy"] == "large_phase"
+    assert workflow["safe_work_question_budget"] == 0
+    assert workflow["external_approval_batches_per_phase"] == 1
+    assert workflow["review_timing"] == "phase_boundary"
+    assert names == [
+        "Use Agent",
+        "Use Flow Guardian",
+        "Use Comply",
+        "Use WOW Resource",
+        "Use Impeccable",
+        "Use QA QC",
+        "Use Continue",
+        "Use Save Git",
+        "Use Close Chat",
+    ]
+
+
+def test_build_phase_workflow_thinking_mode_does_not_select_write_shortcuts():
+    diag = _valid_diagnosis()
+    diag["execution_mode"] = "think"
+    diag["domains"] = ["business-product"]
+    norm = routing.validate_diagnosis(diag)["diagnosis"]
+    workflow = routing.build_team_manifest(norm)["workflow"]
+    names = [item["name"] for item in workflow["selected_shortcuts"]]
+
+    assert names == ["Use Agent", "Use Business Plan"]
+    assert "Use Continue" not in names
+    assert "Use Save Git" not in names
+    assert "Use Close Chat" not in names
+
+
+def test_phase_workflow_shortcuts_exist_in_distributed_registry():
+    registry = (
+        REPO_ROOT / "team-shortcuts/payload/ai-context/prompt-shortcut-registry.md"
+    ).read_text(encoding="utf-8")
+    names = set(routing.SHORTCUT_STAGES)
+    names.update(
+        name for shortcuts in routing.DOMAIN_SHORTCUTS.values() for name in shortcuts
+    )
+    for name in names:
+        assert f"| `{name}`" in registry, f"workflow shortcut {name!r} is not registered"
+
+
 @pytest.mark.parametrize("domain", catalog.get_supported_domains())
 def test_build_team_manifest_routes_every_supported_domain(domain):
     # Every one of the 12 catalog domains must route to at least one
@@ -680,6 +731,26 @@ def test_validate_work_packet_rejects_missing_fields():
     assert report["code"] == "packet_invalid"
 
 
+@pytest.mark.parametrize(
+    ("field", "tampered"),
+    [
+        ("allowed_paths", "plugins/agent_center/**"),
+        ("risk_tags", "low-risk"),
+        ("deliverables", ["valid", 42]),
+        ("seat_policy", "assigned"),
+        ("training_receipt_required", False),
+    ],
+)
+def test_validate_work_packet_rejects_invalid_top_level_types(field, tampered):
+    packet = _valid_packet()
+    packet[field] = tampered
+    body = {key: value for key, value in packet.items() if key != "packet_id"}
+    packet["packet_id"] = routing._content_id("packet", body)
+    report = routing.validate_work_packet(packet)
+    assert report["ok"] is False
+    assert any(field in error for error in report["errors"])
+
+
 def test_validate_work_packet_rejects_non_dict():
     report = routing.validate_work_packet("not a packet")
     assert report["ok"] is False
@@ -749,6 +820,47 @@ def test_validate_work_packet_rejects_team_mode_mismatch():
     report = routing.validate_work_packet(packet)
     assert report["ok"] is False
     assert any("packet.team" in error for error in report["errors"])
+
+
+def test_validate_work_packet_rejects_missing_phase_workflow():
+    packet = _valid_packet()
+    packet["team"].pop("workflow")
+    body = {key: value for key, value in packet.items() if key != "packet_id"}
+    packet["packet_id"] = routing._content_id("packet", body)
+    report = routing.validate_work_packet(packet)
+    assert report["ok"] is False
+    assert any("packet.team.workflow" in error for error in report["errors"])
+
+
+def test_validate_work_packet_rejects_tampered_shortcut_selection():
+    packet = _valid_packet()
+    packet["team"]["workflow"]["selected_shortcuts"].append(
+        {"name": "Use Business Plan", "stage": "domain_work", "reason": "tampered"}
+    )
+    body = {key: value for key, value in packet.items() if key != "packet_id"}
+    packet["packet_id"] = routing._content_id("packet", body)
+    report = routing.validate_work_packet(packet)
+    assert report["ok"] is False
+    assert any("deterministic phase routing" in error for error in report["errors"])
+
+
+@pytest.mark.parametrize(
+    ("field", "tampered"),
+    [
+        ("intake", {"id": "invented-consultor"}),
+        ("leads", []),
+        ("specialists", [{"id": "invented-specialist"}]),
+        ("skills", [{"name": "invented-skill"}]),
+    ],
+)
+def test_validate_work_packet_rejects_tampered_catalog_team(field, tampered):
+    packet = _valid_packet()
+    packet["team"][field] = tampered
+    body = {key: value for key, value in packet.items() if key != "packet_id"}
+    packet["packet_id"] = routing._content_id("packet", body)
+    report = routing.validate_work_packet(packet)
+    assert report["ok"] is False
+    assert any("deterministic catalog" in error for error in report["errors"])
 
 
 # ---------------------------------------------------------------------------
@@ -1339,12 +1451,16 @@ def test_use_agent_shortcut_and_skill_are_connected():
     assert "BUILD_REVIEW passes only when mode is `build`" in skill
     assert "THINK_PAIR_EXECUTION_UNAVAILABLE" in skill
     assert "original packet and its receipt together" in skill
+    assert "The `team.workflow` object is mandatory" in skill
+    assert "safe-work question budget at 0" in skill
     assert "Use AI Relay เฉพาะเมื่อเจ้าของเรียกชัดเจน" in prompt
     assert "ไม่ได้จำกัดเฉพาะงานเขียนโค้ด" in prompt
     assert "ห้ามแต่งกฎว่า Use Agent ใช้กับงานคิดไม่ได้" in prompt
     assert "AGENT_CENTER_UNAVAILABLE" in prompt
     assert "THINK_PAIR_EXECUTION_UNAVAILABLE" in prompt
     assert "seat_evidence" in prompt
+    assert "team.workflow.selected_shortcuts" in prompt
+    assert "งบถามกลาง Phase 0 ครั้ง" in prompt
     assert shortcut_skill.count("Use Agent") >= 3
     assert shortcut_skill.count("| `Use Agent` |") == 1
     assert shortcut_index.count("| `Use Agent` |") == 1

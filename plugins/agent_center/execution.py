@@ -751,12 +751,16 @@ def _error_text(exc: BaseException) -> str:
 
 
 def _path_allowed(path: str, allowed_paths: list[str]) -> bool:
+    if not isinstance(allowed_paths, list):
+        return False
     normalized = path.replace("\\", "/")
     candidate = PurePosixPath(normalized)
     if candidate.is_absolute() or not candidate.parts or ".." in candidate.parts:
         return False
     clean_path = candidate.as_posix()
     for raw_pattern in allowed_paths:
+        if not isinstance(raw_pattern, str) or not raw_pattern.strip():
+            continue
         pattern_path = PurePosixPath(raw_pattern.replace("\\", "/"))
         if (
             pattern_path.is_absolute()
@@ -772,8 +776,16 @@ def _path_allowed(path: str, allowed_paths: list[str]) -> bool:
 def _git_scope_pathspecs(allowed_paths: list[str]) -> list[str]:
     """Translate validated Agent Center scope patterns into top-level Git pathspecs."""
 
+    if not isinstance(allowed_paths, list):
+        raise SubscriptionSeatError(
+            "workspace_scope_invalid", "allowed_paths must be a list of strings"
+        )
     pathspecs: list[str] = []
     for raw_pattern in allowed_paths:
+        if not isinstance(raw_pattern, str) or not raw_pattern.strip():
+            raise SubscriptionSeatError(
+                "workspace_scope_invalid", "allowed_paths must contain non-empty strings"
+            )
         normalized = raw_pattern.replace("\\", "/")
         pattern_path = PurePosixPath(normalized)
         if (
@@ -943,11 +955,28 @@ async def execute_packet(
 
     gate_results = ["planner subscriptions returned two distinct provider families"]
     if packet["execution_mode"] == "build":
+        raw_allowed_paths = packet.get("allowed_paths")
+        if not isinstance(raw_allowed_paths, list):
+            return {
+                "ok": False,
+                "code": "BUILD_SCOPE_INVALID",
+                "blocked": True,
+                "execution_id": execution_id,
+                "receipt": None,
+            }
         allowed_paths = [
             value.strip().replace(os.sep, "/")
-            for value in packet.get("allowed_paths", [])
+            for value in raw_allowed_paths
             if isinstance(value, str) and value.strip()
         ]
+        if len(allowed_paths) != len(raw_allowed_paths):
+            return {
+                "ok": False,
+                "code": "BUILD_SCOPE_INVALID",
+                "blocked": True,
+                "execution_id": execution_id,
+                "receipt": None,
+            }
         if not allowed_paths:
             return {
                 "ok": False,

@@ -11,7 +11,7 @@ tags:
   - adapters
 status: active
 created: 2026-05-24
-updated: 2026-07-14
+updated: 2026-07-19
 source_of_truth: skills/prompt-shortcuts
 codex_runtime_path: /Users/rattanasak/.codex/skills/prompt-shortcuts
 ---
@@ -22,7 +22,7 @@ This is the shared prompt shortcut contract for Codex, Qwen, Claude Code, Gemini
 
 ## Runtime Rule
 
-When the user invokes a shortcut, the AI must read `skills/prompt-shortcuts/references/work-execution-policy.md` and then read the mapped prompt file. Apply both to the current task. Read `worktree-lifecycle-contract.md` only when the owner explicitly asks to inspect or manage an existing Worktree. Work Execution Policy v2.2 takes precedence over older branch/Worktree and Relay rules.
+When the user invokes a shortcut, the AI must read `skills/prompt-shortcuts/references/work-execution-policy.md` and then read the mapped prompt file. Apply both to the current task. Read `worktree-lifecycle-contract.md` only when the owner explicitly asks to inspect or manage an existing Worktree. Work Execution Policy v2.3 takes precedence over older branch/Worktree and Relay rules.
 
 ## Current Workspace Only — Shortcut Integration
 
@@ -43,7 +43,7 @@ When the user invokes a shortcut, the AI must read `skills/prompt-shortcuts/refe
 | `Use Summary` | `use-summary`, `Summary`, `summary`, `ใช้ Summary`, `สรุป`, `สรุปลิงก์`, `วิเคราะห์บทความ`, `สรุปข้อมูล` | [[skills/prompt-shortcuts/references/use-summary|use-summary]] | Summarize and analyze user-provided links plus content, propose routing options, and wait for owner approval before writing to durable systems. |
 | `Use Scan Feature` | `use-scan-feature`, `Scan Feature`, `scan-feature`, `สแกนฟีเจอร์`, `ตรวจฟีเจอร์`, `บัญชีฟีเจอร์` | [[skills/prompt-shortcuts/references/use-scan-feature|use-scan-feature]] | Scan a real repo phase by phase and extract a Thai feature/capability spec with evidence, real/mock status, Reality Matrix, and Hidden Gems. |
 | `Use AI Relay` | `use-ai-relay`, `AI Relay`, `ai-relay`, `ใช้ AI Relay`, `สายพาน AI`, `สายพานส่งต่องาน AI`, `Claude วางแผน Grok โค้ด`, `ให้ AI ตัวอื่นโค้ดแล้ว Claude ตรวจ` | [[skills/prompt-shortcuts/references/use-ai-relay|use-ai-relay]] | v2.16 · รับรูปแบบ 1/2 จาก Use New Chat โดยไม่ถามซ้ำ · Write Permit ผูกหนึ่งงาน · ผู้ตรวจและวิธีเดิมไม่ผ่านได้ไม่เกิน 2 รอบต่อปัญหา จากนั้นต้องแยกปัญหาและเปลี่ยนวิธีตรวจ ห้ามยิงรอบที่ 3. |
-| `Use Agent` | `use-agent`, `ใช้ Agent`, `จัดทีม AI`, `เลือกทีม AI` | [[skills/prompt-shortcuts/references/use-agent|use-agent]] | v1.1 · รองรับงานคิด วิเคราะห์ วางแผน ออกแบบ สร้าง ตรวจ และฝึก · ทุกโหมดใช้ THINK_PAIR; BUILD_REVIEW และผู้ลงมือใช้เฉพาะ build · ถ้าเครื่องมือหายให้คืน AGENT_CENTER_UNAVAILABLE ห้ามแต่งกฎว่างานคิดใช้ไม่ได้. |
+| `Use Agent` | `use-agent`, `ใช้ Agent`, `จัดทีม AI`, `เลือกทีม AI` | [[skills/prompt-shortcuts/references/use-agent|use-agent]] | v1.3 · เป็นทางเข้าเดียวที่เลือก Agent, Skill และ Shortcut ของทั้ง Phase จากข้อมูลจริง · build ใช้ Phase ใหญ่: งานปลอดภัยถามกลาง Phase 0 ครั้ง, งานกระทบภายนอกรวบขออนุมัติ 1 ชุด, รวมผลตรวจปลาย Phase · ทุกโหมดใช้ THINK_PAIR; BUILD_REVIEW และผู้ลงมือใช้เฉพาะ build · route อย่างเดียวไม่ใช่หลักฐานว่าทีมทำงานแล้ว ต้องเรียกทุกที่นั่งจริงและตรวจ Work Receipt รุ่น 2 คู่กับ Work Packet ต้นฉบับ. |
 | `Use Viber Structure` | `use-viber-structure`, `Viber Structure`, `viber-structure`, `ใช้ Viber Structure`, `โครงสร้าง Viber`, `วางโครงสร้าง Viber Code`, `วางแผน Viber Code`, `Vibe Code Enterprise` | [[skills/prompt-shortcuts/references/use-viber-structure|use-viber-structure]] | Turn the Viber Code / Vibe Code Enterprise playbook into project structure, artifact matrices, phase/issue trackers, quality gates, and verification evidence rules. |
 | `Use Viber Audit` | `use-viber-audit`, `Viber Audit`, `viber-audit`, `Use Viber Standard Audit`, `Use Viber Compliance`, `ใช้ Viber Audit`, `ตรวจ Viber Standard`, `ตรวจ Viber Enterprise`, `ตรวจมาตรฐาน Viber`, `Viber Enterprise Standard` | [[skills/prompt-shortcuts/references/use-viber-audit|use-viber-audit]] | Audit one or many Viber Project repos against the full Viber Enterprise Standard with evidence-based scoring, missing artifact/gate analysis, remediation issues, and updateable tracking. |
 | `Use Impeccable` | `use-impeccable`, `Impeccable`, `ใช้ Impeccable`, `ตรวจ UI Slop`, `แก้ AI Slop` | [[skills/prompt-shortcuts/references/use-impeccable|use-impeccable]] | Use one simple owner-facing shortcut for Impeccable UI quality work; AI chooses whether to install, scan, ask for target, fix blocking issues, or plan UI debt cleanup. |
