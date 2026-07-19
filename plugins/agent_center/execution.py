@@ -34,6 +34,8 @@ _MAX_OUTPUT_CHARS = 100_000
 _MAX_UNTRACKED_FILES = 32
 _MAX_UNTRACKED_FILE_BYTES = 32 * 1024
 _MAX_UNTRACKED_TOTAL_BYTES = 128 * 1024
+_MAX_IGNORED_FILES = 256
+_MAX_IGNORED_OUTPUT_BYTES = 64 * 1024
 _SECRET_RE = re.compile(
     r"(?i)(?:sk|key|token|bearer)[-_a-z0-9]{12,}|"
     r"(?:authorization|api[_-]?key)\s*[:=]\s*\S+"
@@ -596,6 +598,54 @@ class SubscriptionSeatRunner:
             )
         return str(root)
 
+    async def workspace_ignored(
+        self,
+        cwd: str,
+        *,
+        allowed_paths: list[str],
+    ) -> list[str]:
+        """List ignored files in the approved scope without reading their content."""
+
+        pathspecs = _git_scope_pathspecs(allowed_paths)
+        process = await asyncio.create_subprocess_exec(
+            "git",
+            "ls-files",
+            "--others",
+            "--ignored",
+            "--exclude-standard",
+            "--full-name",
+            "-z",
+            "--",
+            *pathspecs,
+            cwd=cwd,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout_b, stderr_b = await process.communicate()
+        if process.returncode != 0:
+            raise SubscriptionSeatError(
+                "workspace_probe_failed", _safe_error(stderr_b.decode(errors="replace"))
+            )
+        if len(stdout_b) > _MAX_IGNORED_OUTPUT_BYTES:
+            raise SubscriptionSeatError(
+                "ignored_scope_too_large",
+                f"ignored path output exceeds {_MAX_IGNORED_OUTPUT_BYTES} bytes",
+            )
+        paths = sorted(
+            {
+                path
+                for path in stdout_b.decode("utf-8", errors="replace").split("\x00")
+                if path
+            }
+        )
+        if len(paths) > _MAX_IGNORED_FILES:
+            raise SubscriptionSeatError(
+                "ignored_scope_too_large",
+                f"ignored file count exceeds {_MAX_IGNORED_FILES}",
+            )
+        return paths
+
     async def workspace_evidence(
         self,
         cwd: str,
@@ -698,6 +748,29 @@ def _path_allowed(path: str, allowed_paths: list[str]) -> bool:
         if fnmatch.fnmatchcase(clean_path, pattern_path.as_posix()):
             return True
     return False
+
+
+def _git_scope_pathspecs(allowed_paths: list[str]) -> list[str]:
+    """Translate validated Agent Center scope patterns into top-level Git pathspecs."""
+
+    pathspecs: list[str] = []
+    for raw_pattern in allowed_paths:
+        normalized = raw_pattern.replace("\\", "/")
+        pattern_path = PurePosixPath(normalized)
+        if (
+            "\x00" in normalized
+            or pattern_path.is_absolute()
+            or not pattern_path.parts
+            or ".." in pattern_path.parts
+        ):
+            raise SubscriptionSeatError(
+                "workspace_scope_invalid", f"unsafe allowed path: {raw_pattern}"
+            )
+        magic = "glob,top" if any(char in normalized for char in "*?[") else "literal,top"
+        pathspecs.append(f":({magic}){pattern_path.as_posix()}")
+    if not pathspecs:
+        raise SubscriptionSeatError("workspace_scope_invalid", "allowed paths are empty")
+    return pathspecs
 
 
 async def execute_packet(
@@ -865,6 +938,10 @@ async def execute_packet(
                 "receipt": None,
             }
         try:
+            ignored_before = await runtime.workspace_ignored(
+                cwd,
+                allowed_paths=allowed_paths,
+            )
             before = await runtime.workspace_state(cwd)
         except Exception as exc:
             return {
@@ -872,6 +949,15 @@ async def execute_packet(
                 "code": "CURRENT_WORKSPACE_BLOCKED",
                 "blocked": True,
                 "error": _error_text(exc),
+                "receipt": None,
+            }
+        if ignored_before:
+            return {
+                "ok": False,
+                "code": "BUILD_SCOPE_IGNORED_PATHS_PRESENT",
+                "blocked": True,
+                "execution_id": execution_id,
+                "ignored_paths": ignored_before,
                 "receipt": None,
             }
         if before:
@@ -907,6 +993,20 @@ async def execute_packet(
                     "blocked": True,
                     "execution_id": execution_id,
                     "outside_paths": outside,
+                    "outputs": outputs,
+                    "receipt": None,
+                }
+            ignored_after = await runtime.workspace_ignored(
+                cwd,
+                allowed_paths=allowed_paths,
+            )
+            if ignored_after:
+                return {
+                    "ok": False,
+                    "code": "BUILD_IGNORED_PATH_CREATED",
+                    "blocked": True,
+                    "execution_id": execution_id,
+                    "ignored_paths": ignored_after,
                     "outputs": outputs,
                     "receipt": None,
                 }
