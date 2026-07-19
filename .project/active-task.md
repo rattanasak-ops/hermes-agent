@@ -1,7 +1,7 @@
 ---
 task_id: UAG-P5
 goal_id: UAG-P5-DIRECT-CODEX-20260718
-status: pull_request_open_owner_merge_pending
+status: gate_fix_pull_request_closed_unmerged
 owner_decision_at: 2026-07-19
 writer: codex-current-chat
 external_ai_relay: disabled
@@ -70,7 +70,7 @@ spec: .project/spec/UAG.md
 
 ## ขั้นตอนถัดไปเพียงหนึ่งขั้น
 
-เจ้าของตรวจและ merge PR #71 เมื่อเห็นสมควร
+เจ้าของเปิด PR #79 กลับและรวมเมื่อเห็นสมควร; PR ถูกปิดโดยไม่รวมเมื่อ 2026-07-19 เวลา 02:51 น. ส่วนตัวงาน Agent Center รวมเข้า `main` แล้วผ่าน PR #74
 
 ## จุดติดที่เคลียร์แล้วใน UAG-P3
 
@@ -86,6 +86,7 @@ spec: .project/spec/UAG.md
 - ตรวจไม่ให้ test path หนีออกนอก Git root ก่อนเริ่มคำสั่ง
 - เขียนสมุดหลักฐานลง `.project/ledger/` และผลคำสั่งลง `.project/gate-output/`
 - ด่าน UAG-P2 และ UAG-P3 ผ่าน 2/2 แถวด้วย exit 0
+- รันซ้ำที่ commit `83274c7f2f54b944103a41d7093d89840b79c69a` แล้ว: UAG-P2 ผ่าน 109/109 และ UAG-P3 ผ่าน 218/218
 - สำเนา `gate-run` ที่ติดตั้งนอก Git root ไม่ถูกแก้ รอบนี้เรียกไฟล์ในพื้นที่งานโดยตรง
 
 ## ผลด่าน Git
@@ -95,6 +96,8 @@ spec: .project/spec/UAG.md
 - ด่านกลางรองรับรายการไฟล์ค้างเฉพาะเมื่อเปิด `SAVE_GIT_ALLOW_DIRTY=1`; ไม่เปิดกุญแจยังบล็อกตามเดิม · การทดสอบผ่าน 3/3
 - `save-git --stage local --json` คืน `SAFE_TO_MERGE` ด้วย exit 0 และตรวจไฟล์ค้างที่อนุมัติ 2/2
 - push กิ่งขึ้น `origin` สำเร็จ 1/1 และเปิด PR #71 สำเร็จ 1/1: https://github.com/rattanasak-ops/hermes-agent/pull/71
+- PR #71 ปิดโดยไม่รวม; ตัวงาน Agent Center รวมผ่าน PR #74 แล้ว และงานซ่อมด่านปัจจุบันอยู่ใน PR #79: https://github.com/rattanasak-ops/hermes-agent/pull/79
+- PR #79 ถูกบัญชีเจ้าของปิดโดยไม่รวมเมื่อ 2026-07-19 เวลา 02:51 น.; Codex ไม่เปิดกลับเองเพื่อเคารพการเปลี่ยนสถานะจากเจ้าของ
 
 ## แบบ UAG-P3 ที่ลงมือแล้ว
 
@@ -117,6 +120,7 @@ spec: .project/spec/UAG.md
 - แถว gate-run `UAG-P3-I2` ผ่านรวม 208/208
 - ตัวอย่างคำของานออกแบบเว็บและ Web Engine ได้ใบรายชื่อทีม ซองสั่งงาน และใบเสร็จงานผ่าน 2/2
 - แถว gate-run `UAG-P4-I1` ผ่านชุด UAG 125/125 พร้อมคำสั่งที่ระบุพาธทดสอบครบ 2/2
+- แถวรันซ้ำ `UAG-P2-I3-RERUN` ผ่าน 109/109 และ `UAG-P3-I2-RERUN` ผ่าน 218/218 ที่หัวกิ่งปัจจุบัน พร้อมหลักฐาน 2/2 แฟ้ม
 - ตัวตรวจ Skill มาตรฐานผ่าน 1/1
 - การตรวจรูปแบบโค้ดผ่านทั้งหมด
 - การตรวจช่องว่างและอักขระผิดรูปในผลต่างไม่พบปัญหา
