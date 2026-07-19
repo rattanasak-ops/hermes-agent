@@ -57,7 +57,11 @@ resolve_hermes_runtime_home() {
         return 0
         ;;
       /*)
-        printf '%s\n' "$reported"
+        if [ -w "$reported" ]; then
+          printf '%s\n' "$reported"
+          return 0
+        fi
+        printf '%s/.hermes\n' "$HOME"
         return 0
         ;;
     esac
@@ -76,6 +80,20 @@ CODEX_AGENT_LINK="$HOME/.codex/skills/agent-center"
 OWNER_PATH="/Users/rattanasak/ObsidianVault/HermesAgent"
 
 say() { printf '%s\n' "$*"; }
+
+install_executable_file() {
+  local src="$1"
+  local dest="$2"
+
+  mkdir -p "$(dirname "$dest")"
+  if [ -L "$dest" ]; then
+    rm -f "$dest"
+  fi
+  if ! cmp -s "$src" "$dest"; then
+    cp "$src" "$dest"
+  fi
+  chmod 0755 "$dest"
+}
 
 WANT_CURSOR=0
 FORCE=0
@@ -202,7 +220,11 @@ detect_newer_destination_conflicts() {
       "$src" \
       "$AGENT_PLUGIN_DEST/$rel" \
       "Hermes runtime plugin/agent-center/$rel"
-  done < <(find "$AGENT_PLUGIN_SRC" -type f -print0)
+  done < <(find "$AGENT_PLUGIN_SRC" -type f \
+    ! -path '*/__pycache__/*' \
+    ! -name '*.pyc' \
+    ! -name '*.pyo' \
+    -print0)
   add_destination_only_conflicts \
     "$AGENT_PLUGIN_SRC" \
     "$AGENT_PLUGIN_DEST" \
@@ -214,29 +236,29 @@ shortcuts_payload_differs() {
     return 0
   fi
 
-  if ! diff -qr "$PAYLOAD/skills/prompt-shortcuts" "$SKILL_SRC" >/dev/null 2>&1; then
+  if ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$PAYLOAD/skills/prompt-shortcuts" "$SKILL_SRC" >/dev/null 2>&1; then
     return 0
   fi
 
-  if ! diff -qr "$AGENT_SKILL_PAYLOAD" "$AGENT_SKILL_SRC" >/dev/null 2>&1; then
+  if ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$AGENT_SKILL_PAYLOAD" "$AGENT_SKILL_SRC" >/dev/null 2>&1; then
     return 0
   fi
 
-  if ! diff -qr "$AGENT_SKILL_PAYLOAD" "$HERMES_AGENT_SKILL_DEST" >/dev/null 2>&1; then
+  if ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$AGENT_SKILL_PAYLOAD" "$HERMES_AGENT_SKILL_DEST" >/dev/null 2>&1; then
     return 0
   fi
 
   if [ -d "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ] \
-    && ! diff -qr "$AGENT_SKILL_PAYLOAD" "$CODEX_AGENT_LINK" >/dev/null 2>&1; then
+    && ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$AGENT_SKILL_PAYLOAD" "$CODEX_AGENT_LINK" >/dev/null 2>&1; then
     return 0
   fi
 
   if [ -d "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ] \
-    && ! diff -qr "$PAYLOAD/skills/prompt-shortcuts" "$CODEX_LINK" >/dev/null 2>&1; then
+    && ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$PAYLOAD/skills/prompt-shortcuts" "$CODEX_LINK" >/dev/null 2>&1; then
     return 0
   fi
 
-  if ! diff -qr "$AGENT_PLUGIN_SRC" "$AGENT_PLUGIN_DEST" >/dev/null 2>&1; then
+  if ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$AGENT_PLUGIN_SRC" "$AGENT_PLUGIN_DEST" >/dev/null 2>&1; then
     return 0
   fi
 
@@ -375,29 +397,19 @@ if [ ! -f "$WRITE_PERMIT_SRC" ]; then
   say "ผิดพลาด: ไม่พบด่านล็อกงานเขียนที่ $WRITE_PERMIT_SRC"
   exit 1
 fi
-mkdir -p "$HOME/.local/bin"
-if ! cmp -s "$WRITE_PERMIT_SRC" "$WRITE_PERMIT_BIN"; then
-  cp "$WRITE_PERMIT_SRC" "$WRITE_PERMIT_BIN"
-fi
-chmod 0755 "$WRITE_PERMIT_BIN"
+install_executable_file "$WRITE_PERMIT_SRC" "$WRITE_PERMIT_BIN"
 say "      สำเร็จ: ติดตั้งด่านล็อกงานเขียนที่ $WRITE_PERMIT_BIN"
 if [ ! -f "$HOOK_DOCTOR_SRC" ]; then
   say "ผิดพลาด: ไม่พบตัวตรวจสุขภาพ Hook ที่ $HOOK_DOCTOR_SRC"
   exit 1
 fi
-if ! cmp -s "$HOOK_DOCTOR_SRC" "$HOOK_DOCTOR_BIN"; then
-  cp "$HOOK_DOCTOR_SRC" "$HOOK_DOCTOR_BIN"
-fi
-chmod 0755 "$HOOK_DOCTOR_BIN"
+install_executable_file "$HOOK_DOCTOR_SRC" "$HOOK_DOCTOR_BIN"
 say "      สำเร็จ: ติดตั้งตัวตรวจสุขภาพ Hook ที่ $HOOK_DOCTOR_BIN"
 if [ ! -f "$SAVE_GIT_SRC" ]; then
   say "ผิดพลาด: ไม่พบด่าน Save Git ที่ $SAVE_GIT_SRC"
   exit 1
 fi
-if ! cmp -s "$SAVE_GIT_SRC" "$SAVE_GIT_BIN"; then
-  cp "$SAVE_GIT_SRC" "$SAVE_GIT_BIN"
-fi
-chmod 0755 "$SAVE_GIT_BIN"
+install_executable_file "$SAVE_GIT_SRC" "$SAVE_GIT_BIN"
 say "      สำเร็จ: ติดตั้งด่าน Save Git ที่ $SAVE_GIT_BIN"
 if [ ! -f "$NEW_CHAT_INSTALLER" ]; then
   say "ผิดพลาด: ไม่พบตัวติดตั้ง New Chat ที่ $NEW_CHAT_INSTALLER"

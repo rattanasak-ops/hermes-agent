@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import pwd
 import shutil
+import shlex
 import subprocess
 import sys
 
@@ -18,6 +19,7 @@ HOOK_NAMES = (
     "validate-thai-language.py",
     "enforce-codex-review.py",
     "enforce-prompt-evidence.py",
+    "owner-friction-gate.py",
     "team-stop-gates.py",
     "enforce-flow-gate.py",
     "enforce-new-chat-relay.py",
@@ -48,7 +50,11 @@ def active_hermes_home() -> Path:
     except (OSError, subprocess.TimeoutExpired):
         return default
     candidate = Path(result.stdout.strip()).expanduser()
-    return candidate.resolve().parent if result.returncode == 0 and candidate.name == "config.yaml" else default
+    if result.returncode == 0 and candidate.name == "config.yaml":
+        parent = candidate.resolve().parent
+        if parent.exists() and os.access(parent, os.W_OK):
+            return parent
+    return default
 
 
 def config_hook_section(text: str) -> tuple[list[str], int, int]:
@@ -443,29 +449,33 @@ def install_hermes_prompt_entry(config_path: Path, runner: Path) -> None:
 
 
 def install_hermes_response_entry(config_path: Path, runner: Path) -> None:
-    command = str(runner)
+    raw_command = str(runner)
+    command = f"{shlex.quote(sys.executable)} {shlex.quote(raw_command)}"
     text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
-    if runner.name in text:
-        return
     lines, hooks_index, section_end = config_hook_section(text)
-    event_index = next(
-        (
-            i
-            for i in range(hooks_index + 1, section_end)
-            if lines[i].strip() == "transform_llm_output:"
-        ),
+    for index in range(hooks_index + 1, section_end):
+        line = lines[index]
+        if "command:" not in line:
+            continue
+        prefix, _value = line.split("command:", 1)
+        if runner.name in line:
+            lines[index] = f"{prefix}command: {command}"
+    response_index = next(
+        (i for i in range(hooks_index + 1, section_end) if lines[i].strip() == "transform_llm_output:"),
         None,
     )
     entry = [f"    - command: {command}", "      timeout: 12"]
-    if event_index is None:
+    if response_index is None:
         lines[section_end:section_end] = ["  transform_llm_output:", *entry]
     else:
         insert_at = section_end
-        for i in range(event_index + 1, section_end):
+        for i in range(response_index + 1, section_end):
             if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].strip():
                 insert_at = i
                 break
-        lines[insert_at:insert_at] = entry
+        existing = "\n".join(lines[response_index:insert_at])
+        if raw_command not in existing and command not in existing:
+            lines[insert_at:insert_at] = entry
     config_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = config_path.with_suffix(config_path.suffix + ".tmp")
     tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -550,12 +560,12 @@ def main() -> int:
     )
     install_hermes_allowlist(
         hermes_home / "shell-hooks-allowlist.json",
-        hermes_hooks / "enforce-workspace-response.py",
+        f"{shlex.quote(sys.executable)} {shlex.quote(str(hermes_hooks / 'enforce-workspace-response.py'))}",
         event="transform_llm_output",
     )
     install_hermes_allowlist(
         hermes_home / "shell-hooks-allowlist.json",
-        hermes_hooks / "enforce-phase-autonomy.py",
+        f"{shlex.quote(sys.executable)} {shlex.quote(str(hermes_hooks / 'enforce-phase-autonomy.py'))}",
         event="transform_llm_output",
     )
     print("ติดตั้ง Hook พื้นที่ปัจจุบันให้ Claude Code, Codex, Cursor และ Hermes Agent แล้ว")

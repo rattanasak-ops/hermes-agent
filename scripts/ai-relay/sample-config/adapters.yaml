@@ -11,6 +11,15 @@ tools:
       - "{prompt}"
     note: "Grok วิ่งผ่าน AI Portal token ของพนักงาน ไม่ต้อง login Grok local"
 
+  grok-local:
+    cmd:
+      - grok
+      - --cwd
+      - "{cwd}"
+      - -p
+      - "{prompt}"
+    note: "Grok local ใช้บัญชีที่ login ไว้ในเครื่องนี้ · ไม่มี flag เขียนไฟล์อัตโนมัติ"
+
   codex:
     cmd:
       - relay-portal
