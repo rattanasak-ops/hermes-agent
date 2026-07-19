@@ -32,7 +32,7 @@ except ImportError:  # pragma: no cover - Windows fallback uses process-local wr
 
 
 SCHEMA_VERSION = "worktree-lifecycle-v1"
-ACTIVE_STATES = {"CREATED", "ACTIVE", "PAUSED", "IN_REVIEW", "BLOCKED"}
+CAPACITY_STATES = {"ACTIVE", "PAUSED"}
 CLEANUP_SOURCE_STATES = {"MERGED", "ABANDONED_BY_OWNER", "CLEANUP_READY", "QUARANTINED"}
 DEFAULT_PORT_RANGE = (8100, 8999)
 QUARANTINE_HOURS = 72
@@ -677,7 +677,7 @@ def command_open(args: argparse.Namespace) -> Dict[str, Any]:
             for item in data["tasks"].values()
             if item.get("project_id") == project_id
             and item.get("staff_id") == staff_id
-            and item.get("state") in ACTIVE_STATES
+            and item.get("state") in CAPACITY_STATES
         )
         if open_count >= 3 and not args.allow_over_limit:
             raise WorktreeLifecycleError("มี Worktree ที่เปิดอยู่ครบ 3 งานแล้ว ต้องอนุมัติ --allow-over-limit")
@@ -765,6 +765,35 @@ def command_list(args: argparse.Namespace) -> Dict[str, Any]:
     if args.project_id:
         tasks = [item for item in tasks if item.get("project_id") == args.project_id]
     return {"ok": True, "decision": "WTL_LIST", "message": "พบ {} งาน".format(len(tasks)), "tasks": tasks, "registry": str(path)}
+
+
+def command_find(args: argparse.Namespace) -> Dict[str, Any]:
+    """Find registered tasks without changing the registry or task leases."""
+    project_id = validate_id("project_id", args.project_id)
+    staff_id = validate_id("staff_id", args.staff_id)
+    task_id = validate_id("task_id", args.task_id) if args.task_id else None
+    states = set(args.state or [])
+    path = registry_path(args.registry)
+    data = load_registry(path)
+    tasks = [
+        task_summary(item)
+        for item in data.get("tasks", {}).values()
+        if item.get("project_id") == project_id
+        and item.get("staff_id") == staff_id
+        and (task_id is None or item.get("task_id") == task_id)
+        and (not states or item.get("state") in states)
+    ]
+    tasks.sort(key=lambda item: item.get("task_id") or "")
+    found = bool(tasks)
+    return {
+        "ok": True,
+        "decision": "WTL_FOUND" if found else "WTL_NOT_FOUND",
+        "message": "พบงานเดิม {} งาน; ไม่มีการเปลี่ยนสมุดทะเบียน".format(len(tasks)),
+        "tasks": tasks,
+        "count": len(tasks),
+        "read_only": True,
+        "registry": str(path),
+    }
 
 
 def command_status(args: argparse.Namespace) -> Dict[str, Any]:
@@ -1221,6 +1250,7 @@ def cmd_worktree(args: argparse.Namespace) -> None:
     handlers = {
         "open": command_open,
         "list": command_list,
+        "find": command_find,
         "status": command_status,
         "enter": command_enter,
         "pause": command_pause,
@@ -1266,6 +1296,13 @@ def register_worktree_subparser(subparsers) -> argparse.ArgumentParser:
     list_p = subs.add_parser("list", help="แสดง Worktree ในทะเบียน")
     list_p.add_argument("--project-id")
     add_registry_json(list_p)
+
+    find_p = subs.add_parser("find", help="ค้นงานเดิมแบบอ่านอย่างเดียวก่อนเปิดงานใหม่")
+    find_p.add_argument("--project-id", required=True)
+    find_p.add_argument("--staff-id", required=True)
+    find_p.add_argument("--task-id")
+    find_p.add_argument("--state", action="append", help="กรองสถานะ; ระบุซ้ำได้")
+    add_registry_json(find_p)
 
     for action in ("status", "enter", "doctor"):
         item = subs.add_parser(action, help="{} Worktree".format(action))
@@ -1340,6 +1377,7 @@ __all__ = [
     "WorktreeLifecycleError",
     "cleanup_gates",
     "cmd_worktree",
+    "command_find",
     "default_worktree_root",
     "disk_usage",
     "load_registry",

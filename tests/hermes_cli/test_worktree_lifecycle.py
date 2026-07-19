@@ -107,6 +107,50 @@ class WorktreeLifecycleTests(unittest.TestCase):
         with self.assertRaisesRegex(wtl.WorktreeLifecycleError, "ครบ 3 งาน"):
             wtl.command_open(self.open_args("TASK-4", "work-4"))
 
+    def test_blocked_worktree_does_not_consume_open_limit(self) -> None:
+        for number in range(1, 4):
+            wtl.command_open(self.open_args("TASK-{}".format(number), "work-{}".format(number)))
+        data = wtl.load_registry(self.registry)
+        data["tasks"]["TASK-1"]["state"] = "BLOCKED"
+        wtl.save_registry(self.registry, data)
+
+        opened = wtl.command_open(self.open_args("TASK-4", "work-4"))
+
+        self.assertEqual("WTL_READY", opened["decision"])
+
+    def test_active_and_paused_worktrees_consume_open_limit(self) -> None:
+        for number in range(1, 4):
+            wtl.command_open(self.open_args("TASK-{}".format(number), "work-{}".format(number)))
+        wtl.command_pause(argparse.Namespace(
+            task_id="TASK-3", registry=str(self.registry), reason="พักทดสอบ",
+        ))
+
+        with self.assertRaisesRegex(wtl.WorktreeLifecycleError, "ครบ 3 งาน"):
+            wtl.command_open(self.open_args("TASK-4", "work-4"))
+
+    def test_owner_override_allows_opening_more_than_three_worktrees(self) -> None:
+        for number in range(1, 4):
+            wtl.command_open(self.open_args("TASK-{}".format(number), "work-{}".format(number)))
+        override = self.open_args("TASK-4", "work-4")
+        override.allow_over_limit = True
+
+        opened = wtl.command_open(override)
+
+        self.assertEqual("WTL_READY", opened["decision"])
+
+    def test_find_existing_task_is_read_only(self) -> None:
+        wtl.command_open(self.open_args("TASK-1", "first"))
+        registry_before = self.registry.read_bytes()
+
+        result = wtl.command_find(argparse.Namespace(
+            project_id="project-1", staff_id="staff-1", task_id=None,
+            state=None, registry=str(self.registry),
+        ))
+
+        self.assertEqual("WTL_FOUND", result["decision"])
+        self.assertEqual(["TASK-1"], [item["task_id"] for item in result["tasks"]])
+        self.assertEqual(registry_before, self.registry.read_bytes())
+
     def test_disk_policy_at_85_percent_blocks_open(self) -> None:
         self.disk_patcher.stop()
         try:
@@ -414,7 +458,7 @@ class WorktreeLifecycleTests(unittest.TestCase):
         worktree = wtl.register_worktree_subparser(subparsers)
         action = next(item for item in worktree._actions if isinstance(item, argparse._SubParsersAction))
         self.assertEqual(
-            {"open", "list", "status", "enter", "doctor", "scan", "import", "report", "pause", "handoff", "accept", "close", "abandon", "cleanup"},
+            {"open", "list", "find", "status", "enter", "doctor", "scan", "import", "report", "pause", "handoff", "accept", "close", "abandon", "cleanup"},
             set(action.choices),
         )
         parsed = parser.parse_args([
