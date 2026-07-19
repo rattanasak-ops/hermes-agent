@@ -14,7 +14,7 @@
 | 2. กู้ detached HEAD และกันคำตอบโยนงานให้เจ้าของ | verified | 100% | `hermes-current-workspace-recover` + `enforce-workspace-response.py` |
 | 3. ต่อสาย Codex/Claude Code/Cursor/Hermes | verified | 100% | doctor `workspace_response` 4/4 · `current_workspace_prewrite` 23/23 |
 | 4. ห้ามถามอนุมัติซ้ำกลางเฟส | verified | 100% | `phase_autonomy` 4/4 · ข้อยกเว้นภายนอกต้องมีรหัส+หลักฐาน |
-| 5. ส่งกิ่งเข้า main แล้วกระจาย VPS/ทีม | pending | 0% | รอบนี้อยู่กิ่งงานและติดตั้ง Mac แล้ว · ยังไม่ merge main/ตรวจ VPS/เครื่องพนักงาน |
+| 5. ส่งกิ่งเข้า main แล้วกระจาย VPS/ทีม | pending | 0% | push กิ่งแล้ว · Merge Gate บล็อกเพราะ 9 commit/31 ไฟล์เกินเพดาน 5/30 · ยังไม่ merge main/ตรวจ VPS/เครื่องพนักงาน |
 | **รวม** | **ทำแล้ว 4/5 เฟส** | **80%** | ชุดติดตั้ง Mac รุ่น `2026.07.19-2` ผ่าน 33/33 |
 
 ## ตรวจแผนทั้งหมดใน `.project`
@@ -74,11 +74,11 @@
 
 ## Deploy
 
-N/A — ยังไม่ merge เข้า `main` และยังไม่กระจายรุ่นนี้ไป VPS/เครื่องพนักงาน
+N/A — push กิ่งสำเร็จที่ `e66cb467c38b2bd35aeb42fbac4bc5d6a60ff833` แต่ Merge Gate คืน `BLOCKED_DO_NOT_MERGE` เพราะขอบเขตกิ่งสะสม 9 commit/31 ไฟล์เกินเพดาน 5/30 จึงยังไม่เปิด PR ใหม่ ไม่ merge `main` และไม่กระจายรุ่นนี้ไป VPS/เครื่องพนักงาน
 
 ## งานค้างและความเสี่ยง
 
-- ส่งกิ่งงานขึ้น remote และเปิด PR หลัง Save Git ผ่าน
+- กิ่งงานขึ้น remote แล้ว; ต้องจัดรูปขอบเขตให้ผ่าน Merge Gate ก่อนเปิด PR ใหม่
 - merge เข้า `main` โดยเจ้าของ แล้วติดตั้งเฉพาะโฟลเดอร์กลางบน VPS และเครื่องทีม
 - ทำแผนกลางใหม่เพื่อแยก 6 plan_id ออกจากไฟล์เดียว และอัปสถานะเก่าที่ไม่ตรงของจริง
 - SPEC-P6 ในอีกพื้นที่มีไฟล์ค้างนอก commit; ห้ามแตะจากงานนี้
@@ -119,3 +119,4 @@ Use Continue
 - branch: `task/nat/SHORTCUT-P1-I1-team-rollout-hardening-team-rollout-hardening`
 - code HEAD before close-memory commit: `c6e7fcf381c12f1c0ff824f26fe4c9651fe6091e`
 - commands: pytest scoped, ruff, `git diff --check`, `install-shortcuts.sh --force`, `hermes-hook-doctor`, `git merge origin/main`
+- Save Git: local ผ่าน 1/1 และ push สำเร็จ · merge-gate บล็อกที่ชั้น MR scope 1/1
