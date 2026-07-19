@@ -1,15 +1,13 @@
-"""Agent Center bundled plugin: catalog, routing, and policy tools.
+"""Agent Center bundled plugin: catalog, routing, policy, and execution tools.
 
-Registers six read-only tools over the bundled agent/skill catalog. Every tool
-is deterministic, standard-library only, and never writes files, touches the
-network, or persists anything. Tool bodies live in ``tools.py``; the catalog,
-routing, and policy logic live in ``catalog.py``, ``routing.py``, and
-``policies.py`` respectively.
+Registers six deterministic catalog/policy tools plus one subscription runtime
+tool. The runtime invokes fresh Codex, Claude Code, or Hermes/xAI OAuth sessions
+without reading API keys or using AI Relay.
 """
 
 from __future__ import annotations
 
-from plugins.agent_center import tools
+from . import execution, tools
 
 
 def register(ctx) -> None:
@@ -101,3 +99,34 @@ def register(ctx) -> None:
             },
             handler=lambda args, _handler=handler, **_: _handler(args),
         )
+
+    ctx.register_tool(
+        name="agent_center_execute",
+        toolset="agent_center",
+        schema={
+            "name": "agent_center_execute",
+            "description": (
+                "Execute a validated Work Packet through logged-in AI "
+                "subscriptions. Every mode runs a cross-family planner pair. "
+                "Build mode then runs a writable worker and a separate "
+                "read-only reviewer in distinct sessions. Returns a "
+                "packet-bound Work Receipt without using API keys or AI Relay."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "packet": {"type": "object"},
+                    "request": {"type": "string"},
+                    "timeout_seconds": {
+                        "type": "number",
+                        "minimum": execution.MIN_TIMEOUT_SECONDS,
+                        "maximum": execution.MAX_TIMEOUT_SECONDS,
+                    },
+                },
+                "required": ["packet", "request"],
+                "additionalProperties": False,
+            },
+        },
+        handler=lambda args, **kwargs: execution.agent_center_execute(args, **kwargs),
+        is_async=True,
+    )

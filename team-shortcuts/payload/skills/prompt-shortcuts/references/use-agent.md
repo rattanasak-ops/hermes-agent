@@ -11,7 +11,7 @@ tags:
   - agent-center
   - team-routing
 status: active
-version: "1.1"
+version: "1.2"
 updated: 2026-07-19
 ---
 
@@ -43,8 +43,8 @@ Use Agent ใช้ได้กับงานคิด วิเคราะห
 8. ผลผ่านต้องมาจาก test/lint/build/manual evidence จริง ไม่ใช่คำบอกของ AI
 9. การเทรน Agent/Skill ให้สร้าง training candidate เท่านั้น ห้ามเลื่อนขั้นหรือเขียน Obsidian ถาวรอัตโนมัติ
 10. ถ้าไม่พบ Skill, plugin หรือเครื่องมือ Agent Center ให้คืน AGENT_CENTER_UNAVAILABLE พร้อมหลักฐานส่วนที่หาย ห้ามแต่งกฎว่า Use Agent ใช้กับงานคิดไม่ได้
-11. ผล route_ready หมายถึงจัดทีมได้เท่านั้น ยังไม่ใช่หลักฐานว่า AI ทุกที่นั่งทำงานแล้ว ต้องเรียกทุก active seat ผ่านความสามารถ Agent/Subagent ที่มีจริง เก็บ output_ref ของแต่ละที่นั่ง และสังเคราะห์ข้อเห็นต่างก่อนสรุป ถ้าเรียกคู่คิดคนละค่ายจริงไม่ได้ ให้คืน THINK_PAIR_EXECUTION_UNAVAILABLE ห้ามสร้างผลตรวจปลอม
-12. ก่อนอ้างว่างานจบ ต้องส่ง Work Packet ต้นฉบับพร้อม Work Receipt รุ่น 2 ที่มี seat_evidence และ synthesis เข้า agent_center_validate ในครั้งเดียว Receipt เดี่ยวหรือ Packet รุ่น 1 ห้ามใช้เป็นหลักฐานจบงาน
+11. ผล route_ready หมายถึงจัดทีมได้เท่านั้น ยังไม่ใช่หลักฐานว่า AI ทุกที่นั่งทำงานแล้ว ให้เรียก agent_center_execute ด้วย Packet ที่ตรวจผ่านและคำขอเดิม เครื่องมือนี้ต้องเรียก Subscription ที่ล็อกอินอยู่จริงเท่านั้น: Codex ผ่าน ChatGPT login, Claude ผ่าน OAuth ของ Claude Code และ Grok ผ่าน xAI OAuth ของ Hermes ห้ามรับ provider override ห้ามอ่านกุญแจ API และห้ามวิ่งผ่าน AI Relay เครื่องมือต้องคืนผลจริง ลายนิ้วมือ SHA-256 และ output_ref แยกทุกที่นั่งก่อนสังเคราะห์ ถ้าเรียกคู่คิดคนละตระกูลจริงไม่ได้ ให้คืน THINK_PAIR_EXECUTION_UNAVAILABLE ห้ามสร้างผลตรวจปลอม ส่วน build ต้องใช้พื้นที่สะอาดที่อนุมัติ มี allowed_paths ชัดเจน ให้ผู้ลงมือเขียนไฟล์จริง แล้วส่งผู้ตรวจคนละ session และคนละตระกูลตรวจแบบอ่านอย่างเดียว
+12. ก่อนอ้างว่างานคิด/วิเคราะห์จบ ต้องส่ง Work Packet ต้นฉบับพร้อม Work Receipt รุ่น 2 ที่มี request/output/synthesis hash เข้า agent_center_validate ในครั้งเดียว และต้องได้ receipt_runtime_valid เท่านั้น ส่วน receipt_structural_valid แปลว่าตรวจเพียงโครงกับตัวตน ยังห้ามอ้างว่า AI ทำงานจริง Receipt เดี่ยวหรือ Packet รุ่น 1 ห้ามใช้เป็นหลักฐานจบงาน
 
 ผลลัพธ์ขั้นต่ำ:
 - ใบวินิจฉัยงาน
@@ -56,7 +56,7 @@ Use Agent ใช้ได้กับงานคิด วิเคราะห
 
 ## Runtime source
 
-ขั้นตอนฉบับใช้งานจริงอยู่ที่ `skills/agent-center/SKILL.md` และเครื่องมือทั้ง 6 ตัวมาจากปลั๊กอิน `plugins/agent_center/` ใน Hermes Agent
+ขั้นตอนฉบับใช้งานจริงอยู่ที่ `skills/agent-center/SKILL.md` และเครื่องมือทั้ง 7 ตัวมาจากปลั๊กอิน `plugins/agent_center/` ใน Hermes Agent
 
 ## Safety
 
