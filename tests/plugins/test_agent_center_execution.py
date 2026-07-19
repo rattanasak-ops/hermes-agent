@@ -72,6 +72,8 @@ class FakeRunner:
         reported_family: dict[str, str] | None = None,
         initial_paths: list[str] | None = None,
         changed_paths: list[str] | None = None,
+        initial_ignored_paths: list[str] | None = None,
+        changed_ignored_paths: list[str] | None = None,
         reviewer_text: str | None = None,
         evidence_error: execution.SubscriptionSeatError | None = None,
     ):
@@ -81,9 +83,12 @@ class FakeRunner:
         self.reported_family = reported_family or {}
         self.initial_paths = initial_paths or []
         self.changed_paths = changed_paths or ["plugins/agent_center/execution.py"]
+        self.initial_ignored_paths = initial_ignored_paths or []
+        self.changed_ignored_paths = changed_ignored_paths or []
         self.reviewer_text = reviewer_text
         self.evidence_error = evidence_error
         self.state_calls = 0
+        self.ignored_calls = 0
 
     async def run_seat(self, **kwargs):
         await asyncio.sleep(0)
@@ -126,6 +131,14 @@ class FakeRunner:
     async def workspace_state(self, cwd):
         self.state_calls += 1
         return list(self.initial_paths if self.state_calls == 1 else self.changed_paths)
+
+    async def workspace_ignored(self, cwd, *, allowed_paths):
+        self.ignored_calls += 1
+        return list(
+            self.initial_ignored_paths
+            if self.ignored_calls == 1
+            else self.changed_ignored_paths
+        )
 
     async def workspace_evidence(self, cwd, *, changed_paths, allowed_paths):
         if self.evidence_error:
@@ -257,6 +270,37 @@ def test_build_blocks_dirty_workspace_before_worker():
     assert out["ok"] is False
     assert out["code"] == "CURRENT_WORKSPACE_DIRTY"
     assert "worker" not in [call["seat_name"] for call in runner.calls]
+
+
+def test_build_blocks_preexisting_ignored_path_before_worker():
+    packet = _packet("build")
+    runner = FakeRunner(
+        initial_ignored_paths=["plugins/agent_center/private-note.txt"]
+    )
+
+    out = _run({"packet": packet, "request": "Build it."}, runner)
+
+    assert out["ok"] is False
+    assert out["code"] == "BUILD_SCOPE_IGNORED_PATHS_PRESENT"
+    assert out["ignored_paths"] == ["plugins/agent_center/private-note.txt"]
+    assert out["receipt"] is None
+    assert "worker" not in [call["seat_name"] for call in runner.calls]
+
+
+def test_build_blocks_new_ignored_path_before_reviewer():
+    packet = _packet("build")
+    runner = FakeRunner(
+        changed_ignored_paths=["plugins/agent_center/private-note.txt"]
+    )
+
+    out = _run({"packet": packet, "request": "Build it."}, runner)
+
+    assert out["ok"] is False
+    assert out["code"] == "BUILD_IGNORED_PATH_CREATED"
+    assert out["ignored_paths"] == ["plugins/agent_center/private-note.txt"]
+    assert out["receipt"] is None
+    assert "worker" in [call["seat_name"] for call in runner.calls]
+    assert "reviewer" not in [call["seat_name"] for call in runner.calls]
 
 
 def test_build_blocks_changed_path_outside_packet_scope():
@@ -394,6 +438,33 @@ def test_path_scope_rejects_traversal_absolute_and_invalid_patterns():
     assert not execution._path_allowed("../secret.txt", ["**"])
     assert not execution._path_allowed("/tmp/secret.txt", ["**"])
     assert not execution._path_allowed("secret.txt", ["../**"])
+
+    with pytest.raises(execution.SubscriptionSeatError) as traversal:
+        execution._git_scope_pathspecs(["../**"])
+    assert traversal.value.code == "workspace_scope_invalid"
+    with pytest.raises(execution.SubscriptionSeatError):
+        execution._git_scope_pathspecs(["/tmp/**"])
+
+
+def test_workspace_ignored_finds_only_ignored_files_in_allowed_scope(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / ".gitignore").write_text("hidden/**\noutside/**\n", encoding="utf-8")
+    hidden = tmp_path / "hidden"
+    hidden.mkdir()
+    (hidden / "proof.txt").write_text("ignored", encoding="utf-8")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "other.txt").write_text("ignored", encoding="utf-8")
+    runner = execution.SubscriptionSeatRunner()
+
+    paths = asyncio.run(
+        runner.workspace_ignored(str(tmp_path), allowed_paths=["hidden/**"])
+    )
+
+    assert paths == ["hidden/proof.txt"]
+    assert asyncio.run(
+        runner.workspace_ignored(str(tmp_path), allowed_paths=["safe/**"])
+    ) == []
 
 
 def test_untracked_text_content_is_included_bounded_and_redacted(tmp_path):
