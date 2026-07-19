@@ -364,17 +364,36 @@ class SubscriptionSeatRunner:
         writable: bool,
     ) -> list[str]:
         if family == "codex":
-            return [
+            command = [
                 self._require("codex"),
                 "exec",
                 "--ephemeral",
                 "--json",
-                "-s",
-                "workspace-write" if writable else "read-only",
-                "-C",
-                cwd,
-                prompt,
             ]
+            if not writable:
+                # Planner, synthesis, and reviewer seats need only the Codex
+                # subscription identity, project instructions, and project
+                # execution rules. Loading the owner's full interactive config
+                # here recursively starts plugins and can stall a nested
+                # read-only seat. Codex keeps CODEX_HOME authentication when
+                # this flag is present.
+                command.extend(
+                    [
+                        "--ignore-user-config",
+                        "--disable",
+                        "multi_agent",
+                    ]
+                )
+            command.extend(
+                [
+                    "-s",
+                    "workspace-write" if writable else "read-only",
+                    "-C",
+                    cwd,
+                    prompt,
+                ]
+            )
+            return command
         if family == "opus":
             # The owner may still have a legacy endpoint/token in Claude's
             # user settings. This per-invocation override forces Anthropic's
