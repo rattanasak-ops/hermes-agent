@@ -10,6 +10,8 @@ Standard library only. No writes, no network, no clock, no randomness.
 
 from __future__ import annotations
 
+import hashlib
+import re
 from typing import Any
 
 
@@ -21,6 +23,9 @@ BUILD_SEAT_NAMES = (*PLANNER_SEAT_NAMES, "worker", "reviewer")
 SEAT_NAMES = BUILD_SEAT_NAMES
 
 EXECUTION_MODES = frozenset({"think", "plan", "build", "review", "train"})
+RUNTIME_EVIDENCE_LEVEL = "runtime_bound_v1"
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_EXECUTION_ID_RE = re.compile(r"^acrun_[0-9a-f]{20}$")
 
 # Roles that qualify a seat to act as the challenger planner.
 CHALLENGER_ROLES = frozenset({"planner", "analysis", "brain"})
@@ -34,16 +39,77 @@ def normalize_id(value: Any) -> str:
     return value.strip().lower()
 
 
+def _sha256_parts(*parts: str) -> str:
+    payload = "\x1f".join(parts).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def runtime_request_sha256(packet_id: str, request: str) -> str:
+    """Bind a runtime request to the validated packet id."""
+
+    return _sha256_parts("request", packet_id, request)
+
+
+def runtime_output_sha256(
+    *,
+    packet_id: str,
+    request_sha256: str,
+    execution_id: str,
+    seat_name: str,
+    provider_id: str,
+    session_id: str,
+    runtime_provider: str,
+    runtime_model: str,
+    output_text: str,
+) -> str:
+    """Bind one returned model output to its request, packet, and seat."""
+
+    return _sha256_parts(
+        "seat-output",
+        packet_id,
+        request_sha256,
+        execution_id,
+        seat_name,
+        normalize_id(provider_id),
+        normalize_id(session_id),
+        normalize_id(runtime_provider),
+        normalize_id(runtime_model),
+        output_text,
+    )
+
+
+def runtime_synthesis_sha256(
+    *,
+    packet_id: str,
+    request_sha256: str,
+    planner_primary_sha256: str,
+    planner_challenger_sha256: str,
+    synthesis_text: str,
+) -> str:
+    """Bind the synthesis to both planner outputs and the original request."""
+
+    return _sha256_parts(
+        "synthesis",
+        packet_id,
+        request_sha256,
+        planner_primary_sha256,
+        planner_challenger_sha256,
+        synthesis_text,
+    )
+
+
 def _provider_family(provider_id: str) -> str:
     """Classify a normalized provider id into a coarse family for preferences."""
 
     pid = provider_id
-    if "grok" in pid:
+    if "grok" in pid or "xai" in pid:
         return "grok"
-    if "opus" in pid or "claude" in pid:
+    if "opus" in pid or "claude" in pid or "anthropic" in pid:
         return "opus"
     if "codex" in pid or "gpt" in pid or "openai" in pid:
         return "codex"
+    if "gemini" in pid or "google" in pid:
+        return "gemini"
     return pid or "unknown"
 
 
@@ -390,6 +456,52 @@ def validate_work_receipt(receipt: Any, expected_packet: Any = None) -> dict[str
         if field not in receipt:
             errors.append(f"receipt: missing field '{field}'")
 
+    evidence_level = receipt.get("evidence_level", "structural_only")
+    runtime_markers_present = any(
+        field in receipt
+        for field in (
+            "execution_id",
+            "request",
+            "request_sha256",
+            "synthesis_sha256",
+        )
+    )
+    raw_seat_evidence = receipt.get("seat_evidence")
+    if isinstance(raw_seat_evidence, dict):
+        runtime_markers_present = runtime_markers_present or any(
+            isinstance(record, dict)
+            and any(
+                field in record
+                for field in (
+                    "output_sha256",
+                    "output_text",
+                    "runtime_provider",
+                    "runtime_model",
+                    "resumable",
+                )
+            )
+            for record in raw_seat_evidence.values()
+        )
+    runtime_bound = evidence_level == RUNTIME_EVIDENCE_LEVEL
+    if evidence_level not in {"structural_only", RUNTIME_EVIDENCE_LEVEL}:
+        errors.append(
+            "receipt: 'evidence_level' must be structural_only or "
+            + RUNTIME_EVIDENCE_LEVEL
+        )
+    if runtime_markers_present and not runtime_bound:
+        errors.append(
+            "receipt: runtime evidence cannot be downgraded to structural_only"
+        )
+    if runtime_bound:
+        for field in (
+            "execution_id",
+            "request",
+            "request_sha256",
+            "synthesis_sha256",
+        ):
+            if field not in receipt:
+                errors.append(f"receipt: missing runtime field '{field}'")
+
     if receipt.get("version") != RECEIPT_SCHEMA_VERSION:
         errors.append(
             "receipt: 'version' must be " + RECEIPT_SCHEMA_VERSION
@@ -474,6 +586,23 @@ def validate_work_receipt(receipt: Any, expected_packet: Any = None) -> dict[str
     if execution_mode != expected_mode:
         errors.append("receipt: 'execution_mode' must match expected_packet.execution_mode")
 
+    execution_id = receipt.get("execution_id")
+    request = receipt.get("request")
+    request_sha256 = receipt.get("request_sha256")
+    if runtime_bound:
+        if not isinstance(execution_id, str) or not _EXECUTION_ID_RE.fullmatch(execution_id):
+            errors.append("receipt: 'execution_id' must match acrun_<20 lowercase hex>")
+        if not isinstance(request, str) or not request.strip():
+            errors.append("receipt: 'request' must be a non-empty string")
+        if not isinstance(request_sha256, str) or not _SHA256_RE.fullmatch(request_sha256):
+            errors.append("receipt: 'request_sha256' must be a lowercase SHA-256")
+        elif isinstance(packet_id, str) and isinstance(request, str):
+            expected_request_sha256 = runtime_request_sha256(packet_id, request)
+            if request_sha256 != expected_request_sha256:
+                errors.append(
+                    "receipt: 'request_sha256' does not bind request to packet_id"
+                )
+
     expected_seats = expected_packet.get("seats")
     if not isinstance(expected_seats, dict):
         errors.append("expected_packet: 'seats' must be an object")
@@ -525,6 +654,66 @@ def validate_work_receipt(receipt: Any, expected_packet: Any = None) -> dict[str
                 )
             else:
                 output_refs.append(output_ref.strip())
+            if runtime_bound:
+                output_text = evidence.get("output_text")
+                output_sha256 = evidence.get("output_sha256")
+                runtime_provider = evidence.get("runtime_provider")
+                runtime_model = evidence.get("runtime_model")
+                if not isinstance(output_text, str) or not output_text.strip():
+                    errors.append(
+                        f"receipt.seat_evidence.{name}.output_text: must be non-empty"
+                    )
+                if not isinstance(output_sha256, str) or not _SHA256_RE.fullmatch(
+                    output_sha256
+                ):
+                    errors.append(
+                        f"receipt.seat_evidence.{name}.output_sha256: must be a lowercase SHA-256"
+                    )
+                if not isinstance(runtime_provider, str) or not runtime_provider.strip():
+                    errors.append(
+                        f"receipt.seat_evidence.{name}.runtime_provider: must be non-empty"
+                    )
+                if not isinstance(runtime_model, str) or not runtime_model.strip():
+                    errors.append(
+                        f"receipt.seat_evidence.{name}.runtime_model: must be non-empty"
+                    )
+                elif isinstance(seat, dict) and provider_family(runtime_model) != provider_family(
+                    seat.get("provider_id")
+                ):
+                    errors.append(
+                        f"receipt.seat_evidence.{name}.runtime_model: family must match packet seat"
+                    )
+                expected_ref = f"agent-center://execution/{execution_id}/seat/{name}"
+                if output_ref != expected_ref:
+                    errors.append(
+                        f"receipt.seat_evidence.{name}.output_ref: must bind execution and seat"
+                    )
+                if all(
+                    isinstance(value, str) and value
+                    for value in (
+                        packet_id,
+                        request_sha256,
+                        execution_id,
+                        runtime_provider,
+                        runtime_model,
+                        output_text,
+                    )
+                ) and isinstance(seat, dict):
+                    expected_output_sha256 = runtime_output_sha256(
+                        packet_id=packet_id,
+                        request_sha256=request_sha256,
+                        execution_id=execution_id,
+                        seat_name=name,
+                        provider_id=seat.get("provider_id", ""),
+                        session_id=seat.get("session_id", ""),
+                        runtime_provider=runtime_provider,
+                        runtime_model=runtime_model,
+                        output_text=output_text,
+                    )
+                    if output_sha256 != expected_output_sha256:
+                        errors.append(
+                            f"receipt.seat_evidence.{name}.output_sha256: does not bind runtime output"
+                        )
         if len(output_refs) != len(set(output_refs)):
             errors.append("receipt.seat_evidence: output_ref must be unique per active seat")
 
@@ -532,6 +721,53 @@ def validate_work_receipt(receipt: Any, expected_packet: Any = None) -> dict[str
     if not isinstance(synthesis, str) or not synthesis.strip():
         errors.append("receipt: 'synthesis' must be a non-empty string")
 
+    if runtime_bound:
+        synthesis_sha256 = receipt.get("synthesis_sha256")
+        if not isinstance(synthesis_sha256, str) or not _SHA256_RE.fullmatch(
+            synthesis_sha256
+        ):
+            errors.append("receipt: 'synthesis_sha256' must be a lowercase SHA-256")
+        elif isinstance(seat_evidence, dict) and isinstance(synthesis, str):
+            primary_evidence = seat_evidence.get("planner_primary")
+            challenger_evidence = seat_evidence.get("planner_challenger")
+            primary_sha = (
+                primary_evidence.get("output_sha256")
+                if isinstance(primary_evidence, dict)
+                else None
+            )
+            challenger_sha = (
+                challenger_evidence.get("output_sha256")
+                if isinstance(challenger_evidence, dict)
+                else None
+            )
+            if all(
+                isinstance(value, str) and value
+                for value in (
+                    packet_id,
+                    request_sha256,
+                    primary_sha,
+                    challenger_sha,
+                )
+            ):
+                expected_synthesis_sha256 = runtime_synthesis_sha256(
+                    packet_id=packet_id,
+                    request_sha256=request_sha256,
+                    planner_primary_sha256=primary_sha,
+                    planner_challenger_sha256=challenger_sha,
+                    synthesis_text=synthesis,
+                )
+                if synthesis_sha256 != expected_synthesis_sha256:
+                    errors.append(
+                        "receipt: 'synthesis_sha256' does not bind both planner outputs"
+                    )
+
     if errors:
         return {"ok": False, "code": "receipt_invalid", "errors": errors}
-    return {"ok": True, "code": "receipt_valid", "packet_id": packet_id.strip()}
+    return {
+        "ok": True,
+        "code": (
+            "receipt_runtime_valid" if runtime_bound else "receipt_structural_valid"
+        ),
+        "packet_id": packet_id.strip(),
+        "evidence_level": evidence_level,
+    }

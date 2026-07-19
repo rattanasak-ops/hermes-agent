@@ -1,15 +1,13 @@
-"""Agent Center bundled plugin: catalog, routing, and policy tools.
+"""Agent Center bundled plugin: catalog, routing, policy, and execution tools.
 
-Registers six read-only tools over the bundled agent/skill catalog. Every tool
-is deterministic, standard-library only, and never writes files, touches the
-network, or persists anything. Tool bodies live in ``tools.py``; the catalog,
-routing, and policy logic live in ``catalog.py``, ``routing.py``, and
-``policies.py`` respectively.
+Registers six deterministic catalog/policy tools plus one bounded runtime tool.
+The runtime tool uses Hermes-owned model credentials through ``ctx.llm``. It
+never reads credentials, writes files, opens a terminal, or persists anything.
 """
 
 from __future__ import annotations
 
-from plugins.agent_center import tools
+from . import execution, tools
 
 
 def register(ctx) -> None:
@@ -101,3 +99,45 @@ def register(ctx) -> None:
             },
             handler=lambda args, _handler=handler, **_: _handler(args),
         )
+
+    ctx.register_tool(
+        name="agent_center_execute",
+        toolset="agent_center",
+        schema={
+            "name": "agent_center_execute",
+            "description": (
+                "Execute a validated think, plan, review, or train Work Packet "
+                "through the real cross-family planner pair using Hermes-owned "
+                "model credentials, synthesize both outputs, and return a "
+                "packet-bound Work Receipt. Build mode fails closed because "
+                "plugin model completions have no file or terminal tools."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "packet": {"type": "object"},
+                    "request": {"type": "string"},
+                    "provider": {
+                        "type": "string",
+                        "enum": sorted(execution.SUPPORTED_RUNTIME_PROVIDERS),
+                    },
+                    "max_tokens": {
+                        "type": "integer",
+                        "minimum": execution.MIN_MAX_TOKENS,
+                        "maximum": execution.MAX_MAX_TOKENS,
+                    },
+                    "timeout_seconds": {
+                        "type": "number",
+                        "minimum": execution.MIN_TIMEOUT_SECONDS,
+                        "maximum": execution.MAX_TIMEOUT_SECONDS,
+                    },
+                },
+                "required": ["packet", "request"],
+                "additionalProperties": False,
+            },
+        },
+        handler=lambda args, _ctx=ctx, **kwargs: execution.agent_center_execute(
+            args, llm=_ctx.llm, **kwargs
+        ),
+        is_async=True,
+    )

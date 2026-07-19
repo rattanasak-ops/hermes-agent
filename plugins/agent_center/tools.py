@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from plugins.agent_center import catalog, policies, routing
+from . import catalog, policies, routing
 
 
 def _json(payload: dict[str, Any]) -> str:
@@ -188,8 +188,10 @@ def agent_center_validate(args: dict[str, Any]) -> str:
                 {
                     "ok": receipt_report["ok"],
                     "code": (
-                        "packet_receipt_valid"
-                        if receipt_report["ok"]
+                        "packet_receipt_runtime_valid"
+                        if receipt_report.get("code") == "receipt_runtime_valid"
+                        else "packet_receipt_structural_valid"
+                        if receipt_report.get("code") == "receipt_structural_valid"
                         else "packet_receipt_invalid"
                     ),
                     "packet_report": packet_report,

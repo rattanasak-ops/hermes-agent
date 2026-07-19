@@ -59,7 +59,7 @@ Do not replace catalog results with a team invented from memory.
 
 ### 4. Assemble the active seats
 
-Provide `agent_center_route` with the diagnosis plus the available healthy seat pool, current provider ID, and current session ID. Each seat record needs a provider ID, session ID, health state, and supported roles. Set `execution_mode` explicitly when the task intent is known; otherwise the router derives a compatible default from `phase`.
+Provide `agent_center_route` with the diagnosis plus the available healthy seat pool, current provider ID, and current session ID. Each seat record needs a provider ID, session ID, health state, and supported roles. For runtime thinking calls, use a callable model ID as `provider_id` (for example `anthropic/claude-opus-4.6` or `openai/gpt-5.4`) and use a unique logical run ID as `session_id`; these bounded calls are not resumable Hermes child sessions. Set `execution_mode` explicitly when the task intent is known; otherwise the router derives a compatible default from `phase`.
 
 The router enforces:
 
@@ -100,9 +100,9 @@ Validate the packet with `agent_center_validate` before execution. Do not start 
 
 ### 6. Execute in the approved channel
 
-The route result assigns seats; it does not prove that any assigned AI actually ran. Invoke every active seat through a real agent/subagent capability available in the current app, preserve an output reference for each seat, and synthesize the planner disagreement before claiming completion. Never fabricate a seat output or a cross-check. If the current app cannot call the assigned cross-provider planner pair, return `THINK_PAIR_EXECUTION_UNAVAILABLE` instead of claiming a cross-check.
+The route result assigns seats; it does not prove that any assigned AI actually ran. For `think`, `plan`, `review`, or `train`, call `agent_center_execute` with the validated packet and the owner's request. The tool invokes both planner models through Hermes-owned credentials, preserves the output text plus SHA-256 fingerprint for each seat, asks the primary model to reconcile the disagreement, and returns a packet-bound version-2 receipt. Completion requires `receipt_runtime_valid`; `receipt_structural_valid` checks identities and shape only and is not proof that the models ran. Pass `provider: openrouter` when the approved models are reached through AI Portal/OpenRouter; otherwise omit it to use the active Hermes provider. Never fabricate a seat output or a cross-check. If either required call fails, return the tool's blocked result.
 
-For `think`, `plan`, `review`, or `train`, return the cross-checked analysis or decision without requiring a branch, code change, worker, or build approval. For `build`, when the current workspace and path scope are approved, let the worker execute the packet and keep the reviewer separate and read-only. Use AI Relay only after an explicit owner request. Keep commit, push, merge, deployment, dependency installation, external communication, spending, and destructive actions behind their separate approval gates.
+For `think`, `plan`, `review`, or `train`, return the cross-checked analysis or decision without requiring a branch, code change, worker, or build approval. `agent_center_execute` deliberately returns `BUILD_EXECUTION_UNAVAILABLE` for `build` because bounded model calls have no file or terminal tools. For build work, use a tool-capable worker in the current approved workspace and a separate read-only reviewer; do not present a model draft as a repository change. Use AI Relay only after an explicit owner request. Keep commit, push, merge, deployment, dependency installation, external communication, spending, and destructive actions behind their separate approval gates.
 
 Validate completion by sending the original packet and its receipt together to `agent_center_validate`. A receipt alone is not completion evidence. Version 1 packets/receipts must be routed again under schema 2; never infer build authority from a missing mode or version.
 
@@ -118,6 +118,7 @@ When real feedback or gate evidence may improve an agent or skill, call `agent_c
 - Unsupported execution mode: return the accepted modes and correct the diagnosis once.
 - Missing Agent Center runtime: return `AGENT_CENTER_UNAVAILABLE`; never invent a scope restriction.
 - Assigned cross-provider seat cannot be called: return `THINK_PAIR_EXECUTION_UNAVAILABLE`; never fabricate evidence.
+- Build packet sent to the bounded model executor: return `BUILD_EXECUTION_UNAVAILABLE` and move it to a tool-capable worker channel.
 - Invalid catalog: stop and report catalog validation errors.
 - Unsatisfied seat policy: return `blocked` with the missing provider/session capability.
 - Invalid packet or receipt: do not execute or record it.
@@ -132,6 +133,7 @@ When real feedback or gate evidence may improve an agent or skill, call `agent_c
 - [ ] Execution mode matches the owner's requested outcome.
 - [ ] THINK_PAIR passes for every mode; BUILD_REVIEW passes only when mode is `build`.
 - [ ] Work Packet validation passes before execution.
+- [ ] Non-build planner pairs run through `agent_center_execute`; build work uses a tool-capable worker channel.
 - [ ] Every active seat has a real output reference and the receipt is validated together with the original packet.
 - [ ] Real test, lint, build, or manual evidence is attached to completion claims.
 - [ ] Training candidates remain pending until owner approval.
