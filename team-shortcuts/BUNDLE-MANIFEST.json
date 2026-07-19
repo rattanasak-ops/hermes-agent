@@ -1,5 +1,5 @@
 {
-  "aggregate_sha256": "f688b257c3704bf592fa82c8ca875cc9a7621b51d757704c8739b847a756b790",
+  "aggregate_sha256": "e2b77e48278337083b602b0f746781c459969d41a97c59146d1f3df6a8c8e07f",
   "file_count": 93,
   "files": [
     {
@@ -245,8 +245,8 @@
     {
       "kind": "payload",
       "path": "payload/skills/prompt-shortcuts/references/use-agent.md",
-      "sha256": "a36cf9536fe529c6bb7569a4f3ec6751e20689a645c88e97278668d6d591fc6e",
-      "size": 8484
+      "sha256": "71ae8b2d840732715d7542a8d35651671e6ac5521812e9c7be959ecc66350758",
+      "size": 9024
     },
     {
       "kind": "payload",

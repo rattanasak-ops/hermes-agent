@@ -38,6 +38,7 @@ Use Agent ใช้ได้กับงานคิด วิเคราะห
 2. ทำงานเฉพาะ Git root และ branch ที่เจ้าของเปิดอยู่ ห้ามสร้างหรือสลับ branch/Worktree
 3. แปลงคำขอเป็น structured diagnosis ที่มี project, goal, phase, execution_mode, domains, risks, signals, allowed paths, forbidden actions, deliverables และ evidence gates โดย execution_mode ใช้ think, plan, build, review หรือ train
 4. เรียก agent_center_validate เพื่อตรวจสมุดรายชื่อ แล้วใช้ agent_center_route เพื่อสร้าง Team Manifest และ Work Packet
+4.1 อ่าน `team.workflow.selected_shortcuts` จาก Work Packet ตามลำดับและเปิด Prompt เต็มของแต่ละ Shortcut ตอนเริ่มขั้นนั้น ห้ามเดาคำสั่งจากความจำ โดยงานปลอดภัยมีงบถามกลาง Phase 0 ครั้ง และงานที่มีผลภายนอกรวมคำขออนุมัติครั้งเดียวที่ขอบ Phase
 5. ทุกโหมดบังคับ THINK_PAIR ให้ AI สองค่ายตรวจความคิดกัน ส่วน BUILD_REVIEW ใช้เฉพาะโหมด build โดยคนสร้างห้ามตรวจงานตัวเอง ห้ามลดเหลือยี่ห้อเดียวเงียบ ๆ
 6. ตรวจ Work Packet ด้วย agent_center_validate ก่อนลงมือ
 7. โหมด think, plan, review และ train ให้ส่งผลวิเคราะห์หรือคำตัดสินที่ผ่านคู่คิดได้ทันที โดยไม่บังคับสร้าง branch เขียนโค้ด หรือขออนุมัติงานสร้าง ส่วนโหมด build ให้ AI ในแอปปัจจุบันลงมือได้เมื่อพื้นที่และขอบเขตผ่าน ใช้ Use AI Relay เฉพาะเมื่อเจ้าของเรียกชัดเจน
