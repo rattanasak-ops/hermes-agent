@@ -1,7 +1,7 @@
 # Active Task — SCG-P9-I4
 
 > สร้างจาก .project/active-task.json · ห้ามแก้ไฟล์นี้เป็นแหล่งข้อมูลหลัก
-> goal_hash: `66051e04861eb0b9f6eeacc76f85dfb1b1cbdb08a87258a33f6d259b91eee34c`
+> goal_hash: `5fc4330ffb27805ef8cb4d6013f65c33dabfe657facf67bb4b4a0eb5c1c4df18`
 > status: `active` · branch: `codex/scg-goal-contract-core` · base: `f6408b2992df8c3fcc12ebd80841bb718d5c6607`
 
 ## เป้าหมาย
@@ -19,7 +19,9 @@
 - `.project/active-task.json`
 - `.project/active-task.md`
 - `.project/spec/SCG-GOAL-DRIFT.md`
+- `agent/conversation_loop.py`
 - `agent/next_action_contract.py`
+- `agent/prompt_builder.py`
 - `plugins/shortcut_governance/__init__.py`
 - `plugins/shortcut_governance/cli.py`
 - `plugins/shortcut_governance/plugin.yaml`
