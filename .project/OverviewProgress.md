@@ -2,13 +2,20 @@
 > อ่านตามลำดับ: plan-wtl.md (plan_id: WTL — active · Worktree Lifecycle) → plan.md (plan_id: QAQC/MW) → plan-grd.md (แผน GRD จบแล้ว + คิว GRD-P5..P9) → decisions.md → hermes-standard/REQUIREMENTS.md (บัญชีความต้องการ 66 ข้อ)
 
 # Overview & Progress — Hermes Agent
-อัปเดตล่าสุด: 2026-07-18 (BRM รวมงานใหม่เข้า `main` แล้ว · closeout 146/146) · branch งานปัจจุบัน: `task/codex/BRM-P1-I1-branch-remediation-main-integration` · ป้าย: [fact] เว้นแต่ระบุ
+อัปเดตล่าสุด: 2026-07-19 (BRM ปิดขอบเขตส่งเข้า `main` แล้ว · PR #80 และ #81 รวมสำเร็จ · closeout 352/352) · branch งานปัจจุบัน: `main` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
-- **2026-07-18 (BRM-P5): รวมงานสาขาที่ตรวจแล้วกลับ `main` สำเร็จ** [fact]
-  - ฐานล่าสุด `origin/main` ถูกผนวกใน commit `c076984d0` และ `main` เลื่อนแบบเดินหน้าอย่างเดียว · push สาขางานและ `main` ขึ้น `origin` สำเร็จที่ SHA `0bd4b03d1`
-  - ชุดทดสอบเฉพาะงานหลังรวมฐานผ่าน **146/146** · `git diff --check` ผ่าน · worktree สะอาด
-  - branch/worktree ยังเก็บไว้ในช่วงกัก 72 ชั่วโมงตามกฎ WTL; ยังไม่ลบสิ่งใด
+- **2026-07-17 (ยามเขียนไฟล์ + ส่งต่อทีม): prewrite gate v2.2 เข้า main และสร้างกิ่ง `dev` จาก main ล่าสุด** [fact · PR #60]
+  - บันทึกนี้ยืนยันว่าชุดยามและการส่งต่อทีมผ่าน PR #60 แล้ว พร้อมผลตรวจ doctor 4/4 ตามบันทึกรอบเดิม
+  - ช่องแข็งแรงที่ยังต้องทำต่อ: ตรวจคำสั่ง `git -C <path> ...` ที่อาจหลบด่าน และดูแลกิ่ง `dev` ให้เดินตาม main
+- **2026-07-16 (Fable): ปิดรอบการเรียก Fable เฉพาะเครื่องเจ้าของ** [fact · PR #54+#55 อยู่ใน main]
+  - ชั้นป้องกันในโค้ดบังคับให้ Fable ใช้ได้เฉพาะเครื่องที่มีไฟล์อนุญาต และตัดตัวแปรแวดล้อมที่ทำให้เรียก Claude ซ้อนแล้วล้ม
+  - หลักฐานจากรอบเดิม: relay-call ตอบ `status: ok` และชุดทดสอบที่เกี่ยวข้องผ่าน 98/98
+  - ข้อจำกัด: เครื่องเจ้าของใช้ Claude Subscription ตรง ส่วนเครื่องพนักงาน/VPS ห้ามเรียก Fable
+- **2026-07-19 (BRM-P5): ปิดขอบเขตส่งงานเข้า `main` ครบ 3/3 = 100%** [fact]
+  - `origin/main` และ worktree `main` ตรงกันที่ SHA `ae230bbd5ee55c18eb6a12f9dd6ae883fe67dc81` หลัง PR #80 และ #81 รวมสำเร็จ แล้วส่งสัญญาทดสอบแก้ไขขึ้น `main`
+  - ชุดทดสอบบนฐานล่าสุดผ่าน **352/352** · `git diff --check` ผ่าน · `git status` สะอาด 0 ไฟล์
+  - Worktree/branch ประวัติ 18 รายการยังคงไว้ตาม WTL เพราะมีงาน dirty หรือยังไม่มี owner/task ที่ยืนยัน; ไม่มีการลบข้อมูลของแชทอื่น
 - **2026-07-18 (BRM · ตรวจสาขา Fable/NCR): ล็อกกฎปัจจุบันว่า AI ทุกตัวผ่าน AI Portal; ไม่รวม commit ความจำ Fable local-only และไม่ย้าย local fallback จาก NCR** [fact · `DEC-AIR-001` · รายละเอียด `session-log-2026-07-18-ai-portal-routing.md`]
   - งานใหม่จริงจาก NCR ที่รอเขียน: ต่ออายุ lease อย่างตรวจตัวตนครบ · status กัน permit หมดอายุ · Relay ต้องเห็นไฟล์เปลี่ยนและคำตัดสินรีวิว · cleanup ตอนยกเลิก
   - ตัวกั้นปัจจุบัน: Codex DNS ล้ม · Grok ไหลไป CLI ผิดตัว · Gemini รอ login · Ollama exit 1 → UAG Skill ยังไม่ถูกเขียนและห้ามนับว่าจบ
@@ -19,7 +26,7 @@
   - **⚠️ ยังไม่ทำ (สำคัญ)**: **S1 (SPEC-P6) = ตัวบังคับจริงระดับโค้ด ยังไม่เริ่ม** — ตอนนี้สเปคเป็นแค่ด่านระดับคำสั่ง AI (อ่านแล้วทำตาม) ยังปลอมได้ · แผน S1/S2 ยึดใน `plan.md` (SPEC-P6/P7) แล้ว
   - **เทส payload 2 ตัวแดง = ค้างก่อนงานนี้** (base use-new-chat 2.8 vs pin 2.7 · registry/SKILL count 32≠31) พิสูจน์แล้วไม่ใช่ของ SPEC → spawn task แยก
 - **2026-07-17 (แชท Opus · DSU-P4): shortcut `Use Create Design System` อัปเป็น v3.1 — ปิดข้อบกพร่อง 3/5 ที่การนำร่อง Root Admin ตรวจพบ · PR #58 merged (`af3aa41db`)** [fact]
-  - บัญชีข้อบกพร่องจากการนำร่อง = `.project/dsu-pilot-findings.md` (สิ่งส่งมอบหลักตาม Goal Lock `DEC-DSU-002`): F-01 ด่านตรวจสำเนามาตรฐาน · F-02 กฎกันกลืนเป้าหมายแม่ (`caller_goal` + บรรทัดประกาศสถานี + โหมด pilot) · F-03 ด่านสีจำแนกสีเดิม 3 แบบ — ปิดครบทั้งคลัง (commit `e133f00` · ผู้ตรวจ GPT-5 แก้ตาม 3/3) + payload ตรงคลัง 100% (แฮชตรง 2/2) · F-04 relay ตีผลผิดเมื่อ coder commit = ปักธง task chip (เจอซ้ำ 2 เคสจริง) · F-05 ด่านเครื่องบล็อก ds-gate = รอเจ้าของเคาะ
+  - บัญชีข้อบกพร่องจากการนำร่อง = `.project/dsu-pilot-findings.md` (สิ่งส่งมอบหลักตาม Goal Lock `DEC-DSU-002`): F-01 ด่านตรวจสำเนามาตรฐาน · F-02 กฎกันกลืนเป้าหมายแม่ (`caller_goal` + บรรทัดประกาศสถานี + โหมด pilot) · F-03 ด่านสีจำแนกสีเดิม 3 แบบ — ปิดครบทั้งคลัง (commit `e133f00` · ผู้ตรวจ GPT-5 แก้ตาม 3/3) + payload ตรงคลัง 100% (แฮชตรง 2/2) · F-04 relay ยืนยัน HEAD เลื่อนหลัง coder commit = ปิดพร้อม regression test · F-05 ds-gate/ds-adopt คำสั่งอ่านอย่างเดียวผ่าน gate = ปิดพร้อม regression test 2/2
   - สนามนำร่อง Root Admin (newwebengine2026 · worktree `DSU-P4-I1`): ชั้นแบรนด์ H/U/F ผ่าน `ds-gate` 20/20 exit 0 + สำเนามาตรฐานในโปรเจกต์อัปเป็น v3.1 (commit `c669a7a4`) · ค้าง: เดิน PHASE 3-5 ด้วย prompt รุ่นใหม่ (DSU-P4-I3) + `DesignSystem.md` ของโปรเจกต์นั้นยังไม่เข้า git
   - เหตุการณ์: AI หลงเป้ารอบที่ 20 กลางแชท → สอบสวนพบ 3 ตัวการ (บทใน prompt กลืนเป้าหมาย/บันทึกเป้าไม่ชัด/แรงกด hook) → แก้ถาวรใน DEC-DSU-002 + กฎ F-02 ของ prompt · แผน DSU-P4/P5 อยู่ใน plan.md แล้ว
 - **2026-07-16 (แชท Fable · ต่อจาก station gate): ซ่อมยาม prewrite gate over-lock (v1→v2.2) + เสียบปลั๊กกลับ — ล็อกเฉพาะเขตที่ควร ไม่ล็อกตัวเอง + กัน AI ถอด/ปลอมด่านเอง** [fact · รายละเอียดเต็ม `session-log-2026-07-16-gate-repair.md`]
@@ -85,6 +92,7 @@
   - (ค) **branch cleanup**: merged nat(#28)+shortcut Use Trade-off(#27 · resolve conflict payload) → ลบ merged 25+ branch · **ลบ remote upstream(NousResearch 1,292)+fork ทิ้ง → Git graph 1,300→6** (เหลือ origin/main + vps) · ต้นตอที่เจ้าของเห็น branch เต็ม = upstream ของ NousResearch ไม่ใช่งานเรา
   - (ง) ยืนยัน **JARVIS อยู่ SaaS repo ครบ + active** (typer งานต่อในนั้น) · Hermes jarvis 4 branch = เศษเก่าก่อนย้าย ลบแล้ว
 - **2026-07-10: shortcut `Use QA QC` v1.1 เปิดใช้แล้ว (active · ทะเบียน 29→30)** — เจ้าของสั่งจบด้วย Fable ไม่รอกรรมการ · ตารางแม่ 16 หมวด/178 หัวข้อ + วินิจฉัย ViberQC อยู่ในคลัง (`AI-Security-Testing/`) · New Chat v2.0 + Close Chat v2.3 ผูกไฟล์กลาง `.project/qaqc-scan.md` แล้ว · branch งาน: `feature/use-qa-qc` (แผน active ใหม่ plan_id: QAQC · GRD ย้ายไป plan-grd.md) [fact]
+- **2026-07-19: QAQC-P2-I3/P5 ตรวจต่อด้วย Codex** — ตารางแม่ตรวจครบ 1/1 และแก้ตัวเลข S1b ในคลังกลางแล้ว (MR !3, `c397ade`) · Road Safe Fund มีหลักฐาน 14/178 หัวข้อ และยังไม่ตรวจ 157/178 · Root Admin ยังไม่พบผลสแกน QAQC · สรุป P5 ปิด 0/2 โปรเจกต์ = 0% [fact]
 - 2026-07-10: ซ่อม relay-call quota ปลอม (คำตอบยาวที่พูดถึง quota โดนตีเป็นโควต้าหมด) — scoped pytest 68/69 (1 แดง = เทสต์ timeout พังก่อนแก้ พิสูจน์แล้ว) · แก้ adapter grok (CLI v1.0.1 ตัด flag เก่า) · **grok headless ต้องมี API key = งานคนค้าง** · กรรมการรีวิวรวบ P1-P4 ยังไม่สำเร็จ (โควต้า/บั๊กวันเดียวกัน 3 ตัว) เลื่อนเป็น hardening [fact]
 - **แผน GRD merged เข้า main แล้ว — PR #16 (`8bd9aa5e0`)** · ระบบกันแผนหาย/กัน AI มั่ว ใช้งานจริงบน main [fact]
 - เก็บของค้างเช้า 2026-07-08: commit ไฟล์กฎกลาง 3 ไฟล์ในคลัง Obsidian (commit คลัง 7b52e4b — คนละ repo กับตัวนี้ · re-anchor v2.9/v4.2/v1.9) · push branch `feature/p12b-shortcut-guard` + เปิด **PR #17** (install guard กันเขียนทับไฟล์คลังที่ใหม่กว่า) [fact]

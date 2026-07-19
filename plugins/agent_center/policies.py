@@ -1,9 +1,9 @@
 """Provider/session seat policy and work-receipt validation.
 
-Assigns four AI seats (planner_primary, planner_challenger, worker, reviewer)
-deterministically from a pool of provider/session "seats", enforcing
-never-same-provider cross-checks and unique sessions. Also validates a returned
-Work Receipt without persisting anything.
+Assigns the active AI seats deterministically from a pool of provider/session
+"seats". Every mode gets a cross-provider planner pair; build mode also gets a
+separate worker/reviewer pair. It enforces unique sessions and validates a
+returned Work Receipt without persisting anything.
 
 Standard library only. No writes, no network, no clock, no randomness.
 """
@@ -14,8 +14,13 @@ from typing import Any
 
 
 REVIEW_WRITE_PREFIX = "95-Inbox-Lab/review/"
+RECEIPT_SCHEMA_VERSION = "2.0"
 
-SEAT_NAMES = ("planner_primary", "planner_challenger", "worker", "reviewer")
+PLANNER_SEAT_NAMES = ("planner_primary", "planner_challenger")
+BUILD_SEAT_NAMES = (*PLANNER_SEAT_NAMES, "worker", "reviewer")
+SEAT_NAMES = BUILD_SEAT_NAMES
+
+EXECUTION_MODES = frozenset({"think", "plan", "build", "review", "train"})
 
 # Roles that qualify a seat to act as the challenger planner.
 CHALLENGER_ROLES = frozenset({"planner", "analysis", "brain"})
@@ -50,6 +55,19 @@ def provider_family(provider_id: Any) -> str:
     """
 
     return _provider_family(normalize_id(provider_id))
+
+
+def required_seat_names(execution_mode: Any) -> tuple[str, ...]:
+    """Return the active seat contract for one execution mode.
+
+    Thinking, planning, review, and training need the cross-provider planner
+    pair. Only build work activates the separate worker/reviewer pair.
+    """
+
+    mode = normalize_id(execution_mode)
+    if mode not in EXECUTION_MODES:
+        raise ValueError(f"unsupported execution_mode: {mode or '<empty>'}")
+    return BUILD_SEAT_NAMES if mode == "build" else PLANNER_SEAT_NAMES
 
 
 def is_safe_review_path(path: Any) -> bool:
@@ -94,12 +112,16 @@ def _normalize_seat_pool(seats: Any, errors: list[str]) -> list[dict[str, Any]]:
         roles_raw = seat.get("roles")
         roles = [normalize_id(r) for r in roles_raw] if isinstance(roles_raw, list) else []
         roles = [r for r in roles if r]
+        healthy_raw = seat.get("healthy")
+        if not isinstance(healthy_raw, bool):
+            errors.append(f"seats[{index}]: 'healthy' must be a boolean")
+        healthy = healthy_raw is True
         normalized.append(
             {
                 "order": index,
                 "provider_id": provider_id,
                 "session_id": session_id,
-                "healthy": bool(seat.get("healthy", False)),
+                "healthy": healthy,
                 "roles": roles,
                 "provider_family": _provider_family(provider_id),
             }
@@ -123,8 +145,9 @@ def assign_seats(
     seats: Any,
     current_provider_id: Any,
     current_session_id: Any,
+    execution_mode: Any = "build",
 ) -> dict[str, Any]:
-    """Assign the four AI seats deterministically from the seat pool.
+    """Assign the active AI seats deterministically from the seat pool.
 
     Returns a dict with ``ok``, ``decision`` (assigned/blocked), ``seats`` map,
     ``policy`` reasons, and any ``errors``. Never silently downgrades: if a seat
@@ -134,6 +157,12 @@ def assign_seats(
     errors: list[str] = []
     reasons: list[str] = []
     pool = _normalize_seat_pool(seats, errors)
+
+    mode = normalize_id(execution_mode)
+    if mode not in EXECUTION_MODES:
+        errors.append(
+            "execution_mode: must be one of " + ", ".join(sorted(EXECUTION_MODES))
+        )
 
     primary_provider = normalize_id(current_provider_id)
     primary_session = normalize_id(current_session_id)
@@ -162,6 +191,11 @@ def assign_seats(
     if not primary["healthy"]:
         errors.append("planner_primary: current session is not healthy")
         return {"ok": False, "decision": "blocked", "seats": {}, "policy": reasons, "errors": errors}
+    if not (CHALLENGER_ROLES & set(primary["roles"])):
+        errors.append(
+            "planner_primary: current session must support planner, analysis, or brain"
+        )
+        return {"ok": False, "decision": "blocked", "seats": {}, "policy": reasons, "errors": errors}
 
     used_sessions = {primary["session_id"]}
     reasons.append(
@@ -179,6 +213,24 @@ def assign_seats(
     reasons.append(
         f"planner_challenger = cross-provider '{challenger['provider_id']}' (never same provider as primary)"
     )
+
+    assigned = {
+        "planner_primary": _seat_view(primary),
+        "planner_challenger": _seat_view(challenger),
+    }
+
+    if mode != "build":
+        reasons.append(
+            f"execution_mode '{mode}' activates THINK_PAIR only; no build work is authorized"
+        )
+        return {
+            "ok": True,
+            "decision": "assigned",
+            "execution_mode": mode,
+            "seats": assigned,
+            "policy": reasons,
+            "errors": [],
+        }
 
     # Worker: healthy, supports worker/code, unused session.
     worker = next(
@@ -220,16 +272,17 @@ def assign_seats(
         f"reviewer = cross-provider '{reviewer['provider_id']}' from worker, read_only enforced"
     )
 
-    assigned = {
-        "planner_primary": _seat_view(primary),
-        "planner_challenger": _seat_view(challenger),
-        "worker": _seat_view(worker),
-        "reviewer": _seat_view(reviewer, read_only=True),
-    }
+    assigned.update(
+        {
+            "worker": _seat_view(worker),
+            "reviewer": _seat_view(reviewer, read_only=True),
+        }
+    )
 
     return {
         "ok": True,
         "decision": "assigned",
+        "execution_mode": mode,
         "seats": assigned,
         "policy": reasons,
         "errors": [],
@@ -302,16 +355,31 @@ def _validate_seat_record(
     return provider, session
 
 
-def validate_work_receipt(receipt: Any) -> dict[str, Any]:
-    """Validate a returned Work Receipt (no persistence). Returns a report."""
+def validate_work_receipt(receipt: Any, expected_packet: Any = None) -> dict[str, Any]:
+    """Validate a Work Receipt against its original Work Packet.
+
+    A receipt without the original packet is intentionally rejected. Structural
+    validity alone cannot prove that its mode and seat identities belong to the
+    packet id it claims.
+    """
 
     errors: list[str] = []
     if not isinstance(receipt, dict):
         return {"ok": False, "code": "receipt_invalid", "errors": ["receipt must be an object"]}
 
+    if not isinstance(expected_packet, dict):
+        return {
+            "ok": False,
+            "code": "receipt_packet_required",
+            "errors": ["expected_packet is required to bind the receipt to its Work Packet"],
+        }
+
     required = (
         "packet_id",
+        "execution_mode",
         "seats",
+        "seat_evidence",
+        "synthesis",
         "skills_used",
         "gate_results",
         "candidate_links",
@@ -322,16 +390,37 @@ def validate_work_receipt(receipt: Any) -> dict[str, Any]:
         if field not in receipt:
             errors.append(f"receipt: missing field '{field}'")
 
+    if receipt.get("version") != RECEIPT_SCHEMA_VERSION:
+        errors.append(
+            "receipt: 'version' must be " + RECEIPT_SCHEMA_VERSION
+        )
+
     packet_id = receipt.get("packet_id")
     if not isinstance(packet_id, str) or not packet_id.strip():
         errors.append("receipt: 'packet_id' must be a non-empty string")
 
+    execution_mode = normalize_id(receipt.get("execution_mode"))
+    try:
+        active_seat_names = required_seat_names(execution_mode)
+    except ValueError:
+        errors.append(
+            "receipt: 'execution_mode' must be one of "
+            + ", ".join(sorted(EXECUTION_MODES))
+        )
+        active_seat_names = ()
+
     seats = receipt.get("seats")
     seat_pairs: dict[str, tuple[str, str]] = {}
     if not isinstance(seats, dict):
-        errors.append("receipt: 'seats' must be an object with four seat records")
+        errors.append("receipt: 'seats' must be an object with the active seat records")
     else:
-        for name in SEAT_NAMES:
+        unexpected_seats = sorted(set(seats) - set(active_seat_names))
+        if unexpected_seats:
+            errors.append(
+                "receipt.seats: inactive or unknown seat(s) for execution_mode "
+                f"'{execution_mode}': " + ", ".join(unexpected_seats)
+            )
+        for name in active_seat_names:
             if name not in seats:
                 errors.append(f"receipt.seats: missing seat '{name}'")
                 continue
@@ -339,26 +428,30 @@ def validate_work_receipt(receipt: Any) -> dict[str, Any]:
             if pair is not None:
                 seat_pairs[name] = pair
 
-    if len(seat_pairs) == len(SEAT_NAMES):
+    if active_seat_names and len(seat_pairs) == len(active_seat_names):
         sessions = [pair[1] for pair in seat_pairs.values()]
         if len(set(sessions)) != len(sessions):
-            errors.append("receipt.seats: all four session ids must be unique")
+            errors.append("receipt.seats: all active session ids must be unique")
 
         p_primary = seat_pairs["planner_primary"]
         p_challenger = seat_pairs["planner_challenger"]
         if _provider_family(p_primary[0]) == _provider_family(p_challenger[0]):
             errors.append("receipt.seats: planner pair must be cross-provider")
 
-        worker = seat_pairs["worker"]
-        reviewer = seat_pairs["reviewer"]
-        if _provider_family(worker[0]) == _provider_family(reviewer[0]):
-            errors.append("receipt.seats: worker and reviewer must be cross-provider")
-        if worker[1] == reviewer[1]:
-            errors.append("receipt.seats: worker and reviewer must use different sessions")
+        if execution_mode == "build":
+            worker = seat_pairs["worker"]
+            reviewer = seat_pairs["reviewer"]
+            if _provider_family(worker[0]) == _provider_family(reviewer[0]):
+                errors.append("receipt.seats: worker and reviewer must be cross-provider")
+            if worker[1] == reviewer[1]:
+                errors.append("receipt.seats: worker and reviewer must use different sessions")
 
-        reviewer_record = seats.get("reviewer") if isinstance(seats, dict) else None
-        if not (isinstance(reviewer_record, dict) and reviewer_record.get("read_only") is True):
-            errors.append("receipt.seats.reviewer: must be marked read_only:true")
+            reviewer_record = seats.get("reviewer") if isinstance(seats, dict) else None
+            if not (
+                isinstance(reviewer_record, dict)
+                and reviewer_record.get("read_only") is True
+            ):
+                errors.append("receipt.seats.reviewer: must be marked read_only:true")
 
     for field in ("skills_used", "gate_results", "candidate_links"):
         value = receipt.get(field)
@@ -372,6 +465,72 @@ def validate_work_receipt(receipt: Any) -> dict[str, Any]:
                 errors.append(
                     f"receipt.candidate_links[{index}]: must be a safe relative path under {REVIEW_WRITE_PREFIX}"
                 )
+
+    expected_packet_id = expected_packet.get("packet_id")
+    if packet_id != expected_packet_id:
+        errors.append("receipt: 'packet_id' must match expected_packet.packet_id")
+
+    expected_mode = normalize_id(expected_packet.get("execution_mode"))
+    if execution_mode != expected_mode:
+        errors.append("receipt: 'execution_mode' must match expected_packet.execution_mode")
+
+    expected_seats = expected_packet.get("seats")
+    if not isinstance(expected_seats, dict):
+        errors.append("expected_packet: 'seats' must be an object")
+    elif active_seat_names:
+        for name in active_seat_names:
+            receipt_record = seats.get(name) if isinstance(seats, dict) else None
+            expected_record = expected_seats.get(name)
+            receipt_pair = (
+                normalize_id(receipt_record.get("provider_id")),
+                normalize_id(receipt_record.get("session_id")),
+            ) if isinstance(receipt_record, dict) else ("", "")
+            expected_pair = (
+                normalize_id(expected_record.get("provider_id")),
+                normalize_id(expected_record.get("session_id")),
+            ) if isinstance(expected_record, dict) else ("", "")
+            if receipt_pair != expected_pair:
+                errors.append(
+                    f"receipt.seats.{name}: provider/session must match expected packet"
+                )
+
+    seat_evidence = receipt.get("seat_evidence")
+    if not isinstance(seat_evidence, dict):
+        errors.append("receipt: 'seat_evidence' must be an object")
+    else:
+        output_refs: list[str] = []
+        unexpected_evidence = sorted(set(seat_evidence) - set(active_seat_names))
+        if unexpected_evidence:
+            errors.append(
+                "receipt.seat_evidence: inactive or unknown seat(s): "
+                + ", ".join(unexpected_evidence)
+            )
+        for name in active_seat_names:
+            evidence = seat_evidence.get(name)
+            if not isinstance(evidence, dict):
+                errors.append(f"receipt.seat_evidence.{name}: must be an object")
+                continue
+            seat = seats.get(name) if isinstance(seats, dict) else None
+            for field in ("provider_id", "session_id"):
+                if normalize_id(evidence.get(field)) != normalize_id(
+                    seat.get(field) if isinstance(seat, dict) else None
+                ):
+                    errors.append(
+                        f"receipt.seat_evidence.{name}.{field}: must match receipt seat"
+                    )
+            output_ref = evidence.get("output_ref")
+            if not isinstance(output_ref, str) or not output_ref.strip():
+                errors.append(
+                    f"receipt.seat_evidence.{name}.output_ref: must be non-empty"
+                )
+            else:
+                output_refs.append(output_ref.strip())
+        if len(output_refs) != len(set(output_refs)):
+            errors.append("receipt.seat_evidence: output_ref must be unique per active seat")
+
+    synthesis = receipt.get("synthesis")
+    if not isinstance(synthesis, str) or not synthesis.strip():
+        errors.append("receipt: 'synthesis' must be a non-empty string")
 
     if errors:
         return {"ok": False, "code": "receipt_invalid", "errors": errors}

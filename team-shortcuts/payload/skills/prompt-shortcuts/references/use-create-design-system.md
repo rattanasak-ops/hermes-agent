@@ -98,6 +98,7 @@ standard_ref: design-system-standard-v2/
 ### ด่านเครื่องตรวจชั้นแบรนด์ ds-gate (ใหม่ v3.0 · ห้ามข้าม)
 - เริ่มโปรเจกต์: ยังไม่มี `.project/DesignSystem.md` → รัน `python3 design-system-standard-v2/tools/ds-gate.py --init` ได้แม่แบบ แล้วกรอกชั้น H/U/F ให้ครบ
 - ก่อนเข้า PHASE 3 (ด่านสี): ต้องรัน `python3 design-system-standard-v2/tools/ds-gate.py --layer all` แล้ว exit 0 เท่านั้น · ไม่ผ่าน = ห้ามสร้าง token/แตะโค้ด (fail-closed · ตรวจเนื้อจริง ไม่ใช่แค่มีไฟล์)
+- `ds-gate.py --layer all` เป็นการตรวจอ่านอย่างเดียว จึงรันตรงผ่าน New Chat Gate ได้ ไม่ต้องอ้อมผ่าน Codex/relay; ส่วน `ds-adopt.sh prep/check` อาจเรียก build หรือติดตั้งเครื่องมือ ให้ผ่านด่านของคำสั่งนั้นตามปกติ
 
 ### ด่านวินัยงาน D14-D17 (บทเรียน Root Admin DS พัง 2 วัน · 2026-07-15)
 - D14 กัน tree ชน: เช็ก `git branch --show-current`+`git status` ก่อนเขียนทุกครั้ง · จบ 1 ชิ้น commit ทันที ห้ามค้างข้ามเทิร์น

@@ -158,19 +158,43 @@ def agent_center_prepare_training_candidate(args: dict[str, Any]) -> str:
 
 
 def agent_center_validate(args: dict[str, Any]) -> str:
-    """Validate a Work Packet, a Work Receipt, or the bundled catalog.
+    """Validate a Work Packet, a packet-bound Work Receipt, or the catalog.
 
-    Supply exactly one of ``packet`` or ``receipt`` to validate that object (no
-    persistence); supplying both is rejected. When neither is given the bundled
-    catalog is validated and its totals and versions are reported.
+    Supply ``packet`` alone before execution. Supply both ``packet`` and
+    ``receipt`` to validate completion and bind mode plus seat identities to the
+    original packet. A receipt alone is rejected. When neither is given the
+    bundled catalog is validated and its totals and versions are reported.
     """
 
     try:
         has_packet = "packet" in args
         has_receipt = "receipt" in args
         if has_packet and has_receipt:
+            packet = args.get("packet")
+            packet_report = routing.validate_work_packet(packet)
+            if not packet_report["ok"]:
+                return _json(
+                    {
+                        "ok": False,
+                        "code": "packet_receipt_invalid",
+                        "packet_report": packet_report,
+                        "receipt_report": None,
+                    }
+                )
+            receipt_report = policies.validate_work_receipt(
+                args.get("receipt"), expected_packet=packet
+            )
             return _json(
-                _fail("validate_ambiguous", "provide either packet or receipt, not both")
+                {
+                    "ok": receipt_report["ok"],
+                    "code": (
+                        "packet_receipt_valid"
+                        if receipt_report["ok"]
+                        else "packet_receipt_invalid"
+                    ),
+                    "packet_report": packet_report,
+                    "receipt_report": receipt_report,
+                }
             )
         if has_packet:
             return _json(routing.validate_work_packet(args.get("packet")))
