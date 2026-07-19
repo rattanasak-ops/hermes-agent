@@ -399,11 +399,14 @@ if [ ! -f "$TEAM_HOOK_INSTALLER" ]; then
 fi
 python3 "$TEAM_HOOK_INSTALLER"
 if ! "$HOOK_DOCTOR_BIN" >/dev/null; then
-  say "ผิดพลาด: ติดตั้ง Hook แล้วแต่ตรวจ 4 ด่านไม่ผ่าน"
-  "$HOOK_DOCTOR_BIN" || true
-  exit 1
+  say "      ตัวตรวจ Hook รอบแรกไม่ผ่าน ลองตรวจ Hook ซ้ำอีก 1 ครั้ง"
+  if ! "$HOOK_DOCTOR_BIN" >/dev/null; then
+    say "ผิดพลาด: ติดตั้ง Hook แล้วแต่ตรวจ 6 ด่านไม่ผ่าน 2 รอบ"
+    "$HOOK_DOCTOR_BIN" || true
+    exit 1
+  fi
 fi
-say "      สำเร็จ: Hook ภาษาคน/ผู้ตรวจอิสระ/หลักฐาน/New Chat ผ่าน 4/4"
+say "      สำเร็จ: Hook ภาษาคน/ผู้ตรวจอิสระ/หลักฐาน/คำตอบพื้นที่/ทำงานต่อเป็นเฟส/New Chat ผ่าน 6/6"
 
 # --- 2) ต่อ Claude Code (ทุกโปรเจกต์ผ่าน global memory) ---
 say "[2/4] ต่อ Claude Code ผ่าน ~/.claude/CLAUDE.md"

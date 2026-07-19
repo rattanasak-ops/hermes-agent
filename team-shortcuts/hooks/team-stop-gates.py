@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the three team response gates from one Stop hook."""
+"""Run the team response gates from one Stop hook."""
 
 from __future__ import annotations
 
@@ -13,6 +13,8 @@ GATES = (
     "validate-thai-language.py",
     "enforce-codex-review.py",
     "enforce-prompt-evidence.py",
+    "enforce-workspace-response.py",
+    "enforce-phase-autonomy.py",
 )
 
 

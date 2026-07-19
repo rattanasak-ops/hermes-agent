@@ -139,6 +139,12 @@ _DEFAULT_PAYLOADS = {
         "model": "gpt-4",
         "platform": "cli",
     },
+    "transform_llm_output": {
+        "session_id": "test-session",
+        "response_text": "Synthetic assistant response",
+        "model": "gpt-4",
+        "platform": "cli",
+    },
     "on_session_start": {"session_id": "test-session"},
     "on_session_end": {"session_id": "test-session"},
     "on_session_finalize": {"session_id": "test-session"},

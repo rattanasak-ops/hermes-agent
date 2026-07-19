@@ -1,3 +1,4 @@
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -20,6 +21,7 @@ def build_fake_installer(
     registry: str = "registry v1\n",
     ref: str = "ref v1\n",
     mw_setup_exit: int = 0,
+    hook_doctor_script: str = "#!/usr/bin/env python3\nraise SystemExit(0)\n",
 ):
     team_dir = tmp_path / "team-shortcuts"
     scripts_dir = tmp_path / "scripts"
@@ -42,22 +44,21 @@ def build_fake_installer(
         "  printf '#!/usr/bin/env bash\\nexit 0\\n' > \"$HOME/.local/bin/$name\"\n"
         "  chmod 0755 \"$HOME/.local/bin/$name\"\n"
         "done\n"
-        "rm -f \"$HOME/.local/bin/hermes-hook-doctor\"\n"
-        "ln -s /usr/bin/true \"$HOME/.local/bin/hermes-hook-doctor\"\n"
         "printf '#!/usr/bin/env bash\\nexit 2\\n' > \"$HOME/.local/bin/hermes-prewrite-gate\"\n"
         "chmod 0755 \"$HOME/.local/bin/hermes-prewrite-gate\"\n"
     )
     (team_dir / "VERSION").write_text("test-version\n")
     (team_dir / "install-team-hooks.py").write_text("#!/usr/bin/env python3\n")
     (scripts_dir / "hermes_write_permit.py").write_text("#!/usr/bin/env bash\nexit 0\n")
-    (scripts_dir / "hermes_hook_doctor.py").write_text(
-        "#!/usr/bin/env python3\nraise SystemExit(0)\n"
-    )
+    (scripts_dir / "hermes_hook_doctor.py").write_text(hook_doctor_script)
     gate = scripts_dir / "new-chat/hermes_prewrite_gate.py"
     gate.parent.mkdir(parents=True)
     gate.write_text("#!/usr/bin/env python3\nraise SystemExit(2)\n")
-    (scripts_dir / "new-chat/hermes_owner_intent.py").write_text(
-        "#!/usr/bin/env python3\n"
+    (gate.parent / "hermes_owner_intent.py").write_text(
+        "#!/usr/bin/env python3\nraise SystemExit(0)\n"
+    )
+    (gate.parent / "hermes_workspace_recover.py").write_text(
+        "#!/usr/bin/env python3\nraise SystemExit(0)\n"
     )
     lifecycle = tmp_path / "hermes_cli/worktree_lifecycle.py"
     lifecycle.parent.mkdir(parents=True)
@@ -305,3 +306,71 @@ def test_failed_mw_setup_fails_installation(tmp_path: Path):
 
     assert result.returncode != 0
     assert "ติดตั้งเครื่องมือ Use Migrate Web (MW) ไม่สำเร็จ" in result.stdout
+
+
+def test_installer_retries_hook_doctor_once(tmp_path: Path):
+    marker = tmp_path / "hook-doctor-attempted"
+    doctor = (
+        "#!/usr/bin/env python3\n"
+        "from pathlib import Path\n"
+        f"marker = Path({str(marker)!r})\n"
+        "if not marker.exists():\n"
+        "    marker.write_text('first', encoding='utf-8')\n"
+        "    raise SystemExit(137)\n"
+        "raise SystemExit(0)\n"
+    )
+    team_dir = build_fake_installer(tmp_path, hook_doctor_script=doctor)
+
+    result = run_installer(team_dir, tmp_path)
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert "ลองตรวจ Hook ซ้ำอีก 1 ครั้ง" in result.stdout
+
+
+def test_save_git_scope_uses_merged_head_and_effective_target_diff(tmp_path: Path, monkeypatch):
+    gate_path = ROOT / "skills/devops/save-git/scripts/save_git_gate.py"
+    spec = importlib.util.spec_from_file_location("repo_save_git_gate", gate_path)
+    assert spec and spec.loader
+    gate = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = gate
+    spec.loader.exec_module(gate)
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=tmp_path, check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+    git("init", "-b", "feature/test")
+    git("config", "user.email", "test@example.com")
+    git("config", "user.name", "Test User")
+    (tmp_path / "base.txt").write_text("base\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-m", "base")
+    base = git("rev-parse", "HEAD")
+    (tmp_path / "old.txt").write_text("already merged\n", encoding="utf-8")
+    git("add", "old.txt")
+    git("commit", "-m", "old feature")
+    merged_head = git("rev-parse", "HEAD")
+
+    git("switch", "-c", "main", base)
+    (tmp_path / "old.txt").write_text("already merged\n", encoding="utf-8")
+    git("add", "old.txt")
+    git("commit", "-m", "squash old feature")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+    git("switch", "feature/test")
+    (tmp_path / "new.txt").write_text("new work\n", encoding="utf-8")
+    git("add", "new.txt")
+    git("commit", "-m", "new feature")
+    git("merge", "--no-edit", "main")
+
+    monkeypatch.setattr(
+        gate,
+        "merged_head_checkpoint",
+        lambda root, branch, target: (merged_head, "github"),
+    )
+
+    assert gate.effective_scope(tmp_path, "origin/main", "feature/test", "main") == (
+        1,
+        1,
+        "github",
+    )

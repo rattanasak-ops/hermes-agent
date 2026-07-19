@@ -493,7 +493,7 @@ def _block_message(primary: Any, secondary: Any) -> str:
     return raw if isinstance(raw, str) and raw else _DEFAULT_BLOCK_MESSAGE
 
 
-def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
+def _parse_response(event: str, stdout: str) -> Optional[Any]:
     """Translate stdout JSON into a Hermes wire-shape dict.
 
     For ``pre_tool_call`` the Claude-Code-style ``{"decision": "block",
@@ -505,7 +505,8 @@ def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
     block directive.
 
     For ``pre_llm_call``, ``{"context": "..."}`` is passed through
-    unchanged to match the existing plugin-hook contract.
+    unchanged. For ``transform_llm_output``, ``{"response_text": "..."}``
+    returns the replacement text consumed by the conversation loop.
 
     Anything else returns ``None``.
     """
@@ -531,6 +532,10 @@ def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
         if data.get("decision") == "block":
             return {"action": "block", "message": _block_message(data.get("reason"), data.get("message"))}
         return None
+
+    if event == "transform_llm_output":
+        response_text = data.get("response_text")
+        return response_text if isinstance(response_text, str) and response_text.strip() else None
 
     context = data.get("context")
     if isinstance(context, str) and context.strip():

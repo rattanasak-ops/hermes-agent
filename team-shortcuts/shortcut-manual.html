@@ -91,7 +91,7 @@
     <header class="page">
       <h1>คู่มือ Prompt Shortcut สำหรับทีม</h1>
       <p>พิมพ์ชื่อ Shortcut ในแชท AI (Cursor / Claude Code / Codex) แล้ว AI จะทำตามขั้นตอนมาตรฐานให้</p>
-      <p class="meta">อัปเดต 2026-06-24 · ครอบคลุม 18 Shortcut ที่ใช้งานจริง</p>
+      <p class="meta">อัปเดต 2026-07-19 · Shortcut ทุกตัวใช้พื้นที่ปัจจุบันและไม่สร้าง Worktree ใหม่</p>
     </header>
 
     <div class="intro">
@@ -106,14 +106,14 @@
     <div class="group-title">เริ่ม / ปิด / ต่อ แชท</div>
 
     <section class="card" id="m-new-chat">
-      <h3>Use New Chat <span class="ver">v1.6</span></h3>
+      <h3>Use New Chat <span class="ver">v4.2</span></h3>
       <div class="aliases">เรียกด้วย: <code>Use New Chat</code> · <code>เปิดแชทใหม่</code> · <code>เริ่ม New Chat</code></div>
       <p class="use"><b>ใช้เมื่อ:</b> เริ่มแชทใหม่/มาทำงานต่อ · อยากให้ AI รู้ว่างานถึงไหน อยู่ branch ไหน ก่อนเริ่ม (กันทำผิดที่)</p>
       <div class="flowlabel">Flow</div>
       <ol class="flow">
         <li>อ่านความจำล่าสุด (handoff + session log) → สรุป 3 บรรทัด: process ขั้นไหน / งานล่าสุดถึงไหน / ต้องทำต่ออะไร</li>
         <li>ตรวจของจริง: project path / branch / ไฟล์ค้าง / remote / VPS-service (มีอะไรตรวจอันนั้น)</li>
-        <li>งานเขียน + อยู่กิ่งรวม → Shortcut หยุด · ถ้าเจ้าของพิมพ์คำสั่งสั้นพร้อมชื่อกิ่งตรง ๆ AI สร้างกิ่งนั้นในโฟลเดอร์เดิมให้ได้ · ห้ามสร้าง Worktree</li>
+        <li>ถ้าหลุด detached HEAD แต่ Git root ตรงงาน → AI กู้กิ่งจากสมุดทะเบียนในโฟลเดอร์เดิม · ไฟล์ค้างไม่หาย · ไม่เพิ่ม Worktree; ถ้าอยู่กิ่งร่วมจะบล็อกโดยไม่สลับกิ่ง</li>
         <li>เช็กการจองงาน (กันแก้ทับเพื่อนร่วมทีม)</li>
         <li>ออกผลเป็น READY / BLOCKED / NEED_OWNER_INPUT</li>
       </ol>
@@ -149,11 +149,12 @@
     </section>
 
     <section class="card" id="m-continue">
-      <h3>Use Continue <span class="ver">v3.1</span></h3>
+      <h3>Use Continue <span class="ver">v5.3</span></h3>
       <div class="aliases">เรียกด้วย: <code>Use Continue</code> · <code>ทำต่อ</code> · <code>ไม่ต้องรอผม</code></div>
       <p class="use"><b>ใช้เมื่อ:</b> อยากให้ AI ทำงานต่อเองอัตโนมัติ ปิดทุกเฟสให้ครบ</p>
       <div class="flowlabel">Flow — ระดับอิสระ 3 ชั้น</div>
       <ol class="flow">
+        <li>เจ้าของอนุมัติเป้าหมายหรือเฟสแล้ว → AI ทำงานปลอดภัยต่อจนปิดเฟส โดยไม่ถามอนุมัติซ้ำระหว่างทาง</li>
         <li>ชั้น 1 ทำเองได้ (อ่าน/แก้โค้ดใน scope/รันเทส)</li>
         <li>ชั้น 2 รายงานแล้วทำต่อ (ลง dependency/แก้ config ที่ไม่ใช่ production)</li>
         <li>ชั้น 3A งานเสี่ยง (push/merge/deploy/migration) → ทำได้เองแต่ต้องผ่านด่านตรวจอัตโนมัติก่อน</li>
@@ -340,7 +341,7 @@
     <div class="group-title">ความปลอดภัย / จัดการ</div>
 
     <section class="card" id="m-flow-guardian">
-      <h3>Use Flow Guardian <span class="ver">v1.1</span></h3>
+      <h3>Use Flow Guardian <span class="ver">v2.2</span></h3>
       <div class="aliases">เรียกด้วย: <code>Use Flow Guardian</code> · <code>ตรวจ worktree</code> · <code>กัน AI แก้งานทับกัน</code></div>
       <p class="use"><b>ใช้เมื่อ:</b> ระหว่างทำงาน อยากให้ AI มีวินัยความปลอดภัย กันแก้งานทับเพื่อนร่วมทีม</p>
       <div class="flowlabel">Flow</div>

@@ -22,13 +22,13 @@ tags:
   - phase-tracking
   - completion
 status: active
-version: "5.1"
-updated: 2026-07-18
+version: "5.3"
+updated: 2026-07-19
 schema: memory-schema-v1.2
 replaces: go-to-sleep
 ---
 
-# Use Continue (v5.1 · 2026-07-18)
+# Use Continue (v5.3 · 2026-07-19)
 
 คู่กับ Memory Schema v1.2 · เช็ก schema version ตอนเริ่ม · ไม่ตรง = เตือน + ห้ามเขียนไฟล์ความจำจนกว่าจะอ่าน schema ล่าสุด
 
@@ -55,6 +55,7 @@ Use Continue
 - `NEED_OWNER_ACTION_BEFORE_CLOSE` รอบก่อน = หยุด เตือนเจ้าของ ห้ามลุยต่อ จนกว่าเคลียร์
 - ใช้เฉพาะ Git root และกิ่งที่แอปเปิดอยู่ · path ซ้อนงานคนอื่น = STOP · ไม่สร้างหรือสลับ Worktree/กิ่ง
 - Shortcut นี้ไม่สร้างกิ่งเอง แต่ถ้าข้อความสั้นล่าสุดจากเจ้าของสั่งสร้างกิ่งพร้อมชื่อชัดเจน ให้ใช้ `OWNER_EXPLICIT_BRANCH_ONLY`: สร้างกิ่งชื่อนั้นใน Git root ปัจจุบันได้หนึ่งครั้ง ห้ามสร้าง Worktree และห้ามผลักให้เจ้าของเปิด Terminal เอง
+- ถ้า Git root ตรงงานแต่หลุดเป็น detached HEAD ให้รัน `hermes-current-workspace-recover --cwd <Git root> --json` ก่อน โดยใช้ชื่อกิ่งจากสมุดทะเบียนเท่านั้นและต้องรักษาไฟล์ค้าง; ถ้าอยู่กิ่งร่วมให้คืน `PROTECTED_BRANCH_WRITE_BLOCKED` โดยไม่สลับกิ่ง
 - อ้าง phase_id/issue_id เดิมจาก plan/comply ตลอด ไม่ตั้งใหม่ · ถ้า plan.md ประกาศ plan_id (เช่น GRD) เลขงานต้องขึ้นต้นด้วย plan_id นั้น · เลขที่ไม่มีใน plan.md = ห้ามทำ
 
 [กฎ re-anchor — กันลืมแผนหลังคำถามแทรก · แผน GRD 2026-07-07]
@@ -68,6 +69,12 @@ Use Continue
 - หยุดและจัด Phase ใหม่เฉพาะเมื่อ scope/path/branch/SHA เปลี่ยน, ชน ownership, พบ secret, ด่านจริง BLOCKED, จะแตะ production/เงิน/บุคคลภายนอก/ลบถาวร
 - คำถามย่อย การเลือกวิธีภายใน scope และการแก้ test ที่ไม่ผ่าน ไม่ใช่เหตุให้ขออนุมัติใหม่ · เลือกทางที่ปลอดภัยสุดแล้วบันทึกเหตุผล
 
+[Phase Autonomy — ห้ามถามซ้ำกลางเฟส]
+- หลังเจ้าของอนุมัติเป้าหมาย/เฟส งบคำถามสำหรับงาน ZONE_A = 0 ครั้งจนถึงด่านปิดเฟส
+- ถ้าเจ้าของถามสถานะ ให้ตอบสถานะ แล้วเปิด plan.md ทวนเฟสและทำงานเดิมต่อทันที
+- ถ้าติดสิทธิ์หรือผลกระทบภายนอกจริง ให้ถามรวมครั้งเดียวด้วย `OWNER_INPUT_REQUIRED: <รหัสเหตุผล>` และ `หลักฐาน:` จากเครื่อง
+- ห้ามถามคำถามเดิมซ้ำจนกว่าสถานะจากเครื่องเปลี่ยน และห้ามใช้คำถามเพื่อหยุดงานที่ยังทำต่อได้อย่างปลอดภัย
+
 [ระดับอิสระ 3 ชั้น — ตัดสินก่อนทำทุกอย่าง · อิง Schema §12]
 ชั้น 1 = ZONE_A ทำเองได้เลย: อ่านไฟล์ / แก้โค้ดใน scope รอบนี้ / รันเทส / เขียนไฟล์ทดสอบ / เขียน doc
 ชั้น 2 รายงานแล้วทำต่อได้ (แนบหลักฐานก่อน): ลง dependency (+ lockfile diff + license/security) / ลบหลายไฟล์ (+ dry-run list) / แตะไฟล์ข้าม ownership (+ สรุปผลกระทบ) / แก้ config ที่ไม่ใช่ production
@@ -79,7 +86,7 @@ Use Continue
 - ก่อนแก้ไฟล์ครั้งแรกของ Phase ต้องมี `approval_phase / git_root / branch / base_sha / allowed_paths / owner_approval / claim_status` ที่ยังตรงกับ Git จริง
 - สิทธิ์เดียวใช้ได้กับทุก issue ใน Phase และ allowed_paths เดิม · ห้ามถามอนุมัติซ้ำระหว่าง Phase
 - คำสั่งใหม่ เปลี่ยนเป้าหมาย เพิ่ม path เปลี่ยน branch/SHA หรือกลับมาหลังบริบทไม่แน่นอน ต้องตรวจ branch/status/claim ใหม่ แต่ถ้าทุกค่าตรงให้ทำต่อได้ทันที ไม่ต้องขอเจ้าของซ้ำ
-- ถ้าพื้นที่ไม่ตรงโครงการ ให้คืน `CURRENT_WORKSPACE_BLOCKED` และชี้โฟลเดอร์หลักเพียงแห่งเดียว · ห้ามเสนอ Worktree ใหม่; ถ้ากิ่งไม่ตรงและเจ้าของระบุชื่อกิ่งใหม่ตรง ๆ ให้ AI ใช้ข้อยกเว้นกลางได้
+- ถ้าพื้นที่ไม่ตรงโครงการ ให้คืน `WORKSPACE_SCOPE_MISMATCH` พร้อม path ที่ตรวจจริง · ห้ามผลักให้ผู้ใช้เปิด/สร้าง/switch workspace, Worktree, folder หรือ branch · ถ้ากิ่งไม่ตรงให้กู้จากสมุดทะเบียนก่อน หรือใช้ข้อยกเว้นกลางเมื่อเจ้าของระบุชื่อกิ่งใหม่ตรง ๆ
 
 [เปลี่ยนสำคัญ] ต้องขอคนเสมอ (ค่าตั้งต้น · แม้ด่าน SAFE):
 - merge → main · deploy production · migration prod → เพราะ merge→main = CI/CD ดันขึ้น prod ที่มีผู้ใช้จริงอัตโนมัติ
@@ -127,10 +134,12 @@ Use Continue
 
 ## Current Workspace Only
 
-อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ทำต่อใน Git root/branch/SHA ที่เปิดอยู่และตรวจจริง · Shortcut ห้ามเรียก open/enter หรือสร้าง/สลับ Worktree/กิ่งเอง · คำสั่งสั้นแยกจากเจ้าของที่ระบุชื่อกิ่งตรง ๆ ใช้ `OWNER_EXPLICIT_BRANCH_ONLY` · พื้นที่ไม่ตรงให้หยุด `CURRENT_WORKSPACE_BLOCKED`
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ทำต่อใน Git root/branch/SHA ที่เปิดอยู่และตรวจจริง · Shortcut ห้ามเรียก open/enter หรือสร้าง/สลับ Worktree/กิ่งเอง ยกเว้นกู้กิ่งที่ลงทะเบียนไว้ใน Git root เดิม · คำสั่งสั้นแยกจากเจ้าของที่ระบุชื่อกิ่งตรง ๆ ใช้ `OWNER_EXPLICIT_BRANCH_ONLY` · พื้นที่ไม่ตรงให้หยุด `WORKSPACE_SCOPE_MISMATCH` โดยไม่ผลักการเปิดพื้นที่กลับไปให้ผู้ใช้
 
 ## Changelog
 
+- v5.3 (2026-07-19): เพิ่ม Phase Autonomy · งาน ZONE_A มีงบคำถาม 0 ครั้ง · คำถามแทรกไม่ยกเลิกเฟส · ข้อขัดข้องภายนอกต้องมีรหัสและหลักฐานจากเครื่อง
+- v5.2 (2026-07-19): เพิ่มการกู้กิ่งจากสมุดทะเบียนใน Git root เดิม · ตัดข้อความที่ผลักให้ผู้ใช้เปิดพื้นที่หรือกิ่ง
 - v5.1 (2026-07-18): เพิ่ม `OWNER_EXPLICIT_BRANCH_ONLY` สำหรับคำสั่งสร้างกิ่งตรงจากเจ้าของ · ยืนยันว่าไม่เปิด Worktree และไม่ผลักให้เจ้าของใช้ Terminal
 - v5.0 (2026-07-18): ใช้ `CURRENT_WORKSPACE_ONLY` · ไม่สร้าง/สลับ Worktree หรือกิ่ง · เปลี่ยน Phase Write Permit ให้ผูก Git root/branch/SHA ปัจจุบัน
 - v4.5 (2026-07-14): เพิ่ม Two-Zone Execution + Phase Write Permit ตามคำสั่งเจ้าของ · Zone A ทำต่อเองจน verified 100% · Zone B รวมขออนุมัติครั้งเดียวต่อ Phase · เลิกถามราย issue ภายใน scope เดิม

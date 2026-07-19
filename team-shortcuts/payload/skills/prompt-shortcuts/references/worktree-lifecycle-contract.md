@@ -12,16 +12,16 @@ tags:
   - notebook
   - vps
 status: owner-approved
-version: "1.3.0"
-updated: 2026-07-18
+version: "1.3.1"
+updated: 2026-07-19
 plan_id: WTL
 ---
 
-# Hermes Worktree Lifecycle Contract v1.3
+# Hermes Worktree Lifecycle Contract v1.3.1
 
 > สัญญาส่วนเสริมสำหรับตรวจ ส่งต่อ ปิด และเก็บกวาด Git worktree ที่มีอยู่บน Notebook และ VPS
 >
-> หลักสูงสุด: Shortcut ปกติใช้ `CURRENT_WORKSPACE_ONLY` ตาม `work-execution-policy.md` และห้ามสร้าง/สลับ Worktree/กิ่งเอง · ด่าน AI ไม่เปิด Worktree ใหม่ · การสร้างกิ่งตามคำสั่งเจ้าของใช้ `OWNER_EXPLICIT_BRANCH_ONLY` ใน Git root ปัจจุบัน
+> หลักสูงสุด: Shortcut ปกติใช้ `CURRENT_WORKSPACE_ONLY` ตาม `work-execution-policy.md` และห้ามสร้าง/สลับ Worktree/กิ่งเอง · ด่าน AI ไม่เปิด Worktree ใหม่ · การสร้างกิ่งตามคำสั่งเจ้าของใช้ `OWNER_EXPLICIT_BRANCH_ONLY` · การกู้ detached HEAD ใช้ `SYSTEM_REGISTERED_BRANCH_RECOVERY` เฉพาะกิ่งที่สมุดทะเบียนผูกกับ Git root เดิม
 
 ## 0. เงื่อนไขการเรียกใช้
 
