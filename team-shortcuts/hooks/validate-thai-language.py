@@ -23,6 +23,19 @@ BANNED_WORDS = (
     "|deprecate|paradigm|idempotent|refactor|dispatch|orchestrate"
 )
 
+MACHINE_STATUS = re.compile(
+    r"(?:parse\s+passed|registry\s+updated|manifest\s+(?:created|generated)|"
+    r"payload\s+(?:synced|promoted)|hook\s+(?:wired|installed)|"
+    r"promoted|registry\s*(?:แล้ว|สำเร็จ)|อัปเดต\s*registry)",
+    re.I,
+)
+
+HUMAN_IMPACT = re.compile(
+    r"(?:หมายถึง|ผลคือ|ผลกระทบ|ทำให้|เพื่อให้|ป้องกัน|ลดความเสี่ยง|"
+    r"เจ้าของ|ทีม|ผู้ใช้|ใช้งาน|ไม่ต้อง|อ่านได้|ตรวจได้|ย้อนคืน)",
+    re.I,
+)
+
 WHITELIST = frozenset(
     w.lower()
     for w in (
@@ -107,6 +120,11 @@ def find_violations(msg: str):
     if found:
         violations.append(
             f"พบคำต้องห้าม {', '.join(found)} ต้องใช้คำไทยแทน"
+        )
+
+    if MACHINE_STATUS.search(clean) and not HUMAN_IMPACT.search(clean):
+        violations.append(
+            "คำตอบบอกเพียงสถานะของเครื่องมือ แต่ไม่อธิบายว่าหมายถึงอะไรหรือมีผลต่อเจ้าของและทีมอย่างไร"
         )
 
     return violations
