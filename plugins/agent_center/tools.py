@@ -1,4 +1,4 @@
-"""Six Agent Center tool handlers over the catalog, routing, and policy modules.
+"""Seven Agent Center tool handlers over the catalog, routing, and policy modules.
 
 Each handler accepts an ``args`` dict and returns a JSON string with stable key
 ordering and ``ensure_ascii=False``. Failures are caught and returned as
@@ -83,7 +83,7 @@ def agent_center_list_skills(args: dict[str, Any]) -> str:
 
 
 def agent_center_route(args: dict[str, Any]) -> str:
-    """Validate a diagnosis, build a Team Manifest, and assemble a Work Packet.
+    """Build a Team Manifest, phase-shortcut workflow, and Work Packet.
 
     ``diagnosis`` plus the seat pool (``seats``) and the current session's
     ``current_provider_id`` and ``current_session_id`` are all required. When

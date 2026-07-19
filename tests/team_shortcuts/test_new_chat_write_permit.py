@@ -8,7 +8,7 @@ REFS = ROOT / "team-shortcuts/payload/skills/prompt-shortcuts/references"
 def test_new_chat_uses_current_workspace_only():
     text = (REFS / "use-new-chat.md").read_text(encoding="utf-8")
 
-    assert 'version: "4.1"' in text
+    assert 'version: "4.2"' in text
     assert "CURRENT_WORKSPACE_ONLY" in text
     assert "CURRENT_WORKSPACE_READY" in text
     assert "CURRENT_WORKSPACE_READ_ONLY" in text
@@ -26,7 +26,7 @@ def test_relay_and_continue_are_confined_to_current_workspace():
     assert 'version: "3.0"' in relay
     assert "Current Workspace Permit" in relay
     assert "Relay ห้ามสร้าง ลบ ย้าย หรือสลับ Worktree/กิ่ง" in relay
-    assert 'version: "5.1"' in continuation
+    assert 'version: "5.3"' in continuation
     assert "Current Workspace Permit" in continuation
     assert "Shortcut นี้ไม่สร้างกิ่งเอง" in continuation
     assert "ห้ามสร้าง Worktree" in continuation
