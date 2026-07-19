@@ -22,13 +22,13 @@ tags:
   - phase-tracking
   - completion
 status: active
-version: "5.3"
+version: "5.4"
 updated: 2026-07-19
 schema: memory-schema-v1.2
 replaces: go-to-sleep
 ---
 
-# Use Continue (v5.3 · 2026-07-19)
+# Use Continue (v5.4 · 2026-07-19)
 
 คู่กับ Memory Schema v1.2 · เช็ก schema version ตอนเริ่ม · ไม่ตรง = เตือน + ห้ามเขียนไฟล์ความจำจนกว่าจะอ่าน schema ล่าสุด
 
@@ -44,6 +44,8 @@ Use Continue
 
 ```text
 Use Continue
+
+[ด่าน Goal Contract] อ่าน [[skills/prompt-shortcuts/references/goal-contract|goal-contract.md]] แล้วตรวจ `.project/active-task.json` ก่อนแตะไฟล์และหลังคำถามแทรกทุกครั้ง · ใบงาน active ชนะ plan/history/แชท · `goal_hash` ต่างหรือกิ่ง frozen ให้หยุดตามรหัสจริง · งาน ZONE_A ใน Phase เดิมทำต่อเองและจบด้วย `AUTO_CONTINUE:` ตราบใดที่ยังมีงานปลอดภัย
 
 ทำงานต่อเองโดยไม่ต้องรอผม ทีละเฟส ปิดแต่ละเฟสให้ครบ 100% ก่อนข้าม · งานรอบนี้ยึด 1 เป้าหมายหลักเท่านั้น
 
@@ -120,9 +122,13 @@ Use Continue
 [STOP/เปลี่ยนวิธี] ผู้ตรวจคนเดิมและวิธีเดิมไม่ผ่านครบ 2 รอบในปัญหาเดียว → ห้ามเรียกรอบที่ 3 · แยกปัญหาแล้วใช้ test/lint/build/gate-run หรือผู้ตรวจคนละค่ายทันที · พื้นที่ปัจจุบันมีไฟล์ค้างในไฟล์ที่จะแตะหรือมีงานคนอื่นเสี่ยงทับ · จะแตะชั้น 3B หรือ prod ที่ ALLOW_AUTO_PROD=OFF · ด่าน 3A ตอบ BLOCKED · error class เดิม 3 ครั้ง · เจอ secret ใน diff · ต้องเดาเรื่องสำคัญเพราะ context ไม่พอ → หยุด รายงาน ถาม 1 คำถาม
 
 ส่งงานจบ (closeout):
-| phase_id | เป้าหมาย | % หรือสถานะ | หลักฐาน |
+- เริ่มด้วย `## สรุปภาษาคน` ไม่เกิน 5 บรรทัด
+- ตามด้วย `| Phase | สถานะ N/M | % | แปลเป็นภาษาคน |` ทุกครั้ง
+- มี `## งานต่อไปคืออะไร` เพียงหนึ่งงาน
+- ถ้าต้องเปิดหรือส่งต่อแชท ให้มี `## Prompt ที่ควรใช้ต่อ` พร้อมข้อความคัดลอกได้
+- ทุกคำว่าเสร็จ/ผ่าน/ค้างในรายงานต้องมีทั้ง N/M และ % ในบรรทัดเดียวกัน
+- ถ้างานในเครื่องจบแต่ยังเหลือ merge หรือระบบภายนอก ให้ใช้ประโยคบังคับจาก `next-action-contract.md`
 + สิ่งที่ทำ / ไฟล์ที่แก้ / คำสั่งตรวจ (ค้น gate เอง) / เรื่องที่เลือกแทนผู้ใช้ / ledger รอบนี้ / ความเสี่ยงค้าง / next step เดียวที่แนะนำสุด
-(ช่อง % ใส่ BLOCKED/NOT VERIFIED ได้ถ้าวัดเลขไม่ได้)
 เมื่อทุกเฟสที่เจ้าของสั่ง รวมถึง merge เข้า main, VPS, เครื่องทีม และแผนกลาง เสร็จหรือมีข้อขัดข้องภายนอกจริงแล้วเท่านั้น จึงส่งต่อ Use Close Chat เพื่อ verify รวบ + เขียน memory + ออก token
 
 ด่าน Git ตกเพราะจำนวน commit/ไฟล์หรือประวัติกิ่ง ไม่ใช่สิทธิ์ให้สร้างหรือสลับ Worktree/กิ่ง ต้องหาต้นเหตุในกิ่งปัจจุบัน ตรวจรายการที่เคยรวมและวิธีรวม แล้วแก้โดยรักษาประวัติ
@@ -140,6 +146,7 @@ Use Continue
 
 ## Changelog
 
+- v5.4 (2026-07-19): ใช้รายงานภาษาคนก่อนข้อมูลระบบ · บังคับตาราง Phase, งานถัดไปหนึ่งงาน, Prompt ส่งต่อเมื่อจำเป็น และ N/M + % ทุกสถานะ
 - v5.3 (2026-07-19): เพิ่ม Phase Autonomy · งาน ZONE_A มีงบคำถาม 0 ครั้ง · คำถามแทรกไม่ยกเลิกเฟส · ข้อขัดข้องภายนอกต้องมีรหัสและหลักฐานจากเครื่อง
 - v5.2 (2026-07-19): เพิ่มการกู้กิ่งจากสมุดทะเบียนใน Git root เดิม · ตัดข้อความที่ผลักให้ผู้ใช้เปิดพื้นที่หรือกิ่ง
 - v5.1 (2026-07-18): เพิ่ม `OWNER_EXPLICIT_BRANCH_ONLY` สำหรับคำสั่งสร้างกิ่งตรงจากเจ้าของ · ยืนยันว่าไม่เปิด Worktree และไม่ผลักให้เจ้าของใช้ Terminal
@@ -155,6 +162,7 @@ Use Continue
 
 ## Graph Links
 
+- Shared closeout rule: [[skills/prompt-shortcuts/references/next-action-contract|Next Action Contract]]
 - Parent hub: [[skills/prompt-shortcuts/Prompt Shortcuts|Prompt Shortcuts]]
 - Registry: [[ai-context/prompt-shortcut-registry|Prompt Shortcut Registry]]
 - Schema: [[skills/prompt-shortcuts/references/memory-schema|Memory Schema v1.1]]

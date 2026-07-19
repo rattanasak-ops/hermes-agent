@@ -37,6 +37,8 @@ Use Comply
 ```text
 Use Comply กับงานนี้
 
+[ด่าน Goal Contract] อ่าน [[skills/prompt-shortcuts/references/goal-contract|goal-contract.md]] และผูกทุก Issue กับ `task_id/goal_hash` เดียว · ใส่ `kind=primary` สำหรับผลงานหลัก หรือ `kind=support` สำหรับ Hook เอกสารและชุดตรวจ · คิดและรายงานเปอร์เซ็นต์สองกลุ่มแยกกัน ห้ามงานสนับสนุนเพิ่มเปอร์เซ็นต์ผลงานหลัก · ส่งตาราง Phase ให้คอลัมน์ตรง `Phase / สถานะ N/M / % / แปลเป็นภาษาคน` · จบด้วย `Prompt ถัดไป:` หรือ `AUTO_CONTINUE:` ใต้หัวข้อ `Prompt ที่ควรใช้ต่อ` เมื่อเจ้าของต้องส่งต่อ
+
 แตกงานเป็น phase และ issue ย่อยละเอียด กัน AI ลืม/ข้ามขั้น/ทำไม่ครบ/รายงานเสร็จทั้งที่ยังไม่ตรวจจริง
 
 [กฎ non-dev] อธิบายภาษาคน · ห้ามถามว่าใช้ test ตัวไหน — ค้นเอง (Schema §5) · หลักฐานก๊อปวางได้
@@ -106,6 +108,7 @@ Use Comply กับงานนี้
 
 ## Graph Links
 
+- Shared closeout rule: [[skills/prompt-shortcuts/references/next-action-contract|Next Action Contract]]
 - Parent hub: [[skills/prompt-shortcuts/Prompt Shortcuts|Prompt Shortcuts]]
 - Registry: [[ai-context/prompt-shortcut-registry|Prompt Shortcut Registry]]
 - Schema: [[skills/prompt-shortcuts/references/memory-schema|Memory Schema v1.1]]

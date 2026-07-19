@@ -11,7 +11,7 @@ tags:
   - agent-center
   - team-routing
 status: active
-version: "1.3"
+version: "1.2"
 updated: 2026-07-19
 ---
 
@@ -33,12 +33,11 @@ Use Agent
 Use Agent ใช้ได้กับงานคิด วิเคราะห์ วางแผน ออกแบบ สร้าง ตรวจ และฝึก Agent/Skill ไม่ได้จำกัดเฉพาะงานเขียนโค้ด ห้ามปฏิเสธเพียงเพราะโจทย์เป็นงานคิดหรือไม่มีขั้นลงมือสร้าง
 
 กติกา:
+0. อ่าน [[skills/prompt-shortcuts/references/goal-contract|goal-contract.md]] ก่อนทุกครั้ง · Use Agent เป็นทางเข้าหลัก: ตรวจหรือเสนอ `.project/active-task.json` หนึ่งชุดที่มี `goal_hash` และต้องจบด้วย `Prompt ถัดไป:` หรือ `AUTO_CONTINUE:` ตามใบงาน ห้ามให้เจ้าของเดา Shortcut ถัดไป · เมื่อส่งต่อให้แสดงค่านี้ใต้หัวข้อ `Prompt ที่ควรใช้ต่อ` หลังตาราง Phase ตาม `next-action-contract.md`
 1. อ่าน AGENTS.md และความจำโปรเจกต์ที่กำหนดก่อนวินิจฉัย
 2. ทำงานเฉพาะ Git root และ branch ที่เจ้าของเปิดอยู่ ห้ามสร้างหรือสลับ branch/Worktree
 3. แปลงคำขอเป็น structured diagnosis ที่มี project, goal, phase, execution_mode, domains, risks, signals, allowed paths, forbidden actions, deliverables และ evidence gates โดย execution_mode ใช้ think, plan, build, review หรือ train
-4. เรียก agent_center_validate เพื่อตรวจสมุดรายชื่อ แล้วใช้ agent_center_route เพื่อสร้าง Team Manifest, แผน Shortcut ของทั้ง Phase และ Work Packet ห้ามเลือก Shortcut จากความจำเอง
-4.1 อ่าน Prompt เต็มของทุก Shortcut ที่อยู่ใน `team.workflow.selected_shortcuts` ก่อนถึงสถานีนั้น โดย `Use Agent` เป็นทางเข้าเดียว ผู้ใช้ไม่ต้องจำหรือเรียก Shortcut ที่เหลือเอง
-4.2 งาน build ใช้ลำดับกลาง `Use Flow Guardian` → `Use Comply` → Shortcut เฉพาะสายงาน → `Use Continue` → `Use Save Git` → `Use Close Chat` ภายใต้ Phase ใหญ่ งานปลอดภัยมีงบถามกลาง Phase 0 ครั้ง งานที่กระทบภายนอกรวบขออนุมัติไม่เกิน 1 ชุดต่อ Phase และรวมผลตรวจที่ปลาย Phase
+4. เรียก agent_center_validate เพื่อตรวจสมุดรายชื่อ แล้วใช้ agent_center_route เพื่อสร้าง Team Manifest และ Work Packet
 5. ทุกโหมดบังคับ THINK_PAIR ให้ AI สองค่ายตรวจความคิดกัน ส่วน BUILD_REVIEW ใช้เฉพาะโหมด build โดยคนสร้างห้ามตรวจงานตัวเอง ห้ามลดเหลือยี่ห้อเดียวเงียบ ๆ
 6. ตรวจ Work Packet ด้วย agent_center_validate ก่อนลงมือ
 7. โหมด think, plan, review และ train ให้ส่งผลวิเคราะห์หรือคำตัดสินที่ผ่านคู่คิดได้ทันที โดยไม่บังคับสร้าง branch เขียนโค้ด หรือขออนุมัติงานสร้าง ส่วนโหมด build ให้ AI ในแอปปัจจุบันลงมือได้เมื่อพื้นที่และขอบเขตผ่าน ใช้ Use AI Relay เฉพาะเมื่อเจ้าของเรียกชัดเจน
@@ -51,8 +50,7 @@ Use Agent ใช้ได้กับงานคิด วิเคราะห
 ผลลัพธ์ขั้นต่ำ:
 - ใบวินิจฉัยงาน
 - Team Manifest: leads, specialists, skills, reasons
-- Phase Workflow: Shortcut ที่เลือกตามลำดับ, งบถามงานปลอดภัย 0 ครั้ง, จุดรวมผลตรวจ และด่านขออนุมัติภายนอก
-- Work Packet: packet_schema_version, packet_id, execution_mode, scope, active seats, workflow, deliverables, evidence gates
+- Work Packet: packet_schema_version, packet_id, execution_mode, scope, active seats, deliverables, evidence gates
 - Work Receipt รุ่น 2: seat_evidence ของทุก active seat, synthesis, gate results และผลตรวจที่ผูกกับ Work Packet ต้นฉบับ
 - Decision: route_ready หรือ blocked พร้อมเหตุผลและขั้นตอนถัดไปหนึ่งข้อ
 ```
@@ -68,3 +66,10 @@ Use Agent ใช้ได้กับงานคิด วิเคราะห
 - ไม่ติดตั้งโปรไฟล์ Agent จากสมุดรายชื่อ
 - ไม่เขียนความรู้ถาวรหรือส่งข้อมูลลับ
 - ไม่ commit, push, merge หรือ deploy โดยไม่มีด่านเฉพาะและคำอนุมัติ
+
+## Graph Links
+
+- Shared closeout rule: [[skills/prompt-shortcuts/references/next-action-contract|Next Action Contract]]
+- Explicit optional worker route: [[skills/prompt-shortcuts/references/use-ai-relay|Use AI Relay]]
+- Parent hub: [[skills/prompt-shortcuts/Prompt Shortcuts|Prompt Shortcuts]]
+- Registry: [[ai-context/prompt-shortcut-registry|Prompt Shortcut Registry]]

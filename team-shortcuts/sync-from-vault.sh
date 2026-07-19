@@ -23,7 +23,8 @@ fi
 mkdir -p "$PAYLOAD/ai-context" "$PAYLOAD/skills"
 cp "$VAULT/ai-context/prompt-shortcut-registry.md" "$PAYLOAD/ai-context/"
 mkdir -p "$PAYLOAD/skills/prompt-shortcuts"
-rsync -a --delete "$VAULT/skills/prompt-shortcuts/" "$PAYLOAD/skills/prompt-shortcuts/"
+rsync -a --delete --exclude '.DS_Store' --exclude '._*' \
+  "$VAULT/skills/prompt-shortcuts/" "$PAYLOAD/skills/prompt-shortcuts/"
 
 REF_COUNT="$(ls -1 "$PAYLOAD/skills/prompt-shortcuts/references/"*.md 2>/dev/null | wc -l | tr -d ' ')"
 echo "อัปเดต payload แล้ว: ทะเบียน 1 ไฟล์ + prompt $REF_COUNT ไฟล์"

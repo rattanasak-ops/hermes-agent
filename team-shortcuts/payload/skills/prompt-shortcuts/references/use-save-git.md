@@ -28,12 +28,12 @@ tags:
   - vps
   - safety-gate
 status: active
-version: 2.4
+version: 2.5
 updated: 2026-07-19
 supersedes: v1.3 (retired 2026-06-08 · do not use old action-based flow)
 ---
 
-# Use Save Git (v2.4)
+# Use Save Git (v2.5)
 
 ## Shortcut
 
@@ -211,6 +211,8 @@ Owner action: <กด merge ได้ / ห้าม merge เพราะ... / 
 ```text
 Use Save Git
 
+[ด่าน Goal Contract] อ่าน [[skills/prompt-shortcuts/references/goal-contract|goal-contract.md]] · ก่อน commit/push ตรวจไฟล์เปลี่ยนทั้งหมดด้วยใบงาน และก่อน merge ต้องได้ `GOAL_GIT_GATE_OK` จาก task/goal_hash/branch/base_sha/path/work type เดียวกัน · ด่านนี้เพิ่มจากเพดาน commit/ไฟล์เดิม ไม่ได้แทนกัน · frozen แล้วห้าม commit ใหม่ · จบด้วย `Prompt ถัดไป:` หรือ `AUTO_CONTINUE:`
+
 งานนี้ทำตามมาตรฐาน Git/GitLab/VPS แบบปลอดภัยก่อน push, merge, deploy
 หลักใหญ่: ห้ามให้ GitLab merge เป็นที่ลองผิดลองถูก ให้ AI รันด่านตรวจเดียวจนออกใบผ่านก่อน เจ้าของงานค่อยกด merge
 
@@ -271,6 +273,10 @@ Autonomous Remediation Rule:
 - หยุดถามเจ้าของงานได้เฉพาะ secret / permission / destructive / business decision ที่ AI ตัดสินแทนไม่ได้
 
 Output บังคับ:
+- เริ่มด้วย `สรุปภาษาคน` ไม่เกิน 5 บรรทัด แล้วแสดงตาราง Phase ตาม `next-action-contract.md`
+- แปล decision token, Grid และชั้นที่ขวางเป็นผลต่อเจ้าของก่อนแสดงค่าจากเครื่อง
+- ระบุ `งานต่อไปคืออะไร` เพียงหนึ่งงาน และสร้าง `Prompt ที่ควรใช้ต่อ` เมื่อเจ้าของต้องเปิดหรือส่งต่อแชท
+- ทุกบรรทัดที่กล่าวว่าเสร็จ/ผ่าน/ค้างต้องมีทั้ง N/M และ %
 - decision token เดียว + Grid ครบ 5 ด่าน + Blocking layer + Fix needed + Owner action
 - ห้ามจบด้วย "ตรวจได้อย่างเดียว" หรือ "ไป audit ต่อ" ถ้ายังไม่ลงมือ
 - ห้ามบอก merge ได้ถ้า Blocking layer ไม่ใช่ none
@@ -326,6 +332,7 @@ Owner action: ตัด local ได้
 
 ## Changelog
 
+- v2.5 (2026-07-19): เพิ่มสรุปภาษาคน ตาราง Phase งานถัดไปหนึ่งงาน และ Prompt ส่งต่อก่อนรายละเอียดด่าน Git
 - v2.4 (2026-07-19): แก้การนับกิ่งเดิมหลัง squash จาก head SHA ของรายการที่รวมล่าสุด · นับเฉพาะ work commit ใหม่และไฟล์ที่มีผลหลังรวม target · ห้ามสร้าง Worktree/กิ่งใหม่เพื่อหนีด่าน
 - v2.3 (2026-07-17 · SPEC-CENTRAL): เพิ่ม Spec Gate ระดับ Prompt ก่อนออกใบผ่าน merge (Schema §1d — draft = OWNER_DECISION_REQUIRED · approved/building ผ่าน · done ห้ามพฤติกรรมใหม่) · จับคู่สเปคกับแผนด้วยชื่อไฟล์กัน false-block โปรเจกต์เก่า · ประกาศ field `spec_gate` ใน `.savegit.json` ตรงไปตรงมาว่า gate โค้ดยังไม่อ่าน (ตัวบังคับจริงมากับ S1/S2)
 - v2.2 (2026-07-14): เพิ่ม alias `Save Grid` + Entry Gate ไม่รัน 5 ด่านในแชทที่ไม่มี Git action + evidence receipt ให้ Close/New ใช้ผลเดิมโดยตรวจ project/task/branch/SHA ก่อน
@@ -334,6 +341,7 @@ Owner action: ตัด local ได้
 
 ## Graph Links
 
+- Shared closeout rule: [[skills/prompt-shortcuts/references/next-action-contract|Next Action Contract]]
 - Parent hub: [[skills/README|skills]]
 - Registry: [[ai-context/prompt-shortcut-registry|Prompt Shortcut Registry]]
 - Evidence: [[95-Inbox-Lab/review/save-git-redesign/evidence-and-review|Redesign Evidence and Review]]

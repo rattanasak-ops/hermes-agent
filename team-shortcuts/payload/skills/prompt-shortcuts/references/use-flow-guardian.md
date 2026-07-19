@@ -33,6 +33,8 @@ Use Flow Guardian
 ```text
 Use Flow Guardian
 
+[ด่าน Goal Contract] อ่าน [[skills/prompt-shortcuts/references/goal-contract|goal-contract.md]] และตรวจ `.project/active-task.json` · ต้องเทียบ task, goal_hash, branch, base_sha, path และ work type ก่อนออกคำตัดสิน · plan/history ตรงกันแต่ goal_hash ไม่ตรงให้บล็อก ห้ามสร้างหรือสลับ Worktree/กิ่งเพื่อหนีด่าน · จบด้วย `Prompt ถัดไป:` หรือ `AUTO_CONTINUE:`
+
 เป้าหมาย: ตรวจว่าพื้นที่และกิ่งที่เจ้าของเปิดอยู่ปลอดภัยสำหรับงานนี้ โดยไม่เปลี่ยน Git ให้เจ้าของ
 
 1. รัน `pwd`, `git rev-parse --show-toplevel`, `git branch --show-current`, `git rev-parse HEAD`, `git status --short --branch` และ `git worktree list --porcelain` แบบอ่านอย่างเดียว

@@ -1,8 +1,8 @@
 # Active Task — SCG-P9-I4
 
 > สร้างจาก .project/active-task.json · ห้ามแก้ไฟล์นี้เป็นแหล่งข้อมูลหลัก
-> goal_hash: `66051e04861eb0b9f6eeacc76f85dfb1b1cbdb08a87258a33f6d259b91eee34c`
-> status: `active` · branch: `codex/scg-goal-contract-core` · base: `f6408b2992df8c3fcc12ebd80841bb718d5c6607`
+> goal_hash: `449a724fd979c5ba9a41ebbdeba282368ba9d307a6a467e3e85a6adcb93e0750`
+> status: `active` · branch: `codex/scg-shortcut-rollout` · base: `0c7089ec2f5232842d20286626f4d09e282cc82e`
 
 ## เป้าหมาย
 
@@ -18,33 +18,35 @@
 
 - `.project/active-task.json`
 - `.project/active-task.md`
-- `.project/spec/SCG-GOAL-DRIFT.md`
-- `agent/next_action_contract.py`
-- `plugins/shortcut_governance/__init__.py`
-- `plugins/shortcut_governance/cli.py`
-- `plugins/shortcut_governance/plugin.yaml`
-- `plugins/shortcut_governance/store.py`
-- `scripts/plan_index_check.py`
-- `scripts/shortcut_dependency_graph.py`
-- `team-shortcuts/check-shortcuts.sh`
-- `team-shortcuts/hooks/enforce-goal-contract.py`
-- `team-shortcuts/hooks/enforce-memory-receipt.py`
-- `team-shortcuts/hooks/enforce-phase-autonomy.py`
-- `team-shortcuts/hooks/enforce-shortcut-central.py`
-- `team-shortcuts/hooks/enforce-spec-gate.py`
-- `team-shortcuts/hooks/goal_contract.py`
-- `team-shortcuts/hooks/goal_evidence.py`
-- `team-shortcuts/hooks/memory_receipt.py`
-- `team-shortcuts/hooks/phase_state.py`
-- `team-shortcuts/hooks/record-spec-owner.py`
-- `team-shortcuts/hooks/team-stop-gates.py`
-- `team-shortcuts/hooks/validate-thai-language.py`
-- `team-shortcuts/install-team-hooks.py`
-- `team-shortcuts/team-hook-doctor.py`
-- `team-shortcuts/verify-bundle.py`
-- `tests/team_shortcuts/test_goal_contract.py`
-- `tests/team_shortcuts/test_goal_contract_hook.py`
+- `team-shortcuts/VERSION`
+- `team-shortcuts/install-shortcuts.sh`
+- `team-shortcuts/payload/ai-context/prompt-shortcut-registry.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/Prompt Shortcuts.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/SKILL.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/goal-contract.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/next-action-contract.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-act-as.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-agent.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-close-chat.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-comply.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-continue.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-create-design-system.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-flow-guardian.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-migrate-web.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-new-chat.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-qa-qc.md`
+- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-save-git.md`
+- `team-shortcuts/sync-from-vault.sh`
+- `team-shortcuts/BUNDLE-MANIFEST.json`
+- `tests/team_shortcuts/test_bundle_manifest.py`
+- `tests/team_shortcuts/test_goal_contract_distribution.py`
+- `tests/team_shortcuts/test_goal_drift_real_incidents.py`
+- `tests/team_shortcuts/test_goal_shortcut_chain.py`
+- `tests/team_shortcuts/test_new_chat_write_permit.py`
+- `tests/team_shortcuts/test_phase_goal_contract.py`
+- `tests/team_shortcuts/test_team_shortcut_distribution.py`
+- `tests/team_shortcuts/test_phase_distribution.py`
 
 ## Prompt ถัดไป
 
-AUTO_CONTINUE: เพิ่ม Workflow และชุดตรวจหลังบัญชี GitHub มีสิทธิ์ workflow
+AUTO_CONTINUE: ตรวจและรวมกิ่ง codex/scg-shortcut-rollout

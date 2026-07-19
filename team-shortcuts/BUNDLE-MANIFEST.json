@@ -1,0 +1,566 @@
+{
+  "aggregate_sha256": "e918453b757ab99e5de4716d06acdab0f33f38df02cf11276d1259b1ebce95d2",
+  "file_count": 93,
+  "files": [
+    {
+      "kind": "package",
+      "path": "VERSION",
+      "sha256": "b75c90ef776f1c60f59bfecc5daf1247ed52edb024562eec84a32be5c829c6ec",
+      "size": 14
+    },
+    {
+      "kind": "package",
+      "path": "check-shortcuts.sh",
+      "sha256": "6c82b6a72cb0c962dd0d9e85619c8c7c4fca685ce0a1c7b24d1d2944c8ec81ba",
+      "size": 9175
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/enforce-codex-review.py",
+      "sha256": "b9ec1812aea2f093bc6a4b186376d64469846dc47cc04a9c70b67a88cc1f98b9",
+      "size": 7920
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/enforce-flow-gate.py",
+      "sha256": "755fecb5fa50a814aeac488574c4459e52abdf696be8625b72e1d851bf794d7a",
+      "size": 17238
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/enforce-goal-contract.py",
+      "sha256": "94256f50dc32ead667792702b7a92fcd0235bac1a02584730ab4aceaad8bb1ba",
+      "size": 6065
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/enforce-memory-receipt.py",
+      "sha256": "96c82d6048ec5b5357a2b00d557e33301edf6db404b8f1f155b1ea3750dd7055",
+      "size": 2034
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/enforce-new-chat-relay.py",
+      "sha256": "a40d88bead4c1dff64f5b78a152923b82432c7e90175ea14112b6a1c9cddfdc7",
+      "size": 1188
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/enforce-phase-autonomy.py",
+      "sha256": "038d9aa9bec116b9ee509d2028ae1754f7f773e357362d6f8daeb6a3ecd77e41",
+      "size": 6817
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/enforce-prompt-evidence.py",
+      "sha256": "93be7ded5eaaa711db77d6a59ca61f311416a0c45f20f5748124d2686d45e70a",
+      "size": 8727
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/enforce-shortcut-central.py",
+      "sha256": "b9e852c3ce450b8f7480477de7d9fdcc0b1c469fc486678d350fcab032dd37c4",
+      "size": 4184
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/enforce-spec-gate.py",
+      "sha256": "6c19924787b684b354f7bfa9294efead02c4f91a2d08ecddcae7c47f18c17e3f",
+      "size": 10714
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/enforce-workspace-response.py",
+      "sha256": "14da56541953dc1d559c8bbdbaa292d4906564188ab3a664d4478b82594c6f19",
+      "size": 5335
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/goal_contract.py",
+      "sha256": "135be6c190db35927cf7c083107ec2b8d9970c132ac86b1ef47b4bacf4c62cbd",
+      "size": 14589
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/goal_evidence.py",
+      "sha256": "a6f0b38c035d66d3027901ffea232b74e4dfbbe0d0e8eee86c1d21e6910733d4",
+      "size": 1866
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/memory_receipt.py",
+      "sha256": "4eb0d931e79a662e2702664c0d810f5fc10a98608209af42c3e6f1dcbb1fd251",
+      "size": 14660
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/owner-friction-gate.py",
+      "sha256": "8390eca7384f767641bb17ad2f5b8a5f7258a12475ef23e803c1a178cd61012f",
+      "size": 4747
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/phase_state.py",
+      "sha256": "b59ab3ad3b3d2076214a8b4a4657afd52f0830372daaef41136fb59e12334e88",
+      "size": 10198
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/record-spec-owner.py",
+      "sha256": "deb97e949c04ea5abea475719dacc973a7e55fae270e08ae71f912dd74f8cbd9",
+      "size": 5440
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/team-stop-gates.py",
+      "sha256": "4f9bb4d165dc3c7541cda9d75239ec2bc5f2897d8c98d67b8c7d06f2e040ce6b",
+      "size": 16224
+    },
+    {
+      "kind": "hook",
+      "path": "hooks/validate-thai-language.py",
+      "sha256": "afdf19d34aa7de85ca945ac50cec6f4e07f8374c9d3e5192dd6600be83e3055f",
+      "size": 7656
+    },
+    {
+      "kind": "package",
+      "path": "install-from-github.sh",
+      "sha256": "98b41ffd75f94d0b187c4ca502d690d567810ac1dfaa918a2e9305c234348a2f",
+      "size": 5397
+    },
+    {
+      "kind": "package",
+      "path": "install-shortcuts.sh",
+      "sha256": "b251fd126b65428fdc97e8c92e8053e90a4014d5c56e3228b3d1962dd7012225",
+      "size": 17991
+    },
+    {
+      "kind": "package",
+      "path": "install-team-hooks.py",
+      "sha256": "4466395c011c92c6a2556f19025d9fdee2f3a65c42ae16779bfa79294a7e8abe",
+      "size": 15189
+    },
+    {
+      "kind": "payload",
+      "path": "payload/ai-context/prompt-shortcut-registry.md",
+      "sha256": "05b59910803e63f65eb2eb809ac3eed4acf577e3867f088aaeb5eadbb567f7b3",
+      "size": 61378
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/agent-center/SKILL.md",
+      "sha256": "c547c4430573cff797e51c099a557eb2a996ecd0d22c7534173958163eb94709",
+      "size": 10469
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/agent-center/agents/openai.yaml",
+      "sha256": "e0f42d94422732e44e84ec685afea79654563b47b2ab020451290267558ec1ec",
+      "size": 279
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/Prompt Shortcuts.md",
+      "sha256": "79899f6272b9605dc79869c8e485c2e300129cc7864769b92b3bf52120321e79",
+      "size": 28859
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/SKILL.md",
+      "sha256": "d4e987c2046a20ae30c59044822a6c0ac8ad920dd0f7d530a5bc8b671067fa4c",
+      "size": 30025
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/agents/openai.yaml",
+      "sha256": "1fac498e2f7a09b67f8f0d73e5cb7fd555a9dcc079539a1536186bc8fd20f631",
+      "size": 655
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/ai-relay-accounts.example.yaml",
+      "sha256": "adf030418e5615bd054fe42e2d59952484066d811b6eac04e304919991a71850",
+      "size": 2671
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/ai-relay-adapters.example.yaml",
+      "sha256": "b95fce3c6e6bcea2fdb762dbfc381bb64bbc50944c25862654778e146f343fe5",
+      "size": 2428
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/ai-relay-catalog.md",
+      "sha256": "447dcdd2be6188647429c75fc379a734d7e1fed22ee3c4345d7d2e048db39774",
+      "size": 15000
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/go-to-sleep.md",
+      "sha256": "c57d88a23375f3831ca6ece79d0919822032bcf4c7600e7f0734c798f53329b8",
+      "size": 952
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/goal-contract.md",
+      "sha256": "32bb63868b4ceae0e704d78699a117fdb57844b57b1dd39e76e721a9fca0b2d5",
+      "size": 5560
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/memory-schema.md",
+      "sha256": "67cabdaabc2f7b35b616663a930a85db050d27831d21067b4a755e3ee8a0ebd4",
+      "size": 26696
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/memory-system-owner-guide-th.md",
+      "sha256": "d44a57a47f3ec76b2012021b2f0d432c92bbcab05525ed407594f7369ac77f40",
+      "size": 5816
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/next-action-contract.md",
+      "sha256": "f553faa4ccc6e0cb96d3ab3766b058ffcb844af3ec43b3e8312dd4d61f2b1a2a",
+      "size": 7929
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/review-chat.md",
+      "sha256": "9d483f003cecd5b46c0aa0d118c4c1f6c33e1404426d8dddcc84f892dc8586a0",
+      "size": 3348
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/sonarqube-vps-install-for-cursor.md",
+      "sha256": "d0615e63f423031b04bd3194aaa0e0d69dc13485d2ab364a4c5f09f940f206dd",
+      "size": 14534
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-act-as.md",
+      "sha256": "4ab0e9083d419cf196f6e77a931bee1144f03cfd73b452cbe71a01ec0a697be0",
+      "size": 14646
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-agent.md",
+      "sha256": "a36cf9536fe529c6bb7569a4f3ec6751e20689a645c88e97278668d6d591fc6e",
+      "size": 8484
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-ai-pair.md",
+      "sha256": "c97f9a2f7474184364f7ff06240e6694d019df5c02ae3fff4fd5d4ee45a7acba",
+      "size": 12864
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-ai-relay.md",
+      "sha256": "099440eff65174b5785e4f4bd2b938e57f051862708558f2570db5ff48235474",
+      "size": 42896
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-blog-auto.md",
+      "sha256": "862d9d00757cf7a9267b399184f6053d1ce059e326ed5bd2390d0cf6e088acae",
+      "size": 10650
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-business-plan.md",
+      "sha256": "51fd14e0bdbc5fc41de8e8da2c03d998a5583b7833a526b0e790fc003eb483f2",
+      "size": 21224
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-businessplan.md",
+      "sha256": "d799f4f022f6bdd1e793304f5b3e7b798754fbb816d10b2d09f00df41c7576e2",
+      "size": 13549
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-close-chat.md",
+      "sha256": "fe452f0481bf410995c3c340a79288c72c17b3c084cd79b8d9c61f149aac2f7e",
+      "size": 28396
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-comply.md",
+      "sha256": "9856cce5678072346a192f28e60c765511d1d5d48213b1bc291fda86b57e4b6a",
+      "size": 13701
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-continue.md",
+      "sha256": "ef76bcf696fa2af4e0da9ea5165d2eeaa0eeafe095c274032e76bd5a209c3373",
+      "size": 25446
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-create-content.md",
+      "sha256": "c61ff86979712e54dcee9e6cff6f7a33a8cace296fb5f72977e553f912741211",
+      "size": 34776
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-create-design-system.md",
+      "sha256": "46ad6aa460d2385f28413bd570aae07e7f40831ed6b570c6bcf9edf83678790d",
+      "size": 49578
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-designsystem.md",
+      "sha256": "11d3c5f24550a3e800753a90488708a902f883dc6fac883e7e0379ada6ab7478",
+      "size": 9605
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-featurespec.md",
+      "sha256": "1150fff433d0217302c5d218aa5e978593030e796d446c1ce50cb38284e1bfb1",
+      "size": 7488
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-flow-guardian.md",
+      "sha256": "ce3f052d4bcedc5feb9fa86e3a146ea40963ef9c351900a84ec4b99229b26f8e",
+      "size": 5668
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-hermes-structure.md",
+      "sha256": "c08e1be626b741fa1574fd3f9a017cbd1f8da342e4faa50edcc3d20808a8f773",
+      "size": 5377
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-impeccable.md",
+      "sha256": "c1e0cb9034a37cf15c5f41745b654c428433118cb547d50d99deee335429c10e",
+      "size": 9634
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-merge-to-production.md",
+      "sha256": "db4d286ca90bcae131289e101e65bff12a44fb3db06a007694578549e54f2ab2",
+      "size": 11600
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-0.md",
+      "sha256": "9191e7f07acf60183d3f3242250fed7eb3656b9d7fefce71cd1849349eae80ec",
+      "size": 9451
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-1.md",
+      "sha256": "76dbd0fb63fd3f9c26f1ad3b4ddce6d233f2fd050f2dfc1a2d90d84a4d892c49",
+      "size": 8753
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-10.md",
+      "sha256": "865c297e89a0ab68f0b944f36c629e89872aed69de37c2cac78668062ddc67da",
+      "size": 8035
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-11.md",
+      "sha256": "4e56b79a2e86807b3e92981139d77daeced5c7a914a47cfe9901c4458078f029",
+      "size": 5540
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-12.md",
+      "sha256": "ccafb0c025a3fcbc2df4b57c656ae96a03f24f188c97b95dc3198eaa8ea4063d",
+      "size": 4999
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-13.md",
+      "sha256": "5e4f4428969ee6c8f869577f1634c56ef8e34941dc66fdb1687890738a03c750",
+      "size": 8151
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-2.md",
+      "sha256": "9184f324e81928b850c8769975120845a404150878e1a7e488cc67eeaf6fe7f7",
+      "size": 6563
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-3.md",
+      "sha256": "9ecbb08ad059f50fad489e0b43e4110284f37fa8c2b5147b73c22ce6479061af",
+      "size": 8131
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-4.md",
+      "sha256": "f08665b6f6b6226ac92c666937e6e077e7aa68a2112237ae17236e59e0519987",
+      "size": 8118
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-5.md",
+      "sha256": "7d2d3dbe7f247a637ef37db335dbf17abf96b08c2c04ccb57b1a7280d2b4afc4",
+      "size": 6594
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-6.md",
+      "sha256": "d9fa27d536bc8b7b4440f34b19f35e71bfc4cad245973fc1913ea24234f21188",
+      "size": 8015
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-7.md",
+      "sha256": "801522c00ae952fc7eff1f2ede97818aa55b8c1b2b08f5b4d3e41429639a8aa0",
+      "size": 7480
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-8.md",
+      "sha256": "70b37976a7f40c9df8a3a22c4e23df000d907679a0e86f2a477a780d60e33601",
+      "size": 9232
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-9.md",
+      "sha256": "847cf6240b5b3337f8a72fcbb74f019bf0729f4e6ecbe1ba0b8b5cefcd8bbfbd",
+      "size": 8654
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-phase-contract.md",
+      "sha256": "aa2e75e6f1c2ae215ef9d2bea49c0fa11891cc9fc5ed9f5bdac90be16746514e",
+      "size": 19802
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-web-flow13.md",
+      "sha256": "e554c1dcc38c591d6807a6e477bfea3de1da1dee74fd45f6d92b07f0de55fa8d",
+      "size": 92729
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-migrate-web.md",
+      "sha256": "a079e83509a9166ba40314ead126724bc3e7007078c2bef3f002ca8f9833f6bd",
+      "size": 33857
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-move-folder.md",
+      "sha256": "9adaf7f1f72a3777db873a97ea3af74096e0825dca9009d096b8b36af5873201",
+      "size": 10465
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-new-chat-conditional-gates.md",
+      "sha256": "a8f3dc9de08149923bde891876749667031d37bd43b71e2b6ffa178a838aa578",
+      "size": 3305
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-new-chat.md",
+      "sha256": "f63767220fc654abbab2fe007c1413c0f00f5f096d63573e5d215d4c8be61bf5",
+      "size": 12808
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-overviewprogress.md",
+      "sha256": "da00ef25dba8250700f3f9bc2740c7003bfd017d2ef98a0d3bf73c2ed1dc6618",
+      "size": 9669
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-qa-qc.md",
+      "sha256": "9f5cb0bda149f0b3f1ad15ec6c2089bb9a048cc29c8ce23fd682aeb3c07b1c08",
+      "size": 33277
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-saas-opus-master-prompt.md",
+      "sha256": "db33e61f9baf28766efdf18d73ac8e766c18a44c05be31c7cb08cdc867aae946",
+      "size": 19393
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-save-git.md",
+      "sha256": "2438f883a575a2f858d4c03ca31df1231bd8b43920d49a1de224964615dd15a0",
+      "size": 26546
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-scan-feature.md",
+      "sha256": "20114a29dba4d5cfe85f8d79ae12f7a95f0d3ae5a84dbf31d5ea2d9353acc25b",
+      "size": 23118
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-sonarqube.md",
+      "sha256": "e186fc299a4451ab6aed77d74ec8f8aceecb57d2021f9e1262aff3eb148e1dc7",
+      "size": 10238
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-summary.md",
+      "sha256": "5409e16f71eacdafe7fd8925bd269b0ab7607a631885e993e75f52930db9acde",
+      "size": 15952
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-trade-off.md",
+      "sha256": "799b4f8f8bbb0ac54e733796ae8dba3e13b5c9dde47f494cbf21db06fb3d0747",
+      "size": 5231
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-viber-audit.md",
+      "sha256": "c4821096348ac499bfea445605bdd37be4c34a1104d3f8b0db40e44e61be9347",
+      "size": 36869
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-viber-structure.md",
+      "sha256": "5fbbdcdc353d25744929a7e7012689464583b59498b75ee190c01689557f086b",
+      "size": 13536
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/use-wow-resource.md",
+      "sha256": "f04d7e657de26f9b5c5761311cf8d65cc1c3a5808a57732024cc0b221939e920",
+      "size": 13065
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/work-execution-policy.md",
+      "sha256": "24cd6260a16ce8068a415931ac0d7c8ed4e0c5d5e1723340d9a454b5284233a1",
+      "size": 16178
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/worktree-lifecycle-contract.md",
+      "sha256": "32622dbaddcaa57128ae80b849a788ff3b1f11da4741d9fc80353ac71456fbe4",
+      "size": 29189
+    },
+    {
+      "kind": "package",
+      "path": "sync-from-vault.sh",
+      "sha256": "889c583e35788d764de292d982b4a362c23a8607f16ac8372de4d9bc4d61e5ab",
+      "size": 1768
+    },
+    {
+      "kind": "package",
+      "path": "team-hook-doctor.py",
+      "sha256": "073e7249c1abca861cfc22b9d8b53e266c8ec284c123f753bb598194c45d3daf",
+      "size": 3367
+    },
+    {
+      "kind": "package",
+      "path": "verify-bundle.py",
+      "sha256": "fd0a5c65fb8fed19194014d6f2995c8d9151d7fc4bf1be09bec9e421f90eeb95",
+      "size": 9153
+    }
+  ],
+  "schema": "hermes-shortcut-bundle-v1",
+  "version": "2026.07.19-12"
+}

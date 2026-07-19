@@ -113,6 +113,8 @@ Use Design System        # หรือ Use Create Design System (ตัวเ�
 
 ## Prompt
 
+[ด่าน Goal Contract] อ่าน [[skills/prompt-shortcuts/references/goal-contract|goal-contract.md]] ก่อนสวมบท · `caller_goal` ต้องคัดจาก goal ใน `.project/active-task.json` และเก็บ goal_hash คู่กัน ห้าม AI เขียนเป้าหมายแม่ใหม่เอง · งานสี/ฟอนต์ที่อนุมัติไม่ให้สิทธิ์แก้ seed, API, ฐานข้อมูล,เนื้อหาชั่วคราวหรือระบบอื่น · ทำ ZONE_A ต่อทั้ง Phase และจบด้วย `Prompt ถัดไป:` หรือ `AUTO_CONTINUE:`
+
 ```text
 Use Create Design System กับโปรเจกต์นี้
 
