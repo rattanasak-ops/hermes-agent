@@ -7,7 +7,9 @@
 | ไฟล์ | หน้าที่ | ใครเขียน |
 |---|---|---|
 | `OverviewProgress.md` | สถานะเดียวของโปรเจกต์ (4 หัวข้อบนสุด: สถานะล่าสุด/งานถัดไป/ข้อห้าม/งานค้าง) | Close Chat |
-| `plan.md` | แผนเฟสที่เจ้าของอนุมัติแล้ว (P0, P1, …) | Act-As (ตอนอนุมัติ) |
+| `plan-index.md` | ดัชนีแผนทั้งหมด + แผน active เพียงชุดเดียว + เปอร์เซ็นต์จากหลักฐาน | Act-As / Close Chat |
+| `plan.md` | แผน active เท่านั้น และต้องมี `plan_id` เดียว | Act-As (ตอนอนุมัติ) |
+| `plans/*.md` | แผน parked/closed ที่แยกหนึ่ง `plan_id` ต่อไฟล์ | Close Chat |
 | `decisions.md` | บันทึกการตัดสินใจสะสม (append อย่างเดียว) | Close Chat |
 | `BusinessPlan.md` + `-Full.md` | แผนธุรกิจ 2 ชั้น (Project OS 1/4) | Use BusinessPlan |
 | `FeatureSpec.md` (เมื่อสร้าง) | บัญชีฟีเจอร์ real/mock/planned (Project OS 3/4) | Use FeatureSpec |

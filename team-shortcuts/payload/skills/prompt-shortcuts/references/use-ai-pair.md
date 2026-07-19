@@ -54,7 +54,7 @@ Use AI Pair กับงานนี้
 
 ถามเจ้าของงานเฉพาะเมื่อทำต่อไม่ได้จริง เช่น:
 - ไม่รู้ว่า repo/task/issue ไหนต้องทำ
-- ต้องเลือก branch/worktree ที่มีความเสี่ยงต่อการทับงานและไม่มีข้อมูลให้เดา
+- Git root/กิ่ง/ขอบเขตไฟล์ปัจจุบันไม่ตรงกันหรือเสี่ยงทับงาน และไม่มีหลักฐานพอให้ทำต่อ โดยต้องรายงานหลักฐานจากพื้นที่เดิม ห้ามสร้างหรือสลับพื้นที่หนีปัญหา
 - ต้องใช้ secret/token/account หรือสิทธิ์ที่ AI ไม่มี
 - การทำต่อจะเขียนไฟล์หรือ deploy โดยที่เจ้าของงานยังไม่เคยอนุมัติ scope นั้น
 
@@ -150,4 +150,4 @@ Use AI Pair กับงานนี้
 
 - Parent hub: [[skills/README|skills]]
 - Registry: [[ai-context/prompt-shortcut-registry|Prompt Shortcut Registry]]
-- Workflow: [[50-Playbooks/worktree-first-multi-agent-coding-workflow|Worktree-first Multi-Agent Coding Workflow]]
+- Workflow: `CURRENT_WORKSPACE_ONLY` · ผู้เขียนหนึ่งตัวในพื้นที่ปัจจุบัน ผู้ตรวจอ่าน path/SHA เดียวกันแบบไม่เขียน

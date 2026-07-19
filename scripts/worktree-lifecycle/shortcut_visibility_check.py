@@ -39,6 +39,26 @@ ACTIVE_CONFLICTS = [
 
 OWNER_BRANCH_POLICY = "OWNER_EXPLICIT_BRANCH_ONLY"
 
+NEGATION_MARKERS = (
+    "ห้าม", "ไม่สร้าง", "ไม่สลับ", "ไม่ย้าย", "ไม่ลบ", "อย่า", "ปฏิเสธ",
+    "ขวาง", "หยุด", "never", "must not", "may not", "do not", "don't",
+    "without creating", "without switching",
+)
+
+WORKTREE_MUTATION_PATTERNS = (
+    re.compile(r"\bhermes(?:-new-chat)?\s+worktree\s+(?:open|enter)\b", re.I),
+    re.compile(r"\bhermes-new-chat\s+open\b", re.I),
+    re.compile(r"\bgit\s+worktree\s+(?:add|remove|move)\b", re.I),
+    re.compile(r"worktree-first\s+multi-agent", re.I),
+    re.compile(r"worktree/branch\s+แยก", re.I),
+    re.compile(r"ต้องแยก\s+scope,?\s*worktree/branch", re.I),
+    re.compile(r"มีผลเหนือ\s+fixed-workspace", re.I),
+    re.compile(r"ต้องเลือก\s+branch/worktree", re.I),
+    re.compile(r"auto-create\s+worktrees", re.I),
+    re.compile(r"parallel.+worktrees", re.I),
+    re.compile(r"create\s+a\s+separate\s+temporary\s+worktree", re.I),
+)
+
 
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -54,7 +74,17 @@ def shortcut_names(markdown: str) -> list[str]:
     return names
 
 
-def validate(vault: Path, payload: Path) -> dict:
+def active_lines(path: Path) -> list[str]:
+    text = path.read_text(encoding="utf-8").split("## Changelog", 1)[0]
+    return text.splitlines()
+
+
+def has_negation(line: str) -> bool:
+    lowered = line.lower()
+    return any(marker in lowered for marker in NEGATION_MARKERS)
+
+
+def validate(vault: Path, payload: Path, repo: Path | None = None) -> dict:
     refs = vault / "skills" / "prompt-shortcuts" / "references"
     payload_skill = payload / "skills" / "prompt-shortcuts"
     contract = refs / "worktree-lifecycle-contract.md"
@@ -104,13 +134,37 @@ def validate(vault: Path, payload: Path) -> dict:
             if phrase in active:
                 errors.append("active_conflict:{}:{}".format(filename, phrase))
 
+    reference_files = sorted(refs.glob("*.md")) if refs.is_dir() else []
+    for path in reference_files:
+        for line_number, line in enumerate(active_lines(path), start=1):
+            if has_negation(line):
+                continue
+            if any(pattern.search(line) for pattern in WORKTREE_MUTATION_PATTERNS):
+                errors.append(
+                    "worktree_mutation_instruction:{}:{}:{}".format(
+                        path.name, line_number, line.strip()
+                    )
+                )
+
+    repo = repo or Path(__file__).resolve().parents[2]
+    repo_policy_files = sorted((repo / "skills").glob("**/SKILL.md"))
+    review_doc = repo / "team-shortcuts" / "shortcut-review.md"
+    if review_doc.is_file():
+        repo_policy_files.append(review_doc)
+    for path in repo_policy_files:
+        for line_number, line in enumerate(active_lines(path), start=1):
+            if has_negation(line):
+                continue
+            if any(pattern.search(line) for pattern in WORKTREE_MUTATION_PATTERNS):
+                errors.append(
+                    "repo_worktree_mutation_instruction:{}:{}:{}".format(
+                        path.relative_to(repo), line_number, line.strip()
+                    )
+                )
+
     parity_files = [
         "SKILL.md",
-        "references/work-execution-policy.md",
-        "references/worktree-lifecycle-contract.md",
-    ] + [
-        "references/{}".format(name) for name in DIRECT_FILES.values()
-    ]
+    ] + ["references/{}".format(path.name) for path in reference_files]
     for relative in parity_files:
         source = vault / "skills" / "prompt-shortcuts" / relative
         mirror = payload_skill / relative
@@ -129,6 +183,8 @@ def validate(vault: Path, payload: Path) -> dict:
         "direct_integrations": "{}/{}".format(len(DIRECT_FILES), len(DIRECT_FILES)),
         "worktree_auto_create": "0/{}".format(len(all_shortcuts)),
         "owner_branch_policy": "{}/{}".format(len(all_shortcuts), len(all_shortcuts)),
+        "reference_files_scanned": len(reference_files),
+        "repo_policy_files_scanned": len(repo_policy_files),
         "parity_files": len(parity_files) + 1,
         "errors": errors,
     }
@@ -138,9 +194,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--vault", required=True)
     parser.add_argument("--payload", required=True)
+    parser.add_argument("--repo")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
-    result = validate(Path(args.vault).resolve(), Path(args.payload).resolve())
+    result = validate(
+        Path(args.vault).resolve(),
+        Path(args.payload).resolve(),
+        Path(args.repo).resolve() if args.repo else None,
+    )
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:

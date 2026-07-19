@@ -34,25 +34,28 @@ POLICY_EXPLANATION_RE = re.compile(
 )
 
 
-def read_message() -> str:
+def read_payload() -> tuple[str, bool]:
     raw = sys.stdin.read()
     if not raw.strip():
-        return ""
+        return "", False
     try:
         data = json.loads(raw)
     except Exception:
-        return raw
+        return raw, False
     if not isinstance(data, dict) or data.get("stop_hook_active"):
-        return ""
+        return "", False
+    transform_mode = data.get("hook_event_name") == "transform_llm_output"
     extra = data.get("extra") if isinstance(data.get("extra"), dict) else {}
     value = (
         data.get("last_assistant_message")
         or data.get("response")
         or data.get("message")
+        or data.get("response_text")
+        or data.get("text")
         or extra.get("response_text")
         or ""
     )
-    return value if isinstance(value, str) else ""
+    return (value if isinstance(value, str) else ""), transform_mode
 
 
 def find_violations(message: str) -> list[str]:
@@ -75,7 +78,7 @@ def find_violations(message: str) -> list[str]:
 def main() -> int:
     if os.environ.get("OWNER_FRICTION_GATE_DISABLED") == "owner-approved":
         return 0
-    message = read_message()
+    message, transform_mode = read_payload()
     if not message:
         return 0
     violations = find_violations(message)
@@ -92,13 +95,16 @@ def main() -> int:
             handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except Exception:
         pass
-    print(
+    block_text = (
         "BLOCK · คำตอบผลักงานที่ AI ควรทำเองกลับให้เจ้าของ\n"
         + "\n".join(f"  - {item}" for item in violations)
         + "\nแก้: ทำต่อใน Git root ปัจจุบัน, กู้สถานะที่เครื่องกู้ได้เอง, "
-        "หรือรายงาน blocker ที่พิสูจน์จากเครื่องเท่านั้น",
-        file=sys.stderr,
+        "หรือรายงาน blocker ที่พิสูจน์จากเครื่องเท่านั้น"
     )
+    if transform_mode:
+        print(json.dumps({"response_text": block_text}, ensure_ascii=False))
+        return 0
+    print(block_text, file=sys.stderr)
     return 2
 
 

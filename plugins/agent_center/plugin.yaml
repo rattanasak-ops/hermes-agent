@@ -1,6 +1,6 @@
 name: agent-center
-version: 0.2.0
-description: "Deterministic, standard-library-only Agent Center: read-only catalog of lead/specialist agents and skills, mode-aware thinking/build routing to Team Manifests and Work Packets, provider/session seat policy, Work Receipt validation, and owner-review training candidates. Never writes files, touches the network, or persists anything."
+version: 0.3.0
+description: "Agent Center catalog, mode-aware routing, packet/receipt validation, owner-review training candidates, and real planner/worker/reviewer execution through logged-in Codex, Claude, and xAI subscriptions without API keys or AI Relay."
 author: "Hermes Agent"
 kind: standalone
 provides_tools:
@@ -10,3 +10,4 @@ provides_tools:
   - agent_center_route
   - agent_center_prepare_training_candidate
   - agent_center_validate
+  - agent_center_execute

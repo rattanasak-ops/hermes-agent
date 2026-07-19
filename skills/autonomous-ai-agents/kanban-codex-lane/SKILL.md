@@ -14,7 +14,7 @@ metadata:
 
 ## Overview
 
-This skill defines the lightweight Hermes+Codex dual-lane convention for Kanban workers. Hermes is always the task owner: it calls `kanban_show`, decides whether Codex is appropriate, creates or selects an isolated workspace, starts and monitors Codex, reconciles any diff, runs verification, and writes the final `kanban_complete` or `kanban_block` handoff. Codex is an input lane only. Codex output is not a task completion signal, not a trusted reviewer, and not allowed to write durable Kanban state directly.
+This skill defines the lightweight Hermes+Codex dual-lane convention for Kanban workers. Hermes is always the task owner: it calls `kanban_show`, decides whether Codex is appropriate, verifies the workspace already assigned by the manager, starts and monitors Codex, reconciles any diff, runs verification, and writes the final `kanban_complete` or `kanban_block` handoff. Codex is an input lane only. Codex output is not a task completion signal, not a trusted reviewer, and not allowed to write durable Kanban state directly.
 
 The convention exists so a Hermes worker can use Codex for bounded implementation help without changing the dispatcher. The dispatcher must still spawn Hermes workers. A worker may optionally spawn Codex inside its own run, then accept, partially accept, or reject the lane after independent review and tests.
 
@@ -24,7 +24,7 @@ Use the Codex lane when all of these are true:
 
 - The Kanban task is a coding, refactor, documentation, test, or mechanical migration task with clear acceptance criteria.
 - A bounded diff can be evaluated by Hermes in one run.
-- The repo can be copied or checked out in an isolated git worktree/branch.
+- The manager-provided workspace already exists and its Git root/branch/SHA match the task.
 - Hermes can run the relevant tests itself after Codex exits.
 - The prompt can state all safety constraints and files that must not change.
 
@@ -43,41 +43,11 @@ Do not use the Codex lane when any of these are true:
 2. Hermes owns final acceptance. Treat Codex commits/diffs as untrusted patches until reviewed and verified.
 3. Hermes owns test execution. Codex may run tests, but those runs are advisory; repeat required verification from Hermes with the repo's canonical wrapper.
 4. Hermes owns safety. If Codex changes safety boundaries, risk gates, live trading behavior, or secrets handling, reject the lane even if tests pass.
-5. Hermes owns cleanup. Kill stuck Codex processes and remove temporary worktrees when they are no longer needed.
+5. Hermes owns process cleanup. Kill stuck Codex processes, but never create, switch, move, or remove a Worktree/branch.
 
-## Required Worktree and Branch Pattern
+## Required Current Workspace Pattern
 
-Never run Codex directly in a shared dirty checkout. Use a branch/worktree name that ties the lane to the Kanban task and keeps untrusted edits isolated.
-
-Recommended variables:
-
-```bash
-TASK_ID="${HERMES_KANBAN_TASK:-t_manual}"
-REPO="/path/to/repo"
-BASE="$(git -C "$REPO" rev-parse --abbrev-ref HEAD)"
-SAFE_TASK="$(printf '%s' "$TASK_ID" | tr -cd '[:alnum:]_-')"
-BRANCH="codex/${SAFE_TASK}/$(date -u +%Y%m%d%H%M%S)"
-WORKTREE="/tmp/${SAFE_TASK}-codex-lane"
-```
-
-Create the isolated lane:
-
-```bash
-git -C "$REPO" fetch --all --prune
-git -C "$REPO" worktree add -b "$BRANCH" "$WORKTREE" "$BASE"
-git -C "$WORKTREE" status --short --branch
-```
-
-If the current Kanban workspace is already an isolated git worktree created for this task, you may create a sibling Codex branch inside it only if `git status --short` is clean except for intentional Hermes edits. Otherwise create a separate temporary worktree and cherry-pick or copy accepted commits back after reconciliation.
-
-Cleanup after reconciliation:
-
-```bash
-git -C "$REPO" worktree remove "$WORKTREE"
-git -C "$REPO" branch -D "$BRANCH"  # only after accepted commits were copied/cherry-picked or intentionally rejected
-```
-
-Keep the worktree if it is needed as an artifact for review; record it in `codex_lane.artifacts` and mention it in the handoff.
+Use only `$HERMES_KANBAN_WORKSPACE` as resolved by the manager. Verify its Git root, branch, SHA, and dirty paths before calling Codex. If the path is missing, lacks `.git`, or conflicts with another writer, block with `WORKSPACE_NOT_PROVISIONED` or the exact conflict evidence. Never create or switch a sibling branch/Worktree and never copy or cherry-pick around the workspace gate.
 
 ## Codex Capability Checks
 

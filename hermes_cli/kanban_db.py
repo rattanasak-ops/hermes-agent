@@ -3408,9 +3408,9 @@ def resolve_workspace(task: Task, *, board: Optional[str] = None) -> Path:
       resolves against the dispatcher's CWD instead of a meaningful
       root.  Users who want a kanban-root-relative workspace should
       compute the absolute path themselves.
-    - ``worktree``: a git worktree at ``workspace_path``.  Not created
-      automatically in v1 -- the kanban-worker skill documents
-      ``git worktree add`` as a worker-side step.  Returns the intended path.
+    - ``worktree``: an existing git worktree at ``workspace_path`` provisioned
+      by the owner/manager. Workers never create it. Returns the intended path
+      so a missing checkout can be reported as ``WORKSPACE_NOT_PROVISIONED``.
 
     Persist the resolved path back to the task row via ``set_workspace_path``
     so subsequent runs reuse the same directory.
@@ -3447,7 +3447,8 @@ def resolve_workspace(task: Task, *, board: Optional[str] = None) -> Path:
         return p
     if kind == "worktree":
         if not task.workspace_path:
-            # Default: .worktrees/<id>/ under CWD.  Worker skill creates it.
+            # Default intended path only. The owner/manager must provision it;
+            # workers block when it is missing instead of creating it.
             return Path.cwd() / ".worktrees" / task.id
         p = Path(task.workspace_path).expanduser()
         if not p.is_absolute():

@@ -20,7 +20,7 @@ Use [OpenCode](https://opencode.ai) as an autonomous coding worker orchestrated 
 - User explicitly asks to use OpenCode
 - You want an external coding agent to implement/refactor/review code
 - You need long-running coding sessions with progress checks
-- You want parallel task execution in isolated workdirs/worktrees
+- You want one bounded writer plus read-only reviewers in the current Git root/branch/SHA
 
 ## Prerequisites
 
@@ -163,13 +163,7 @@ terminal(command="REVIEW=$(mktemp -d) && git clone https://github.com/user/repo.
 
 ## Parallel Work Pattern
 
-Use separate workdirs/worktrees to avoid collisions:
-
-```
-terminal(command="opencode run 'Fix issue #101 and commit'", workdir="/tmp/issue-101", background=true, pty=true)
-terminal(command="opencode run 'Add parser regression tests and commit'", workdir="/tmp/issue-102", background=true, pty=true)
-process(action="list")
-```
+Use the current Git root/branch/SHA only. One OpenCode process may write the approved paths; additional processes must review read-only. Never create or switch a Worktree/branch to avoid collisions. Report overlapping dirty paths instead.
 
 ## Session & Cost Management
 

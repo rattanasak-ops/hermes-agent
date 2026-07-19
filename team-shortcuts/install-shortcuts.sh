@@ -32,6 +32,8 @@ WRITE_PERMIT_SRC="$SCRIPT_DIR/../scripts/hermes_write_permit.py"
 WRITE_PERMIT_BIN="$HOME/.local/bin/hermes-write-permit"
 HOOK_DOCTOR_SRC="$SCRIPT_DIR/../scripts/hermes_hook_doctor.py"
 HOOK_DOCTOR_BIN="$HOME/.local/bin/hermes-hook-doctor"
+SAVE_GIT_SRC="$SCRIPT_DIR/../skills/devops/save-git/scripts/save_git_gate.py"
+SAVE_GIT_BIN="$HOME/.local/bin/save-git"
 INSTALLED_VERSION="$DEST_ROOT/.shortcut-version"
 TEAM_HOOK_INSTALLER="$SCRIPT_DIR/install-team-hooks.py"
 NEW_CHAT_INSTALLER="$SCRIPT_DIR/install-new-chat-tools.sh"
@@ -366,6 +368,7 @@ if ! hermes plugins enable agent-center >/dev/null; then
   exit 1
 fi
 say "      สำเร็จ: เปิดใช้ Agent Center ใน Hermes Agent"
+say "      สำเร็จ: Agent Center จะใช้บัญชี Subscription ที่ล็อกอินอยู่ โดยไม่เปิดสิทธิ์เลือก API"
 
 # ติดตั้งด่านล็อกงานเขียนให้ใช้ได้จากทุก project แม้ project นั้นไม่มี repo Hermes Agent
 if [ ! -f "$WRITE_PERMIT_SRC" ]; then
@@ -387,6 +390,15 @@ if ! cmp -s "$HOOK_DOCTOR_SRC" "$HOOK_DOCTOR_BIN"; then
 fi
 chmod 0755 "$HOOK_DOCTOR_BIN"
 say "      สำเร็จ: ติดตั้งตัวตรวจสุขภาพ Hook ที่ $HOOK_DOCTOR_BIN"
+if [ ! -f "$SAVE_GIT_SRC" ]; then
+  say "ผิดพลาด: ไม่พบด่าน Save Git ที่ $SAVE_GIT_SRC"
+  exit 1
+fi
+if ! cmp -s "$SAVE_GIT_SRC" "$SAVE_GIT_BIN"; then
+  cp "$SAVE_GIT_SRC" "$SAVE_GIT_BIN"
+fi
+chmod 0755 "$SAVE_GIT_BIN"
+say "      สำเร็จ: ติดตั้งด่าน Save Git ที่ $SAVE_GIT_BIN"
 if [ ! -f "$NEW_CHAT_INSTALLER" ]; then
   say "ผิดพลาด: ไม่พบตัวติดตั้ง New Chat ที่ $NEW_CHAT_INSTALLER"
   exit 1
@@ -398,11 +410,14 @@ if [ ! -f "$TEAM_HOOK_INSTALLER" ]; then
 fi
 python3 "$TEAM_HOOK_INSTALLER"
 if ! "$HOOK_DOCTOR_BIN" >/dev/null; then
-  say "ผิดพลาด: ติดตั้ง Hook แล้วแต่ตรวจ 4 ด่านไม่ผ่าน"
-  "$HOOK_DOCTOR_BIN" || true
-  exit 1
+  say "      ตัวตรวจ Hook รอบแรกไม่ผ่าน ลองตรวจ Hook ซ้ำอีก 1 ครั้ง"
+  if ! "$HOOK_DOCTOR_BIN" >/dev/null; then
+    say "ผิดพลาด: ติดตั้ง Hook แล้วแต่ตรวจ 6 ด่านไม่ผ่าน 2 รอบ"
+    "$HOOK_DOCTOR_BIN" || true
+    exit 1
+  fi
 fi
-say "      สำเร็จ: Hook ภาษาคน/ผู้ตรวจอิสระ/หลักฐาน/Owner friction/New Chat ผ่าน 5/5"
+say "      สำเร็จ: Hook ภาษาคน/ผู้ตรวจอิสระ/หลักฐาน/คำตอบพื้นที่/ทำงานต่อเป็นเฟส/New Chat ผ่าน 6/6"
 
 # --- 2) ต่อ Claude Code (ทุกโปรเจกต์ผ่าน global memory) ---
 say "[2/4] ต่อ Claude Code ผ่าน ~/.claude/CLAUDE.md"

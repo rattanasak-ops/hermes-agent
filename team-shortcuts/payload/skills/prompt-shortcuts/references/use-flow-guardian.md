@@ -37,7 +37,7 @@ Use Flow Guardian
 
 1. รัน `pwd`, `git rev-parse --show-toplevel`, `git branch --show-current`, `git rev-parse HEAD`, `git status --short --branch` และ `git worktree list --porcelain` แบบอ่านอย่างเดียว
 2. เทียบเป้าหมายและไฟล์ที่จะเขียนกับ Git root ปัจจุบัน
-3. ถ้าเป็น detached HEAD หรือกิ่งร่วม แต่ Git root ตรงงาน ให้รัน `hermes-current-workspace-recover --cwd <Git root> --json` แล้วตรวจซ้ำ
+3. ถ้าเป็น detached HEAD และ Git root ตรงงาน ให้รัน `hermes-current-workspace-recover --cwd <Git root> --json` แล้วตรวจซ้ำ; ถ้าอยู่กิ่งร่วมให้คืน `PROTECTED_BRANCH_WRITE_BLOCKED` โดยไม่สลับกิ่ง
 4. แยกไฟล์ค้างเป็น: อยู่ในงานเดียวกัน / อยู่นอกขอบเขตแต่ไม่ทับ / ไม่ทราบเจ้าของหรือทับงาน
 5. ตรวจไฟล์ลับและคำสั่งอันตรายตาม `work-execution-policy.md`
 6. คืนสถานะเดียว: CURRENT_WORKSPACE_READY, CURRENT_WORKSPACE_READ_ONLY หรือ CURRENT_WORKSPACE_BLOCKED พร้อมรหัสเหตุผลจากเครื่องเมื่อกู้ไม่ได้

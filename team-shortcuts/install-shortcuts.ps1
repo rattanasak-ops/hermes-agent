@@ -245,6 +245,7 @@ Copy-Item -LiteralPath $VersionFile -Destination $InstalledVersion -Force
 if ($LASTEXITCODE -ne 0) {
     throw "คัด Agent Center แล้ว แต่เปิดใช้ผ่าน Hermes Agent ไม่สำเร็จ"
 }
+Write-Host "Agent Center จะใช้บัญชี Subscription ที่ล็อกอินอยู่ โดยไม่เปิดสิทธิ์เลือก API"
 
 Write-Step "[2/4] ทำจุดเชื่อมสำหรับ Codex App"
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $CodexPointer) | Out-Null

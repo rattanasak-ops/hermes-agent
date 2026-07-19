@@ -87,17 +87,12 @@ class TestParseResponse:
         )
         assert r == {"context": "today is Friday"}
 
-    def test_transform_llm_output_response_text_passthrough(self):
+    def test_transform_llm_output_returns_replacement_text(self):
         r = shell_hooks._parse_response(
-            "transform_llm_output", '{"response_text": "BLOCK message"}',
+            "transform_llm_output",
+            '{"response_text": "WORKSPACE_OWNER_HANDOFF_BLOCKED"}',
         )
-        assert r == "BLOCK message"
-
-    def test_transform_llm_output_ignores_empty_replacement(self):
-        r = shell_hooks._parse_response(
-            "transform_llm_output", '{"response_text": ""}',
-        )
-        assert r is None
+        assert r == "WORKSPACE_OWNER_HANDOFF_BLOCKED"
 
     def test_subagent_stop_context_passthrough(self):
         r = shell_hooks._parse_response(
