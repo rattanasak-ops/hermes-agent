@@ -2,13 +2,9 @@
 > อ่านตามลำดับ: plan-wtl.md (plan_id: WTL — active · Worktree Lifecycle) → plan.md (plan_id: QAQC/MW) → plan-grd.md (แผน GRD จบแล้ว + คิว GRD-P5..P9) → decisions.md → hermes-standard/REQUIREMENTS.md (บัญชีความต้องการ 66 ข้อ)
 
 # Overview & Progress — Hermes Agent
-อัปเดตล่าสุด: 2026-07-19 (Shortcut กลางรุ่น `2026.07.19-2` ผ่านบน Mac · รอส่งกิ่งเข้า main/VPS/ทีม) · branch งานปัจจุบัน: `task/nat/SHORTCUT-P1-I1-team-rollout-hardening-team-rollout-hardening` · ป้าย: [fact] เว้นแต่ระบุ
+อัปเดตล่าสุด: 2026-07-19 (BRM ปิดขอบเขตส่งเข้า `main` แล้ว · PR #80 และ #81 รวมสำเร็จ · closeout 352/352) · branch งานปัจจุบัน: `main` · ป้าย: [fact] เว้นแต่ระบุ
 
 ## สถานะล่าสุด
-- **2026-07-19 (Shortcut กลาง): งานเครื่องและนโยบายผ่าน 4/5 เฟส = 80%** [fact · รายละเอียด `session-log-2026-07-19-shortcut-central-close.md`]
-  - ปิดการสร้าง/สลับ Worktree จาก Shortcut · กู้ detached HEAD ใน Git root เดิม · ห้ามโยนให้เจ้าของเปิด workspace/branch · ห้ามถามอนุมัติซ้ำกลางเฟส
-  - ติดตั้ง Mac รุ่น `2026.07.19-2`: Shortcut 33/33 · Hook 6/6 · MW 7/7 · doctor workspace 4/4 + phase autonomy 4/4 + prewrite 23/23
-  - push กิ่งงานแล้วที่ `e66cb467c`; Merge Gate บล็อกเพราะกิ่งสะสม 9 commit/31 ไฟล์เกินเพดาน 5/30 · ยังไม่ merge main และยังไม่ตรวจ VPS/เครื่องพนักงาน
 - **2026-07-17 (ยามเขียนไฟล์ + ส่งต่อทีม): prewrite gate v2.2 เข้า main และสร้างกิ่ง `dev` จาก main ล่าสุด** [fact · PR #60]
   - บันทึกนี้ยืนยันว่าชุดยามและการส่งต่อทีมผ่าน PR #60 แล้ว พร้อมผลตรวจ doctor 4/4 ตามบันทึกรอบเดิม
   - ช่องแข็งแรงที่ยังต้องทำต่อ: ตรวจคำสั่ง `git -C <path> ...` ที่อาจหลบด่าน และดูแลกิ่ง `dev` ให้เดินตาม main
@@ -108,8 +104,6 @@
 - สาย JARVIS v2: รอเจ้าของทดสอบเสียง P0 แล้วเปิดแชตใหม่ส่ง Use AI Relay [fact]
 
 ## งานถัดไป
-0. **Shortcut กลาง P5**: ส่งกิ่งงานเข้า PR/main แล้วติดตั้งรุ่น `2026.07.19-2` บน VPS และเครื่องทีม · ตรวจ doctor 6/6 ทุกปลายทาง
-0b. **ซ่อมแผนกลาง**: แยก 6 plan_id ออกจาก `plan.md` ทำดัชนี active plan หนึ่งตัว และอัปสถานะจากหลักฐานจริงตามตารางใน session log ล่าสุด
 0. **SPEC-CENTRAL ต่อ**: (ก) เจ้าของกด merge PR `SPEC-P5-I1` (SAFE_TO_MERGE แล้ว) + push คลัง Obsidian 7 ไฟล์ขึ้น GitLab · (ข) เปิดแชทใหม่ทำ **S1 (SPEC-P6-I1..I4)** = ตัวบังคับจริงระดับโค้ด (spec-interview + hook default-deny + เทสโจมตี 13 เคส ปิด C1-C5) — งาน security ห้ามรีบ · (ค) S2 + กระจาย 30-40 โปรเจกต์ (SPEC-P7)
 1. **เริ่มใช้จริง RSF**: เจ้าของเปิดแชทที่ NewWebEngine2026 → `Use Migrate 0` (ชุดพร้อมเคาะอยู่ session log 2026-07-16) → เคาะ 2 ข้อ + `quota: nat=3` → 3 แชทจองคนละเมนู · เฟสโค้ด 8-9 ทีละเมนูเสมอ
 1b. ประกาศทีม: รัน `curl .../install-from-github.sh | bash` ซ้ำเพื่อรับ `Use Migrate 0-13` (PR #50 merged แล้ว) + กุญแจ relay รายคน
@@ -128,7 +122,6 @@
 - **กระจกคลัง Obsidian บน VPS = พื้นที่ทีมใช้ร่วม (มีไฟล์พนักงานจริง เช่น session log ของ peter)** — ห้าม mv/rsync ทั้งโฟลเดอร์เด็ดขาด · ซิงก์ได้เฉพาะโฟลเดอร์กลาง `ai-context/` + `skills/prompt-shortcuts/` จากเครื่องเจ้าของ · เจองานแปลกบนนั้น = กู้ขึ้นกิ่ง rescue ใน GitLab ก่อนเสมอ (2026-07-16)
 
 ## งานค้าง/ส่งต่อ
-- **ใหม่ 2026-07-19 (Shortcut กลาง)**: งานเครื่อง 4/5 เฟส = 80% · Mac ผ่านครบ · push กิ่งแล้ว · Merge Gate บล็อกที่ 9 commit/31 ไฟล์เกิน 5/30 · ค้างจัดรูปขอบเขต→PR/main + VPS/เครื่องทีม + ซ่อมโครงแผนกลาง · **next_owner: แชทถัดไปบนกิ่งเดิม**
 - **ใหม่ 2026-07-17 (SPEC-CENTRAL P5)**: (ก) รอเจ้าของกด **merge PR `task/nat/SPEC-P5-I1-central-prompts-sync`** (Save Git = SAFE_TO_MERGE) · (ข) รอเจ้าของ **push คลัง Obsidian 7 ไฟล์** (memory-schema + use-act-as/new-chat/comply/close-chat/save-git + registry) ขึ้น GitLab — AI push ตรงไม่ได้ · (ค) **S1 (SPEC-P6) ยังไม่เริ่ม** = ตัวบังคับจริง (ตอนนี้สเปคเป็นด่านระดับคำสั่ง AI ยังปลอมได้) · (ง) เทส payload 2 ตัวแดง-ค้างก่อนงานนี้ (spawn task แยก · ไม่ใช่ของ SPEC) · **next_owner: เจ้าของ (merge+push) → แชทใหม่ (S1)**
 - **ใหม่ 2026-07-16 (ซ่อมยาม prewrite gate — อัปเดตสถานะ)**: prewrite gate v2.2 **ซ่อมเสร็จ + เสียบปลั๊กกลับแล้ว บังคับใช้จริง** (แก้ธง "ไม่บังคับใช้" ของ station gate ด้านล่าง) · เหลือ: (ก) **push commit `4599eaca0`** ติดเพราะ 29 ไฟล์ dirty ของเซสชัน NCR ก่อนหน้า → เจ้าของงาน NCR เคลียร์ก่อน หรือเจ้าของสั่ง cherry-pick ขึ้น branch สะอาด (ตอนนี้ทำเองไม่ได้ gate บล็อก checkout/switch) (ข) prewrite gate v2 ยังไม่เข้า PR/main (โค้ด local + ติดตั้งบนเครื่องแล้ว) (ค) ซ่อมสายพาน relay เต็มระบบ = งานเจ้าของ (ง) harden รอบหน้า: git plumbing chain + false-block quoted metachar
 - **2026-07-16 (station gate · แก้แล้วบางส่วน)**: ~~prewrite-gate ไม่บังคับใช้อยู่~~ **เสียบกลับแล้ว 2026-07-16 (ยาม v2.2)** · (ก) **prewrite-gate ไม่บังคับใช้อยู่** — `~/.claude/hooks/enforce-new-chat-relay.py` มีไฟล์ (+.bak) แต่ไม่ผูกใน `settings.json`/`settings.local.json` (ถูก neutralize ระหว่างทำ PR #51 เพราะ deadlock) · เจ้าของเลือก: แก้ scope แล้วผูกกลับ หรือถอดถาวร · (ข) relay/codex crash ทั้งระบบบนเครื่องนี้ (station gate ต้องให้ Claude เขียนเอง) — งานซ่อมแยก ยังไม่ตรวจซ้ำ · (ค) station gate v2: ผูก approval รายเมนู/รายรอบ = งานปรับปรุงรอบหน้า · (ง) canonical repo จอดที่ `fix/mw-flow-station-gate` (merged · clean) สลับกลับ main ได้

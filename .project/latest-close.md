@@ -1,7 +1,5 @@
 # Latest Close — nat
 
-- 2026-07-19 (Codex · Shortcut central close) · `session-log-2026-07-19-shortcut-central-close.md` · **งานเครื่อง 4/5 เฟส = 80%** · Mac ผ่าน Shortcut 33/33, Hook 6/6, MW 7/7 · push กิ่งสำเร็จ · Token `CLOSED_WITH_PENDING` (Merge Gate บล็อก 9 commit/31 ไฟล์เกิน 5/30 · รอ PR/main + VPS/เครื่องทีม + แยกแผนกลาง)
-
 - 2026-07-19 (Codex · BRM closeout) · `session-log-2026-07-19-brm-closeout.md` · **BRM-P5 ส่งงานเข้า `main` ครบ 3/3 = 100%** · PR #80 และ #81 merged พร้อมสัญญาทดสอบแก้ไข ที่ SHA `ae230bbd5ee55c18eb6a12f9dd6ae883fe67dc81` · ทดสอบ 352/352 · `main` สะอาดตรง `origin/main` · Token `CLOSED_WITH_PENDING` (worktree ประวัติ 18 รายการคงไว้ตาม WTL เพราะ dirty/ไม่มี owner-task ยืนยัน)
 
 - 2026-07-17 (แชท Fable · ปิดรอบซ่อมยาม + ส่งต่อทีม) · ดู `session-log-2026-07-16-gate-repair.md` · **prewrite gate v2.2 merged main (PR #60) + สร้างกิ่ง `dev`=`d0cf379ca` ให้ทีมทำงานต่อ** · Token CLOSED_WITH_PENDING (เก็บกวาด: ลบกิ่ง merged + ตั้ง branch protection dev + GitHub MCP token หมดอายุ · harden: `git -C` หลบด่าน git)
