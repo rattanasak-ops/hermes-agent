@@ -558,6 +558,28 @@ def validate_work_packet(packet: Any) -> dict[str, Any]:
         if field not in packet:
             errors.append(f"packet: missing field '{field}'")
 
+    packet_diagnosis = validate_diagnosis(packet)
+    if not packet_diagnosis["ok"]:
+        errors.extend(
+            error.replace("diagnosis:", "packet:", 1)
+            for error in packet_diagnosis["errors"]
+        )
+    else:
+        for field, normalized_value in packet_diagnosis["diagnosis"].items():
+            if packet.get(field) != normalized_value:
+                errors.append(
+                    f"packet: '{field}' must use its normalized diagnosis value"
+                )
+
+    seat_policy = packet.get("seat_policy")
+    if not isinstance(seat_policy, list) or not seat_policy or not all(
+        isinstance(reason, str) and bool(reason.strip()) for reason in seat_policy
+    ):
+        errors.append("packet: 'seat_policy' must be a non-empty list of strings")
+
+    if packet.get("training_receipt_required") is not True:
+        errors.append("packet: 'training_receipt_required' must be true")
+
     if packet.get("packet_schema_version") != PACKET_SCHEMA_VERSION:
         errors.append(
             "packet: 'packet_schema_version' must be " + PACKET_SCHEMA_VERSION

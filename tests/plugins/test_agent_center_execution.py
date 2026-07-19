@@ -349,6 +349,19 @@ def test_executor_rejects_invalid_packet_before_any_subscription_call():
     assert runner.calls == []
 
 
+def test_executor_rejects_string_allowed_paths_before_writable_seat():
+    packet = _packet("build")
+    packet["allowed_paths"] = "plugins/agent_center/**"
+    body = {key: value for key, value in packet.items() if key != "packet_id"}
+    packet["packet_id"] = routing._content_id("packet", body)
+    runner = FakeRunner()
+
+    out = _run({"packet": packet, "request": "Do not widen scope."}, runner)
+
+    assert out["code"] == "packet_invalid"
+    assert runner.calls == []
+
+
 def test_output_refs_are_unique_even_when_planners_return_identical_text():
     packet = _packet("think")
     out = _run(
@@ -446,12 +459,18 @@ def test_path_scope_rejects_traversal_absolute_and_invalid_patterns():
     assert not execution._path_allowed("../secret.txt", ["**"])
     assert not execution._path_allowed("/tmp/secret.txt", ["**"])
     assert not execution._path_allowed("secret.txt", ["../**"])
+    assert not execution._path_allowed("unrelated/file.py", "plugins/agent_center/**")
+    assert not execution._path_allowed("unrelated/file.py", [42, ""])
 
     with pytest.raises(execution.SubscriptionSeatError) as traversal:
         execution._git_scope_pathspecs(["../**"])
     assert traversal.value.code == "workspace_scope_invalid"
     with pytest.raises(execution.SubscriptionSeatError):
         execution._git_scope_pathspecs(["/tmp/**"])
+    with pytest.raises(execution.SubscriptionSeatError):
+        execution._git_scope_pathspecs("plugins/agent_center/**")
+    with pytest.raises(execution.SubscriptionSeatError):
+        execution._git_scope_pathspecs([42])
 
 
 def test_workspace_ignored_finds_only_ignored_files_in_allowed_scope(tmp_path):

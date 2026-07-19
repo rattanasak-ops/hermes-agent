@@ -731,6 +731,26 @@ def test_validate_work_packet_rejects_missing_fields():
     assert report["code"] == "packet_invalid"
 
 
+@pytest.mark.parametrize(
+    ("field", "tampered"),
+    [
+        ("allowed_paths", "plugins/agent_center/**"),
+        ("risk_tags", "low-risk"),
+        ("deliverables", ["valid", 42]),
+        ("seat_policy", "assigned"),
+        ("training_receipt_required", False),
+    ],
+)
+def test_validate_work_packet_rejects_invalid_top_level_types(field, tampered):
+    packet = _valid_packet()
+    packet[field] = tampered
+    body = {key: value for key, value in packet.items() if key != "packet_id"}
+    packet["packet_id"] = routing._content_id("packet", body)
+    report = routing.validate_work_packet(packet)
+    assert report["ok"] is False
+    assert any(field in error for error in report["errors"])
+
+
 def test_validate_work_packet_rejects_non_dict():
     report = routing.validate_work_packet("not a packet")
     assert report["ok"] is False
