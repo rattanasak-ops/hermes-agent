@@ -293,7 +293,7 @@ stop runtime
 → CLEANUP_READY
 → QUARANTINED
 → verify 6/6 again
-→ git worktree remove
+→ Manager ขออนุมัติเจ้าของสำหรับการเอาพื้นที่ออก
 → verify branch/recovery evidence
 → remove local branch when safe
 → remove remote branch only after merge/owner approval
@@ -302,20 +302,15 @@ stop runtime
 
 ## 12. คำสั่งกลาง
 
-Shortcut และ AI ต้องเรียกผ่าน:
+Shortcut และ AI อ่านสถานะของ Worktree ที่มีอยู่ได้เฉพาะคำสั่งต่อไปนี้:
 
 ```text
-hermes worktree open
 hermes worktree list
 hermes worktree status
-hermes worktree enter
-hermes worktree handoff
-hermes worktree pause
-hermes worktree close
-hermes worktree cleanup --dry-run
-hermes worktree cleanup --apply
 hermes worktree doctor
 ```
+
+การเปิด เข้า ส่งต่อ พัก ปิด คืนพื้นที่ หรือลบ Worktree เป็นงานของ Manager ตามคำสั่งตรงจากเจ้าของเท่านั้น Shortcut และ AI ห้ามเรียกคำสั่งเปลี่ยนสภาพเหล่านี้เอง ด่าน Git ตกหรือพื้นที่สกปรกไม่ใช่เหตุให้สร้าง Worktree/กิ่งใหม่
 
 ข้อกำหนดผลลัพธ์:
 

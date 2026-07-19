@@ -101,7 +101,7 @@ Use Viber Audit กับโปรเจกต์นี้ หรือกับ
 ต้องตรวจความเสี่ยง AI โดยเฉพาะ:
 - AI-generated app อาจมีช่องโหว่ OWASP ที่ exploit ได้ ต้องมี security gate จริง
 - Slopsquatting = AI หลอนชื่อ dependency/package ต้องตรวจว่าทุก dependency มีอยู่จริงบน registry เช่น npm/PyPI ก่อนใช้
-- Multi-agent coding readiness = ถ้าโปรเจกต์จะใช้ AI หลายตัวพร้อมกัน ต้องตรวจว่าใช้ [[50-Playbooks/worktree-first-multi-agent-coding-workflow|Worktree-first Multi-Agent Coding Workflow]] หรือมีหลักฐานเทียบเท่า ได้แก่ worktree/branch แยก, role ชัด, merge queue, quality gate, และ PDCA log หลังใช้งาน
+- Multi-agent coding readiness = ถ้าโปรเจกต์จะใช้ AI หลายตัวพร้อมกัน ต้องตรวจว่าใช้ Git root/กิ่ง/SHA ปัจจุบันชุดเดียว มีผู้เขียนหนึ่งตัว ผู้ตรวจอ่านอย่างเดียว ขอบเขตไฟล์ชัด ลำดับรับงาน ด่านคุณภาพ และ PDCA log หลังใช้งาน โดยห้ามสร้างหรือสลับ Worktree/กิ่งเอง
 
 ### 2. Matrix เอกสารและ Artifact 360 องศา
 

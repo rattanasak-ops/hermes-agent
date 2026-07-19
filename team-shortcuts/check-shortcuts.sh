@@ -19,6 +19,7 @@ CLAUDE="$HOME/.claude/CLAUDE.md"
 INSTALLED_VERSION="$ROOT/.shortcut-version"
 HOOK_DOCTOR="$HOME/.local/bin/hermes-hook-doctor"
 WRITE_PERMIT="$HOME/.local/bin/hermes-write-permit"
+SAVE_GIT="$HOME/.local/bin/save-git"
 
 resolve_hermes_runtime_home() {
   if [ -n "${HERMES_HOME:-}" ]; then
@@ -122,6 +123,7 @@ same_tree_check "agent_center_codex_match" "$(dirname "$AGENT_SKILL")" "$CODEX_A
 same_tree_check "agent_center_hermes_match" "$(dirname "$AGENT_SKILL")" "$(dirname "$HERMES_AGENT_SKILL")"
 exists_check "hook_doctor_exists" "$HOOK_DOCTOR"
 exists_check "write_permit_exists" "$WRITE_PERMIT"
+exists_check "save_git_exists" "$SAVE_GIT"
 exists_check "installed_version_exists" "$INSTALLED_VERSION"
 
 if [ -f "$HERMES_CONFIG" ] && awk '

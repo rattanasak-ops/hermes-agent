@@ -20,6 +20,24 @@ OWNER_HANDOFF_PATTERNS = (
     re.compile(rf"{ACTION}.{{0,60}}{AREA}.{{0,80}}(?:แล้ว|จากนั้น).{{0,50}}(?:พิมพ์|บอก|ตอบ)", re.I | re.S),
 )
 
+NEGATION_MARKERS = (
+    "ห้าม", "ไม่สร้าง", "ไม่สลับ", "ไม่ย้าย", "ไม่ลบ", "อย่า", "หยุด",
+    "ปฏิเสธ", "never", "must not", "may not", "do not", "don't",
+    "without creating", "without switching",
+)
+
+WORKTREE_MUTATION_PATTERNS = (
+    re.compile(r"\bhermes(?:-new-chat)?\s+worktree\s+(?:open|enter)\b", re.I),
+    re.compile(r"\bhermes-new-chat\s+open\b", re.I),
+    re.compile(r"\bgit\s+worktree\s+(?:add|remove|move)\b", re.I),
+    re.compile(
+        r"(?:ผม|ฉัน|เรา|ai|assistant|i|we).{0,30}"
+        r"(?:จะ|กำลังจะ|will|plan to).{0,20}"
+        r"(?:สร้าง|เปิด|สลับ|ย้าย|create|open|switch|move).{0,30}worktree",
+        re.I,
+    ),
+)
+
 
 def text_value(value: Any) -> str:
     if isinstance(value, str):
@@ -57,6 +75,16 @@ def owner_handoff(message: str) -> bool:
     return any(pattern.search(message) for pattern in OWNER_HANDOFF_PATTERNS)
 
 
+def worktree_mutation(message: str) -> bool:
+    for line in message.splitlines():
+        lowered = line.lower()
+        if any(marker in lowered for marker in NEGATION_MARKERS):
+            continue
+        if any(pattern.search(line) for pattern in WORKTREE_MUTATION_PATTERNS):
+            return True
+    return False
+
+
 def main() -> int:
     try:
         payload = json.load(sys.stdin)
@@ -65,17 +93,22 @@ def main() -> int:
     if not isinstance(payload, dict) or payload.get("stop_hook_active"):
         return 0
     message = assistant_message(payload)
-    if not message or not owner_handoff(message):
+    if not message:
         return 0
+    mutation = worktree_mutation(message)
+    handoff = owner_handoff(message)
+    if not mutation and not handoff:
+        return 0
+    token = "WORKTREE_AUTO_CREATE_BLOCKED" if mutation else "WORKSPACE_OWNER_HANDOFF_BLOCKED"
     if payload.get("hook_event_name") == "transform_llm_output":
         print(
             json.dumps(
                 {
                     "response_text": (
-                        "WORKSPACE_OWNER_HANDOFF_BLOCKED: คำตอบเดิมถูกหยุด เพราะผลักการกู้พื้นที่"
-                        "กลับไปให้ผู้ใช้ ถ้าเป็น detached HEAD ให้ระบบรัน "
-                        "hermes-current-workspace-recover --cwd <path> ใน Git root เดิม "
-                        "กรณีอื่นให้รายงานรหัสเหตุผลของระบบ"
+                        f"{token}: คำตอบเดิมถูกหยุด เพราะเสนอสร้าง สลับ หรือผลักการกู้พื้นที่ "
+                        "ให้ทำต่อใน Git root และกิ่งปัจจุบัน ถ้าเป็น detached HEAD ให้ระบบรัน "
+                        "hermes-current-workspace-recover --cwd <path> ในพื้นที่เดิม "
+                        "กรณีอื่นให้รายงานรหัสเหตุผลพร้อมหลักฐาน"
                     )
                 },
                 ensure_ascii=False,
@@ -83,9 +116,10 @@ def main() -> int:
         )
         return 0
     print(
-        "WORKSPACE_OWNER_HANDOFF_BLOCKED: คำตอบผลักการกู้พื้นที่กลับไปให้ผู้ใช้ "
-        "ถ้าเป็น detached HEAD ให้ AI รัน hermes-current-workspace-recover --cwd <path> "
-        "ใน Git root เดิม กรณีอื่นให้รายงานรหัสเหตุผลของระบบ",
+        f"{token}: คำตอบเสนอสร้าง สลับ หรือผลักการกู้พื้นที่ "
+        "ให้ AI ทำต่อใน Git root และกิ่งปัจจุบัน ถ้าเป็น detached HEAD ให้รัน "
+        "hermes-current-workspace-recover --cwd <path> ในพื้นที่เดิม "
+        "กรณีอื่นให้รายงานรหัสเหตุผลพร้อมหลักฐาน",
         file=sys.stderr,
     )
     return 2

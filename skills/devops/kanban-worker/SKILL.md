@@ -21,7 +21,7 @@ Your workspace kind determines how you should behave inside `$HERMES_KANBAN_WORK
 |---|---|---|
 | `scratch` | Fresh tmp dir, yours alone | Read/write freely; it gets GC'd when the task is archived. |
 | `dir:<path>` | Shared persistent directory | Other runs will read what you write. Treat it like long-lived state. Path is guaranteed absolute (the kernel rejects relative paths). |
-| `worktree` | Git worktree at the resolved path | If `.git` doesn't exist, run `git worktree add <path> ${HERMES_KANBAN_BRANCH:-wt/$HERMES_KANBAN_TASK}` from the main repo first, then cd and work normally. Commit work here. |
+| `worktree` | Existing Git worktree resolved by the manager | Verify that the resolved path already contains `.git`. If it does not, block with `WORKSPACE_NOT_PROVISIONED`; a worker must never create, switch, move, or remove a Worktree/branch. |
 
 ## Tenant isolation
 

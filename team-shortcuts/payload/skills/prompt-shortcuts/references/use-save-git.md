@@ -28,12 +28,12 @@ tags:
   - vps
   - safety-gate
 status: active
-version: 2.3
-updated: 2026-07-17
+version: 2.4
+updated: 2026-07-19
 supersedes: v1.3 (retired 2026-06-08 · do not use old action-based flow)
 ---
 
-# Use Save Git (v2.3)
+# Use Save Git (v2.4)
 
 ## Shortcut
 
@@ -263,8 +263,10 @@ Use Save Git
 
 Autonomous Remediation Rule:
 - BLOCKED ไม่ใช่ final answer เป็นสัญญาณให้หยุด action เสี่ยง แล้วแก้ root cause ต่อ
-- dirty files ที่เป็น safety update ของ AI เอง → classify, verify, commit branch แยก, รัน gate ซ้ำ
-- งานคนอื่น → ห้ามแตะ ใช้ branch/worktree แยก
+- dirty files ที่เป็นงานในขอบเขตและเป็นของ AI รอบนี้ → จำแนก ตรวจจริง และ commit ในกิ่งปัจจุบันแล้วรัน gate ซ้ำ
+- งานคนอื่น → ห้ามแตะและรายงาน path ที่ชนจากพื้นที่เดิม ห้ามสร้างหรือสลับ Worktree/กิ่งเพื่อหลบ
+- scope บวมหลังเคยรวม Pull Request/Merge Request → หา head SHA ของรายการที่รวมล่าสุดบนกิ่งเดิม แยก sync merge ออกจาก work commit และเทียบผลรวมกับ target จริงก่อน ห้ามแก้ด้วยกิ่งหรือ Worktree ใหม่
+- ถ้าจะใช้กิ่งเดิมต่อหลังรวม ต้องรวมแบบรักษาประวัติด้วย merge commit ห้าม squash แล้วนำกิ่งเดิมกลับมาใช้ เพราะด่านจะนับ commit เก่าซ้ำ
 - health fail เพราะตรวจผิด target/URL → แก้ target ก่อน ไม่สรุปว่า service พัง
 - หยุดถามเจ้าของงานได้เฉพาะ secret / permission / destructive / business decision ที่ AI ตัดสินแทนไม่ได้
 
@@ -324,6 +326,7 @@ Owner action: ตัด local ได้
 
 ## Changelog
 
+- v2.4 (2026-07-19): แก้การนับกิ่งเดิมหลัง squash จาก head SHA ของรายการที่รวมล่าสุด · นับเฉพาะ work commit ใหม่และไฟล์ที่มีผลหลังรวม target · ห้ามสร้าง Worktree/กิ่งใหม่เพื่อหนีด่าน
 - v2.3 (2026-07-17 · SPEC-CENTRAL): เพิ่ม Spec Gate ระดับ Prompt ก่อนออกใบผ่าน merge (Schema §1d — draft = OWNER_DECISION_REQUIRED · approved/building ผ่าน · done ห้ามพฤติกรรมใหม่) · จับคู่สเปคกับแผนด้วยชื่อไฟล์กัน false-block โปรเจกต์เก่า · ประกาศ field `spec_gate` ใน `.savegit.json` ตรงไปตรงมาว่า gate โค้ดยังไม่อ่าน (ตัวบังคับจริงมากับ S1/S2)
 - v2.2 (2026-07-14): เพิ่ม alias `Save Grid` + Entry Gate ไม่รัน 5 ด่านในแชทที่ไม่มี Git action + evidence receipt ให้ Close/New ใช้ผลเดิมโดยตรวจ project/task/branch/SHA ก่อน
 - v2.1 (2026-06-24): ผ่านตรวจ 2 AI (Claude+Codex) · แยก skip เป็น skip-ok/skip-risk (skip-risk ห้ามออก SAFE) + field ขั้นต่ำต่อ stage (ขาด = OWNER_DECISION/BLOCKED ไม่ใช่ skip เงียบ) + โหมด --audit ให้โปรเจกต์เก่า · เพิ่ม machine JSON output (schema_version/exit_code/fail-closed) คู่ Grid · path สคริปต์เป็น $HERMES_OBSIDIAN_ROOT (พกพา) · กัน commitSha หลอก (3-way SHA + build provenance + no-store/freshness + เช็ก dirty/unpushed/detached ก่อนเทียบ)

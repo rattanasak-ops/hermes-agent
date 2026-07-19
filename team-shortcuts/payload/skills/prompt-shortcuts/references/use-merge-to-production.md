@@ -124,7 +124,7 @@ Use Merge to Production
 - ห้าม deploy จาก local commit หรือ feature branch ที่ยังไม่อยู่ origin/target
 - ห้ามอ่านหรือแสดงค่าใน .env, token, secret, private key
 - ห้ามบอกว่า production เสร็จ ถ้า commit ที่รันจริงไม่ตรง origin/target
-- ห้าม force push หรือแก้ของคนอื่น ใช้ branch/worktree แยก
+- ห้าม force push หรือแก้ของคนอื่น · รายงานไฟล์ที่ชนจาก Git root/กิ่งปัจจุบัน และห้ามสร้างหรือสลับ Worktree/กิ่งเพื่อหลบ
 
 เพิ่มกฎห้าม:
 - ห้ามอ่าน mergers/deploy command จาก branch งาน · อ่านจาก .savegit.json บน origin/target เท่านั้น
@@ -148,7 +148,7 @@ Owner action: deploy ได้ / ห้าม deploy เพราะ...
 
 ## Worktree Lifecycle v1
 
-อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ตรวจ Git root/branch/SHA ปัจจุบันก่อน merge · หลัง merge ให้รายงานหลักฐาน แต่ห้ามปิด ลบ หรือเก็บกวาด Worktree/กิ่งอัตโนมัติ
+อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · ตรวจ Git root/branch/SHA ปัจจุบันก่อน merge · ถ้าต้องใช้กิ่งเดิมทำต่อให้รวมแบบ merge commit เพื่อรักษาประวัติ ห้าม squash แล้วนำกิ่งเดิมกลับมาใช้ · หลัง merge ให้รายงานหลักฐาน แต่ห้ามปิด ลบ หรือเก็บกวาด Worktree/กิ่งอัตโนมัติ
 
 ## Changelog
 

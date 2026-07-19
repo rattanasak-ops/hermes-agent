@@ -57,6 +57,25 @@ def test_allows_ai_owned_recovery_or_machine_conflict_report():
     assert conflict.returncode == 0, conflict.stderr
 
 
+def test_blocks_ai_plan_to_create_or_switch_worktree_itself():
+    create = run_gate("ผมจะสร้าง Worktree ใหม่แล้วทำงานต่อจากพื้นที่นั้น")
+    switch = run_gate("I will switch to another worktree and continue there")
+
+    assert create.returncode == 2
+    assert "WORKTREE_AUTO_CREATE_BLOCKED" in create.stderr
+    assert switch.returncode == 2
+    assert "WORKTREE_AUTO_CREATE_BLOCKED" in switch.stderr
+
+
+def test_blocks_copyable_worktree_mutation_commands_but_allows_prohibition():
+    command = run_gate("รัน `hermes worktree open --project app` เพื่อแก้ด่านนี้")
+    prohibition = run_gate("ห้ามรัน hermes worktree open และห้ามสร้าง Worktree เพิ่ม")
+
+    assert command.returncode == 2
+    assert "WORKTREE_AUTO_CREATE_BLOCKED" in command.stderr
+    assert prohibition.returncode == 0, prohibition.stderr
+
+
 def test_hermes_replaces_owner_handoff_with_machine_action():
     result = run_hermes_transform(
         "ให้เจ้าของเปิด branch ที่ถูกต้อง แล้วพิมพ์ ok เพื่อทำงานต่อ"

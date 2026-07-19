@@ -177,7 +177,7 @@ Use AI Relay
 - **แยกคนออกแบบ/คนพิมพ์ 2 จังหวะ** (จาก `Aider-AI/aider` โหมด architect/editor): สมองเขียนคำอธิบายวิธีแก้สั้น ๆ → ตัวถูกแปลงเป็นโค้ดเต็ม · ลด token สมองลงอีกชั้น
 - **โหวตข้ามค่ายงานเสี่ยงสูง** (จาก `BeehiveInnovations/pal-mcp-server`): ก่อน merge งานใหญ่ ให้ 2-3 ค่ายรีวิวอิสระ แล้ว Opus 4.8 สรุปคำตัดสิน · ใช้เฉพาะงานที่พลาดแล้วย้อนยาก ไม่ใช่ทุก issue
 
-## Worktree Lifecycle v1 (มีผลเหนือ fixed-workspace v2.10)
+## Current Workspace Only (มีผลเหนือกฎ Worktree รุ่นเก่า)
 
 อ่าน `work-execution-policy.md` ก่อนใช้ Prompt นี้ · coder ทุกตัวต้องมี cwd ตรง Git root/branch/SHA ปัจจุบันที่ `CURRENT_WORKSPACE_READY` · reviewer อ่าน path/SHA เดียวกันแบบ read-only · Relay ห้ามสร้าง/ทิ้ง/ย้าย/สลับ Worktree หรือกิ่ง และห้ามเปลี่ยน cwd ไปโปรเจกต์อื่น
 

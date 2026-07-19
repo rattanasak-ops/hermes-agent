@@ -13,9 +13,12 @@ VAULT = Path(os.environ.get("HERMES_VAULT_PATH", str(PAYLOAD)))
 
 
 class ShortcutVisibilityTests(unittest.TestCase):
-    def run_check(self, vault: Path, payload: Path):
+    def run_check(self, vault: Path, payload: Path, repo: Path = ROOT):
         return subprocess.run(
-            [sys.executable, str(CHECKER), "--vault", str(vault), "--payload", str(payload), "--json"],
+            [
+                sys.executable, str(CHECKER), "--vault", str(vault),
+                "--payload", str(payload), "--repo", str(repo), "--json",
+            ],
             text=True, capture_output=True, check=False,
         )
 
@@ -26,6 +29,7 @@ class ShortcutVisibilityTests(unittest.TestCase):
         self.assertIn('"direct_integrations": "18/18"', result.stdout)
         self.assertIn('"worktree_auto_create": "0/33"', result.stdout)
         self.assertIn('"owner_branch_policy": "33/33"', result.stdout)
+        self.assertIn('"repo_policy_files_scanned":', result.stdout)
 
     def test_new_registry_shortcut_cannot_escape_contract_check(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -62,6 +66,45 @@ class ShortcutVisibilityTests(unittest.TestCase):
             result = self.run_check(fake, PAYLOAD)
         self.assertNotEqual(0, result.returncode)
         self.assertIn("active_conflict", result.stdout)
+
+    def test_contract_positive_worktree_command_is_blocked(self):
+        with tempfile.TemporaryDirectory() as folder:
+            fake = Path(folder) / "vault"
+            import shutil
+            shutil.copytree(VAULT, fake)
+            contract = fake / "skills" / "prompt-shortcuts" / "references" / "worktree-lifecycle-contract.md"
+            contract.write_text(
+                contract.read_text(encoding="utf-8")
+                + "\nShortcut และ AI ต้องเรียกผ่าน:\n`hermes worktree open`\n",
+                encoding="utf-8",
+            )
+            result = self.run_check(fake, PAYLOAD)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("worktree_mutation_instruction", result.stdout)
+
+    def test_positive_worktree_first_instruction_in_any_reference_is_blocked(self):
+        with tempfile.TemporaryDirectory() as folder:
+            fake = Path(folder) / "vault"
+            import shutil
+            shutil.copytree(VAULT, fake)
+            target = fake / "skills" / "prompt-shortcuts" / "references" / "future-workflow.md"
+            target.write_text("# Future workflow\n\nให้ใช้ Worktree-first Multi-Agent Workflow\n", encoding="utf-8")
+            result = self.run_check(fake, PAYLOAD)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("worktree_mutation_instruction:future-workflow.md", result.stdout)
+
+    def test_repo_skill_cannot_instruct_worker_to_create_worktree(self):
+        with tempfile.TemporaryDirectory() as folder:
+            fake_repo = Path(folder) / "repo"
+            skill = fake_repo / "skills" / "worker" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                "# Worker\n\nRun `git worktree add /tmp/task main` before editing.\n",
+                encoding="utf-8",
+            )
+            result = self.run_check(VAULT, PAYLOAD, fake_repo)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("repo_worktree_mutation_instruction:skills/worker/SKILL.md", result.stdout)
 
 
 if __name__ == "__main__":
