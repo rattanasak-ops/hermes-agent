@@ -93,6 +93,9 @@ aliases:
   - use-close-chat
   - Close Chat
   - close-chat
+  - Use Post Chat
+  - use-post-chat
+  - Post Chat
   - ปิดแชท
   - Use Merge to Production
   - use-merge-to-production
@@ -256,7 +259,7 @@ Use SonarQube
 | `Use New Chat` | `use-new-chat`, `Start New Chat`, `New Chat Startup`, `Initialize Hermes Agent chat`, `เริ่ม New Chat`, `เปิด New Chat`, `เริ่มแชทใหม่`, `เปิดแชทใหม่` | [[skills/prompt-shortcuts/references/use-new-chat|use-new-chat]] |
 | `Use Migrate Web` | `use-migrate-web`, `Migrate Web`, `migrate-web`, `ใช้ Migrate Web`, `ย้ายเว็บตาม Flow`, `ทำเว็บ 13 ขั้น`, `Flow ย้ายเว็บ` | [[skills/prompt-shortcuts/references/use-migrate-web|use-migrate-web]] |
 | `Use Migrate 0` … `Use Migrate 13` (ชุดรายเฟส) | `use-migrate-0` … `use-migrate-13` — เลข N ใดก็ตามเปิดไฟล์ `references/use-migrate-<N>.md` ตรงตัว และต้องอ่าน [[skills/prompt-shortcuts/references/use-migrate-phase-contract|use-migrate-phase-contract]] ก่อนเสมอ | [[skills/prompt-shortcuts/references/use-migrate-0|use-migrate-0]] ถึง [[skills/prompt-shortcuts/references/use-migrate-13|use-migrate-13]] |
-| `Use Close Chat` | `use-close-chat`, `Close Chat`, `close-chat`, `ใช้ Close Chat`, `ปิดแชท`, `ปิดงานแชท`, `จบแชท` | [[skills/prompt-shortcuts/references/use-close-chat|use-close-chat]] |
+| `Use Close Chat` | `use-close-chat`, `Close Chat`, `close-chat`, `Use Post Chat`, `use-post-chat`, `Post Chat`, `ใช้ Close Chat`, `ปิดแชท`, `ปิดงานแชท`, `จบแชท` | [[skills/prompt-shortcuts/references/use-close-chat|use-close-chat]] |
 | `Use Save Git` | `use-save-git`, `Save Git`, `save-git`, `Save Grid`, `save-grid`, `Use Save Grid`, `ใช้ Save Git`, `เซฟ Git`, `ก่อน push`, `ก่อน merge`, `ก่อน deploy`, `Git Safe Flow`, `GitLab Deploy Safe Flow`, `Use GitLab Deploy Safe Flow`, `Use Ship Gate` | [[skills/prompt-shortcuts/references/use-save-git|use-save-git]] |
 | `Use Merge to Production` | `use-merge-to-production`, `Merge to Production`, `merge-to-production`, `ใช้ Merge to Production`, `ขึ้น production`, `deploy production`, `Ship to Production` | [[skills/prompt-shortcuts/references/use-merge-to-production|use-merge-to-production]] |
 | `Use Continue` | `use-continue`, `Continue`, `continue`, `ทำต่อ`, `ทำต่อเอง`, `ทำงานต่อ`, `ทำต่ออัตโนมัติ`, `ไม่ต้องรอผม`, legacy: `Go to Sleep`, `go-to-sleep`, `Sleep Mode`, `sleep-mode`, `เข้าโหมดนอน`, `โหมดนอน` | [[skills/prompt-shortcuts/references/use-continue|use-continue]] |
@@ -297,7 +300,7 @@ Claude Code, Gemini, Qwen, Cursor และ AI ตัวอื่นให้เ
 - [[skills/prompt-shortcuts/references/use-wow-resource|use-wow-resource]] - prompt สำหรับให้ AI อ่าน WOW System และ Web Design Intelligence แล้วคัด resource ให้เหมาะกับโจทย์โดยไม่ copy script ตรงๆ
 - [[skills/prompt-shortcuts/references/use-flow-guardian|use-flow-guardian]] - prompt สำหรับบังคับ Home OS Agent safe flow, worktree/branch safety, no-write audit, approval, verify, tracking, และ handoff
 - [[skills/prompt-shortcuts/references/use-new-chat|use-new-chat]] - prompt สำหรับเริ่มแชทใหม่แบบต้องตรวจ project, worktree, branch, dirty status, local/VPS equality, service และ endpoint ก่อนตอบ
-- [[skills/prompt-shortcuts/references/use-close-chat|use-close-chat]] - prompt สำหรับปิดแชท ตรวจหลักฐานจริง และเขียน memory ส่งต่อรอบหน้า
+- [[skills/prompt-shortcuts/references/use-close-chat|use-close-chat]] - prompt เดียวสำหรับ `Use Close Chat` และ `Use Post Chat` เพื่อปิดแชท ตรวจหลักฐานจริง และเขียน memory ส่งต่อรอบหน้า
 - [[skills/prompt-shortcuts/references/use-save-git|use-save-git]] - prompt สำหรับ safe Git/GitLab/VPS gate ก่อน push, merge, deploy หรือสรุป readiness โดยต้องคืน SAFE/STOP decision
 - [[skills/prompt-shortcuts/references/use-merge-to-production|use-merge-to-production]] - prompt สำหรับ merge/deploy production เฉพาะเมื่อผ่านด่านและได้รับอนุมัติ
 - [[skills/prompt-shortcuts/references/use-continue|use-continue]] - prompt เต็มสำหรับทำงานต่อเองทีละเฟสจนผ่าน 100%

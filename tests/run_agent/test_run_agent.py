@@ -950,9 +950,12 @@ class TestBuildSystemPrompt:
 
     def test_includes_closeout_protocol(self, agent):
         prompt = agent._build_system_prompt()
-        assert "Closeout Protocol" in prompt
-        assert "What was changed or checked" in prompt
-        assert "recommended next step" in prompt
+        assert "Closeout and Next Action Contract" in prompt
+        assert "Responsible party" in prompt
+        assert "Next task" in prompt
+        assert "Start condition" in prompt
+        assert "Gate evidence" in prompt
+        assert "never ask the user to reply 'continue'" in prompt
 
     def test_can_use_soul_identity_even_when_context_files_are_skipped(self):
         with (
@@ -2615,6 +2618,132 @@ class TestRunConversation:
             result = agent.run_conversation("hello")
         assert result["final_response"] == "Final answer"
         assert result["completed"] is True
+
+    def test_work_summary_missing_next_action_is_repaired_before_return(self, agent):
+        self._setup_agent(agent)
+        invalid = _mock_response(
+            content="## สรุปผล\nชุดทดสอบผ่าน 8/8 แต่ยังมีงานค้าง",
+            finish_reason="stop",
+        )
+        corrected_section = (
+            "## สรุปภาษาคน\n"
+            "ชุดทดสอบผ่าน 8/8 = 100% และค้าง 0/8 = 0%\n\n"
+            "## สรุป Phase\n"
+            "| Phase | สถานะ N/M | % | แปลเป็นภาษาคน |\n"
+            "|---|---:|---:|---|\n"
+            "| ตรวจงาน | 8/8 | 100% | ตรวจครบตามขอบเขต |\n\n"
+            "## งานต่อไปคืออะไร\n- ไม่มีงานในขอบเขตนี้เหลือ\n\n"
+            "สถานะ: ผ่าน 8/8 = 100% · ค้าง 0/8 = 0%\n\n"
+            "## ขั้นตอนถัดไป\n"
+            "- ผู้ทำต่อ: AI\n"
+            "- ขั้นถัดไป: ไม่มี งานตามคำสั่งครบ 8/8\n"
+            "- เริ่มเมื่อ: ทันที\n"
+            "- หลักฐานปิดด่าน: ผ่าน 8/8 = 100%\n"
+            "- เจ้าของต้องทำตอนนี้: ไม่ต้องทำอะไร\n"
+            "- เหตุผลที่หยุด: งานตามคำสั่งครบ 8/8"
+        )
+        corrected = _mock_response(content=corrected_section, finish_reason="stop")
+        agent.client.chat.completions.create.side_effect = [invalid, corrected]
+
+        with (
+            patch.object(agent, "_persist_session"),
+            patch.object(agent, "_save_trajectory"),
+            patch.object(agent, "_cleanup_task_resources"),
+        ):
+            result = agent.run_conversation("ตรวจงานแล้วสรุปผล")
+
+        assert result["final_response"] == corrected_section
+        assert result["api_calls"] == 2
+        assert not any(
+            message.get("_next_action_contract_repair")
+            for message in result["messages"]
+        )
+
+    def test_repeated_contract_failure_gets_visible_structured_footer(self, agent):
+        self._setup_agent(agent)
+        invalid = _mock_response(
+            content="## สรุปผล\nชุดทดสอบผ่าน 8/8 แต่ยังมีงานค้าง",
+            finish_reason="stop",
+        )
+        agent.client.chat.completions.create.side_effect = [invalid, invalid, invalid]
+
+        with (
+            patch.object(agent, "_persist_session"),
+            patch.object(agent, "_save_trajectory"),
+            patch.object(agent, "_cleanup_task_resources"),
+        ):
+            result = agent.run_conversation("ตรวจงานแล้วสรุปผล")
+
+        assert result["api_calls"] == 3
+        assert "## ขั้นตอนถัดไป" in result["final_response"]
+        assert "NEXT_ACTION_CONTRACT_BLOCKED" in result["final_response"]
+        assert "ด่านคำตอบผ่าน 0/1" in result["final_response"]
+
+    def test_contract_failure_at_iteration_limit_gets_footer_without_retry(self, agent):
+        self._setup_agent(agent)
+        agent.max_iterations = 1
+        agent.client.chat.completions.create.return_value = _mock_response(
+            content="## สรุปผล\nชุดทดสอบผ่าน 8/8 แต่ยังมีงานค้าง",
+            finish_reason="stop",
+        )
+
+        with (
+            patch.object(agent, "_persist_session"),
+            patch.object(agent, "_save_trajectory"),
+            patch.object(agent, "_cleanup_task_resources"),
+        ):
+            result = agent.run_conversation("ตรวจงานแล้วสรุปผล")
+
+        assert result["api_calls"] == 1
+        assert "## ขั้นตอนถัดไป" in result["final_response"]
+        assert agent.client.chat.completions.create.call_count == 1
+
+    def test_ai_owned_pending_work_continues_with_tools_before_final(self, agent):
+        self._setup_agent(agent)
+        premature = _mock_response(
+            content=(
+                "## สรุปภาษาคน\nผ่าน 1/2 = 50% และค้าง 1/2 = 50%\n\n"
+                "## สรุป Phase\n"
+                "| Phase | สถานะ N/M | % | แปลเป็นภาษาคน |\n"
+                "|---|---:|---:|---|\n| ตรวจงาน | 1/2 | 50% | ยังตรวจได้อีกหนึ่งรายการ |\n\n"
+                "## งานต่อไปคืออะไร\n- ตรวจรายการที่สอง\n\n"
+                "สถานะ: ผ่าน 1/2 = 50% · ค้าง 1/2 = 50%\n\n"
+                "## ขั้นตอนถัดไป\n- ผู้ทำต่อ: AI\n- ขั้นถัดไป: ตรวจรายการที่สอง\n"
+                "- เริ่มเมื่อ: ทันที\n- หลักฐานปิดด่าน: ผ่าน 2/2 = 100%\n"
+                "- เจ้าของต้องทำตอนนี้: ไม่ต้องทำอะไร\n- เหตุผลที่หยุด: พร้อมทำต่อ"
+            ),
+            finish_reason="stop",
+        )
+        tc = _mock_tool_call(name="web_search", arguments="{}", call_id="c-next")
+        tool_response = _mock_response(content="", finish_reason="tool_calls", tool_calls=[tc])
+        complete = _mock_response(
+            content=(
+                "## สรุปภาษาคน\nตรวจครบ 2/2 = 100% และค้าง 0/2 = 0%\n\n"
+                "## สรุป Phase\n"
+                "| Phase | สถานะ N/M | % | แปลเป็นภาษาคน |\n"
+                "|---|---:|---:|---|\n| ตรวจงาน | 2/2 | 100% | ตรวจครบตามขอบเขต |\n\n"
+                "## งานต่อไปคืออะไร\n- ไม่มีงานในขอบเขตนี้เหลือ\n\n"
+                "สถานะ: ผ่าน 2/2 = 100% · ค้าง 0/2 = 0%\n\n"
+                "## ขั้นตอนถัดไป\n- ผู้ทำต่อ: AI\n"
+                "- ขั้นถัดไป: ไม่มี งานตามคำสั่งครบ 2/2\n- เริ่มเมื่อ: ทันที\n"
+                "- หลักฐานปิดด่าน: ผ่าน 2/2 = 100%\n- เจ้าของต้องทำตอนนี้: ไม่ต้องทำอะไร\n"
+                "- เหตุผลที่หยุด: งานตามคำสั่งครบ 2/2"
+            ),
+            finish_reason="stop",
+        )
+        agent.client.chat.completions.create.side_effect = [premature, tool_response, complete]
+
+        with (
+            patch("run_agent.handle_function_call", return_value="หลักฐานรายการที่สอง") as handle,
+            patch.object(agent, "_persist_session"),
+            patch.object(agent, "_save_trajectory"),
+            patch.object(agent, "_cleanup_task_resources"),
+        ):
+            result = agent.run_conversation("ตรวจสองรายการแล้วสรุป")
+
+        assert result["api_calls"] == 3
+        assert handle.call_count == 1
+        assert "ค้าง 0/2" in result["final_response"]
 
     def test_tool_calls_then_stop(self, agent):
         self._setup_agent(agent)
