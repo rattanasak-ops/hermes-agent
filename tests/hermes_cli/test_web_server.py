@@ -2,6 +2,8 @@
 
 import os
 import json
+import re
+import subprocess
 import tempfile
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -110,12 +112,14 @@ class TestWebServerEndpoints:
 
         import hermes_state
         from hermes_constants import get_hermes_home
+        from hermes_cli.csrf import generate_csrf_token
         from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
         monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
 
         self.client = TestClient(app)
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
+        self.client.headers["X-CSRF-Token"] = generate_csrf_token(_SESSION_TOKEN)
 
     def test_get_status(self):
         resp = self.client.get("/api/status")
@@ -124,6 +128,99 @@ class TestWebServerEndpoints:
         assert "version" in data
         assert "hermes_home" in data
         assert "active_sessions" in data
+
+    def test_get_health_exposes_runtime_commit_without_auth(self, monkeypatch):
+        from starlette.testclient import TestClient
+
+        import hermes_cli.web_server as web_server
+
+        commit_sha = "a" * 40
+        monkeypatch.setattr(web_server, "_runtime_commit_sha", lambda: commit_sha)
+        response = TestClient(web_server.app).get("/api/health")
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "ok": True,
+            "service": "hermes-dashboard",
+            "version": web_server.__version__,
+            "commitSha": commit_sha,
+        }
+
+    def test_runtime_commit_sha_reads_valid_project_head(self, monkeypatch):
+        import hermes_cli.web_server as web_server
+
+        commit_sha = "b" * 40
+        result = MagicMock(
+            returncode=0,
+            stdout=f"{web_server.PROJECT_ROOT}\n{commit_sha}\n",
+        )
+        clean = MagicMock(returncode=0)
+        calls = []
+
+        def fake_run(*args, **kwargs):
+            calls.append((args, kwargs))
+            return result if len(calls) == 1 else clean
+
+        monkeypatch.setattr(web_server.shutil, "which", lambda name: "/usr/bin/git")
+        monkeypatch.setattr(web_server.subprocess, "run", fake_run)
+
+        assert web_server._runtime_commit_sha() == commit_sha
+        assert calls[0][0][0][0] == "/usr/bin/git"
+        assert calls[0][1]["cwd"] == web_server.PROJECT_ROOT
+        assert calls[0][1]["stdin"] is web_server.subprocess.DEVNULL
+        assert calls[0][1]["timeout"] == 2
+        assert calls[1][0][0][1:3] == ["diff-index", "--quiet"]
+
+    def test_runtime_commit_sha_rejects_invalid_git_output(self, monkeypatch):
+        import hermes_cli.web_server as web_server
+
+        result = MagicMock(returncode=0, stdout="not-a-commit\n")
+        monkeypatch.setattr(web_server.shutil, "which", lambda name: "/usr/bin/git")
+        monkeypatch.setattr(web_server.subprocess, "run", lambda *args, **kwargs: result)
+
+        assert web_server._runtime_commit_sha() == ""
+
+    def test_runtime_commit_sha_rechecks_unstaged_changes(self, monkeypatch, tmp_path):
+        import hermes_cli.web_server as web_server
+
+        tracked = tmp_path / "tracked.txt"
+        subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+        tracked.write_text("clean\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(tmp_path), "add", "tracked.txt"], check=True)
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(tmp_path),
+                "-c",
+                "user.name=Agent Center Test",
+                "-c",
+                "user.email=agent-center@example.invalid",
+                "commit",
+                "-qm",
+                "fixture",
+            ],
+            check=True,
+        )
+        monkeypatch.setattr(web_server, "PROJECT_ROOT", tmp_path.resolve())
+
+        clean_sha = web_server._runtime_commit_sha()
+        tracked.write_text("dirty\n", encoding="utf-8")
+
+        assert re.fullmatch(r"[0-9a-f]{40,64}", clean_sha)
+        assert web_server._runtime_commit_sha() == ""
+
+    def test_get_health_fails_closed_without_runtime_commit(self, monkeypatch):
+        from starlette.testclient import TestClient
+
+        import hermes_cli.web_server as web_server
+
+        monkeypatch.setattr(web_server, "_runtime_commit_sha", lambda: "")
+        response = TestClient(web_server.app).get("/api/health")
+
+        assert response.status_code == 503
+        assert response.json()["ok"] is False
+        assert response.json()["commitSha"] == ""
 
     def test_get_status_filters_unconfigured_gateway_platforms(self, monkeypatch):
         import gateway.config as gateway_config
@@ -427,9 +524,11 @@ class TestConfigRoundTrip:
             from starlette.testclient import TestClient
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
+        from hermes_cli.csrf import generate_csrf_token
         from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
         self.client = TestClient(app)
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
+        self.client.headers["X-CSRF-Token"] = generate_csrf_token(_SESSION_TOKEN)
 
     def test_get_config_no_internal_keys(self):
         """GET /api/config should not expose _config_version or _model_meta."""
@@ -563,12 +662,14 @@ class TestNewEndpoints:
 
         import hermes_state
         from hermes_constants import get_hermes_home
+        from hermes_cli.csrf import generate_csrf_token
         from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
         monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
 
         self.client = TestClient(app)
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
+        self.client.headers["X-CSRF-Token"] = generate_csrf_token(_SESSION_TOKEN)
 
     def test_get_logs_default(self):
         resp = self.client.get("/api/logs")

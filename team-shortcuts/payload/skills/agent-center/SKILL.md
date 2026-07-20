@@ -1,11 +1,11 @@
 ---
 name: agent-center
-description: Diagnose and route thinking, analysis, planning, design, build, review, and training work to a suitable Hermes Agent team and skill set, then produce a deterministic Team Manifest and Work Packet through the bundled Agent Center tools. Use when the owner says "Use Agent", asks Hermes to choose an AI team, asks which agents or skills fit a task, needs two-provider thinking review, or needs separated worker/reviewer execution.
+description: Diagnose and route thinking, analysis, planning, design, build, review, and training work to a suitable Hermes Agent team, skill set, and phase-shortcut workflow, then produce a deterministic Team Manifest and Work Packet through the bundled Agent Center tools. Use when the owner says "Use Agent", asks Hermes to choose an AI team or workflow, asks which agents, skills, or shortcuts fit a task, needs two-provider thinking review, or needs separated worker/reviewer execution.
 ---
 
 # Agent Center
 
-Use Agent Center as the single entry point for choosing a Hermes Agent team. Keep diagnosis in the current AI, keep team selection deterministic in the bundled plugin, and keep execution in the Git workspace already open by the owner.
+Use Agent Center as the single owner-facing entry point for choosing a Hermes Agent team, domain skills, and process shortcuts. Keep diagnosis in the current AI, keep all selection deterministic in the bundled plugin, and keep execution in the Git workspace already open by the owner. The owner does not need to remember or invoke the downstream shortcuts.
 
 `Use Agent` is not limited to code or implementation. It must accept thinking-only, analysis-only, planning, design, review, and training tasks. Never refuse a task merely because it has no build step.
 
@@ -80,6 +80,7 @@ Team Manifest
 - Leads:
 - Specialists:
 - Skills:
+- Phase shortcuts in execution order:
 - Selection reasons:
 
 Work Packet
@@ -90,6 +91,7 @@ Work Packet
 - Execution mode / active seats:
 - Deliverables:
 - Evidence gates:
+- Large-phase contract: safe-work question budget / external approval batches / review timing:
 
 Decision
 - route_ready | blocked
@@ -97,6 +99,8 @@ Decision
 ```
 
 Validate the packet with `agent_center_validate` before execution. Do not start work from an invalid packet.
+
+The `team.workflow` object is mandatory. Read the full registered prompt for each `selected_shortcuts` item when its stage begins; never guess a shortcut from memory. In build mode the router selects the workspace gate, phase planner, matching domain shortcuts, uninterrupted safe execution, one Git boundary gate, and closeout. The encoded contract allows zero safe-work questions mid-phase, at most one grouped external-impact approval request per phase, and one aggregated review at the phase boundary. A selected shortcut is a workflow instruction, not evidence that the step ran.
 
 ### 6. Execute in the approved channel
 
@@ -131,6 +135,8 @@ When real feedback or gate evidence may improve an agent or skill, call `agent_c
 - [ ] Catalog validation returns `catalog_valid`.
 - [ ] Team selection comes from `agent_center_route`.
 - [ ] Team Manifest and Work Packet are both present.
+- [ ] The deterministic phase workflow is present and every selected shortcut was loaded from its full prompt at the assigned stage.
+- [ ] Build mode keeps the safe-work question budget at 0 and aggregates review at the phase boundary.
 - [ ] Execution mode matches the owner's requested outcome.
 - [ ] THINK_PAIR passes for every mode; BUILD_REVIEW passes only when mode is `build`.
 - [ ] Work Packet validation passes before execution.

@@ -15,14 +15,14 @@ tags:
   - new-chat
   - startup-gate
 status: active
-version: "4.2"
+version: "4.3"
 updated: 2026-07-19
 schema: memory-schema-v1.2
 execution_policy: work-execution-policy >= 2.0
 default_mode: CURRENT_WORKSPACE_ONLY
 ---
 
-# Use New Chat (v4.2 · 2026-07-19)
+# Use New Chat (v4.3 · 2026-07-19)
 
 ## Shortcut
 
@@ -31,6 +31,8 @@ Use New Chat
 ```
 
 ## Prompt
+
+[ด่าน Goal Contract] อ่าน [[skills/prompt-shortcuts/references/goal-contract|goal-contract.md]] ก่อนเริ่ม · ต้องตรวจว่าใบรับรองความจำมี `task_id/plan_id/goal_hash` ตรง `.project/active-task.json` แม้แฮชไฟล์ทุกไฟล์จะตรง · ต่างกันให้รายงาน `PROJECT_GOAL_DRIFT` และห้ามซ่อมด้วยการเขียนทับ · งานถัดไปคัดจาก `next_prompt` เพียงหนึ่งบรรทัดในรูป `Prompt ถัดไป:` หรือ `AUTO_CONTINUE:` และแสดงเป็น `Prompt ที่ควรใช้ต่อ` หลังสรุป Phase เมื่อต้องส่งต่อ
 
 ```text
 Use New Chat
@@ -50,6 +52,10 @@ Use New Chat
 - ผู้ตรวจและวิธีเดิมใช้ได้สูงสุด 2 รอบต่อปัญหา ถ้ายังไม่ผ่านให้เปลี่ยนเป็น test/lint/build หรือผู้ตรวจอื่น ห้ามเรียกรอบที่ 3
 
 [ขั้น 1 — อ่านความจำ]
+- ก่อนเชื่อไฟล์ความจำ ให้รัน `memory_receipt.py --cwd <Git root> verify` จาก Hook ที่ติดตั้ง หรือจาก `team-shortcuts/hooks/` ใน repo ชุดกระจาย
+- `MEMORY_RECEIPT_OK` = อ่านชุดไฟล์ตามใบรับรองได้ แล้วเทียบ branch/SHA/dirty กับ Git จริงอีกครั้ง
+- `PROJECT_MEMORY_DRIFT` = พบไฟล์คนละรอบ แฮชไม่ตรง ไฟล์ใหม่กว่าใบรับรอง หรือสายรอบวน; ห้ามเขียนทับเพื่อซ่อมเอง ให้ใช้ Git และไฟล์จริงแบบอ่านอย่างเดียว พร้อมรายงานไฟล์ที่ผิด
+- `PROJECT_MEMORY_RECEIPT_MISSING` = โปรเจกต์เก่ายังไม่มีใบรับรอง; ระบุว่าเป็นสถานะยังไม่รับรอง ใช้ Git จริงเป็นหลัก และห้ามอ้างว่า memory ทั้งชุดตรงกัน
 - อ่าน `.project/OverviewProgress.md` แล้วอ่านไฟล์ตามสารบัญบังคับ โดยอย่างน้อยต้องตรวจ `.project/plan.md` และ `.project/decisions.md` เมื่อมี
 - อ่าน `latest-close.md` หรือ session log ล่าสุดเมื่อมี แล้วเทียบกับ Git จริง ห้ามเชื่อสถานะเก่าโดยไม่ตรวจ
 - ถ้ามีสเปคที่จับคู่กับแผน `.project/spec/<plan_id>.md` ให้ตรวจ status และ owner approval; สเปค draft บล็อกเฉพาะงานโค้ดใต้แผนนั้น
@@ -92,6 +98,7 @@ Branch:
 HEAD:
 Dirty:
 Memory/Plan/Spec:
+Memory receipt: MEMORY_RECEIPT_OK / PROJECT_MEMORY_DRIFT / PROJECT_MEMORY_RECEIPT_MISSING
 Hook health:
 AI Relay: OPTIONAL หรือ OWNER_REQUESTED
 Decision: CURRENT_WORKSPACE_READY / CURRENT_WORKSPACE_READ_ONLY / CURRENT_WORKSPACE_BLOCKED
@@ -107,6 +114,7 @@ Next action:
 
 ## Changelog
 
+- v4.3 (2026-07-19 · SCG-P3): ตรวจ `.project/memory-receipt.json` ก่อนเชื่อความจำ · สถานะผสมคืน `PROJECT_MEMORY_DRIFT` และห้ามเขียนทับเอง
 - v4.2 (2026-07-19): เพิ่มการกู้กิ่งจากสมุดทะเบียนใน Git root เดิม · ห้ามผลักการเปิดพื้นที่/กิ่งกลับไปให้ผู้ใช้
 - v4.1 (2026-07-18): เพิ่ม `OWNER_EXPLICIT_BRANCH_ONLY` · AI สร้างกิ่งตามชื่อที่เจ้าของสั่งตรง ๆ ได้โดยไม่สร้าง Worktree · กันข้อความตัวอย่างยาว
 - v4.0 (2026-07-18): เปลี่ยนเป็น `CURRENT_WORKSPACE_ONLY` · ยกเลิกการสร้าง/สลับ Worktree และกิ่งจาก Shortcut · AI Relay เป็นทางเลือก · ใช้สถานะกลาง 3 ค่า
@@ -114,6 +122,7 @@ Next action:
 
 ## Graph Links
 
+- [[skills/prompt-shortcuts/references/next-action-contract|Next Action Contract]]
 - [[skills/prompt-shortcuts/references/work-execution-policy|Work Execution Policy]]
 - [[skills/prompt-shortcuts/references/use-close-chat|Use Close Chat]]
 - [[ai-context/prompt-shortcut-registry|Prompt Shortcut Registry]]

@@ -38,6 +38,8 @@ Use Act-As
 ```text
 Use Act-As กับงานนี้
 
+[ด่าน Goal Contract] อ่าน [[skills/prompt-shortcuts/references/goal-contract|goal-contract.md]] · ถ้ามีใบงาน active ต้องยึด `task_id/goal_hash/branch/base_sha/allowed_paths` ชุดนั้น ถ้ายังไม่มีให้วางแผนได้แต่ห้ามเริ่มงานส่งมอบ หลังเจ้าของอนุมัติแผน/สเปคจึงสร้างใบงานหนึ่งชุด · จบด้วย `Prompt ถัดไป:` หรือ `AUTO_CONTINUE:`
+
 คุณคือผู้จัดทีม AI ผู้เชี่ยวชาญ งานนี้ยากและต้องการผลที่ใช้งานได้จริงทันที
 จัดทีม role เฉพาะที่ทำให้งานดีขึ้นจริง แล้ววางแผนก่อนขออนุมัติ
 

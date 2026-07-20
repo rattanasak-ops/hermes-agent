@@ -528,6 +528,8 @@ def run_conversation(
     final_response = None
     interrupted = False
     codex_ack_continuations = 0
+    next_action_contract_retries = 0
+    next_action_contract_prefix = ""
     length_continue_retries = 0
     truncated_tool_call_retries = 0
     truncated_response_parts: List[str] = []
@@ -774,6 +776,7 @@ def run_conversation(
                 api_msg.pop("finish_reason")
             # Strip internal thinking-prefill marker
             api_msg.pop("_thinking_prefill", None)
+            api_msg.pop("_next_action_contract_repair", None)
             # Strip Codex Responses API fields (call_id, response_item_id) for
             # strict providers like Mistral, Fireworks, etc. that reject unknown fields.
             # Uses new dicts so the internal messages list retains the fields
@@ -3723,8 +3726,73 @@ def run_conversation(
                     length_continue_retries = 0
                 
                 final_response = agent._strip_think_blocks(final_response).strip()
+
+                from agent.next_action_contract import (
+                    closeout_only,
+                    failure_footer,
+                    inspect_contract,
+                    repair_instruction,
+                )
+
+                if next_action_contract_prefix:
+                    if closeout_only(final_response):
+                        final_response = (
+                            next_action_contract_prefix.rstrip()
+                            + "\n\n"
+                            + final_response.lstrip()
+                        )
+                    next_action_contract_prefix = ""
+
+                contract_result = inspect_contract(final_response)
+                contract_footer_added = False
+                can_repair_contract = (
+                    next_action_contract_retries < 2
+                    and api_call_count < agent.max_iterations
+                    and agent.iteration_budget.remaining > 0
+                )
+                if not contract_result.ok and can_repair_contract:
+                    next_action_contract_retries += 1
+                    section_only = all(
+                        violation.startswith("missing")
+                        for violation in contract_result.violations
+                    )
+                    invalid_msg = agent._build_assistant_message(
+                        assistant_message,
+                        "incomplete",
+                    )
+                    invalid_msg["content"] = final_response
+                    invalid_msg["_next_action_contract_repair"] = True
+                    messages.append(invalid_msg)
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": repair_instruction(
+                                contract_result.violations,
+                                section_only=section_only,
+                            ),
+                            "_next_action_contract_repair": True,
+                        }
+                    )
+                    if section_only:
+                        next_action_contract_prefix = final_response
+                    agent._emit_status(
+                        "↻ Final response omitted a concrete next action — "
+                        f"repairing ({next_action_contract_retries}/2)"
+                    )
+                    final_response = None
+                    continue
+
+                if not contract_result.ok:
+                    final_response = (
+                        final_response.rstrip()
+                        + "\n\n"
+                        + failure_footer(contract_result.violations)
+                    )
+                    contract_footer_added = True
                 
                 final_msg = agent._build_assistant_message(assistant_message, finish_reason)
+                if contract_footer_added:
+                    final_msg["content"] = final_response
 
                 # Pop thinking-only prefill and empty-response retry
                 # scaffolding before appending the final response.  These
@@ -3737,6 +3805,7 @@ def run_conversation(
                         messages[-1].get("_thinking_prefill")
                         or messages[-1].get("_empty_recovery_synthetic")
                         or messages[-1].get("_empty_terminal_sentinel")
+                        or messages[-1].get("_next_action_contract_repair")
                     )
                 ):
                     messages.pop()

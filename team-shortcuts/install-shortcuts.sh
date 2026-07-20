@@ -22,77 +22,31 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PAYLOAD="$SCRIPT_DIR/payload"
 VERSION_FILE="$SCRIPT_DIR/VERSION"
+MANIFEST_FILE="$SCRIPT_DIR/BUNDLE-MANIFEST.json"
+BUNDLE_VERIFY_SRC="$SCRIPT_DIR/verify-bundle.py"
 DEST_ROOT="${HERMES_SHORTCUTS_DEST:-$HOME/ObsidianVault/HermesAgent}"
 REGISTRY="$DEST_ROOT/ai-context/prompt-shortcut-registry.md"
 SKILL_SRC="$DEST_ROOT/skills/prompt-shortcuts"
-AGENT_SKILL_PAYLOAD="$PAYLOAD/skills/agent-center"
-AGENT_SKILL_SRC="$DEST_ROOT/skills/agent-center"
-AGENT_PLUGIN_SRC="$SCRIPT_DIR/../plugins/agent_center"
+AGENT_CENTER_SRC="$DEST_ROOT/skills/agent-center"
 WRITE_PERMIT_SRC="$SCRIPT_DIR/../scripts/hermes_write_permit.py"
 WRITE_PERMIT_BIN="$HOME/.local/bin/hermes-write-permit"
-HOOK_DOCTOR_SRC="$SCRIPT_DIR/../scripts/hermes_hook_doctor.py"
+HOOK_DOCTOR_SRC="$SCRIPT_DIR/team-hook-doctor.py"
 HOOK_DOCTOR_BIN="$HOME/.local/bin/hermes-hook-doctor"
-SAVE_GIT_SRC="$SCRIPT_DIR/../skills/devops/save-git/scripts/save_git_gate.py"
-SAVE_GIT_BIN="$HOME/.local/bin/save-git"
 INSTALLED_VERSION="$DEST_ROOT/.shortcut-version"
+INSTALLED_MANIFEST="$DEST_ROOT/.shortcut-manifest.json"
+BUNDLE_VERIFY_BIN="$HOME/.local/bin/hermes-shortcut-verify"
 TEAM_HOOK_INSTALLER="$SCRIPT_DIR/install-team-hooks.py"
-NEW_CHAT_INSTALLER="$SCRIPT_DIR/install-new-chat-tools.sh"
-
-resolve_hermes_runtime_home() {
-  if [ -n "${HERMES_HOME:-}" ]; then
-    printf '%s\n' "$HERMES_HOME"
-    return 0
-  fi
-
-  if command -v hermes >/dev/null 2>&1; then
-    local reported
-    reported="$(hermes dump 2>/dev/null | sed -n 's/^hermes_home:[[:space:]]*//p' | head -n 1)"
-    case "$reported" in
-      "~")
-        printf '%s\n' "$HOME"
-        return 0
-        ;;
-      "~/"*)
-        printf '%s/%s\n' "$HOME" "${reported#\~/}"
-        return 0
-        ;;
-      /*)
-        if [ -w "$reported" ]; then
-          printf '%s\n' "$reported"
-          return 0
-        fi
-        printf '%s/.hermes\n' "$HOME"
-        return 0
-        ;;
-    esac
-  fi
-
-  printf '%s/.hermes\n' "$HOME"
-}
-
-HERMES_RUNTIME_HOME="$(resolve_hermes_runtime_home)"
-AGENT_PLUGIN_DEST="$HERMES_RUNTIME_HOME/plugins/agent-center"
-HERMES_AGENT_SKILL_DEST="$HERMES_RUNTIME_HOME/skills/agent-center"
-CODEX_LINK="$HOME/.codex/skills/prompt-shortcuts"
-CODEX_AGENT_LINK="$HOME/.codex/skills/agent-center"
+ALLOW_DOWNGRADE="${HERMES_SHORTCUT_ALLOW_DOWNGRADE:-0}"
+BACKUP_ROOT="${HERMES_SHORTCUT_BACKUP_ROOT:-$HOME/.hermes/backups/shortcuts}"
+BACKUP_QUARANTINE="$HOME/.hermes/quarantine/shortcut-backups"
 
 # --- ที่อยู่เดิมที่ไฟล์ตัวเชื่อมทุกตัวในโปรเจกต์ชี้ถึง (ใช้ทำทางลัดชดเชยให้ Cursor) ---
 OWNER_PATH="/Users/rattanasak/ObsidianVault/HermesAgent"
 
 say() { printf '%s\n' "$*"; }
 
-install_executable_file() {
-  local src="$1"
-  local dest="$2"
-
-  mkdir -p "$(dirname "$dest")"
-  if [ -L "$dest" ]; then
-    rm -f "$dest"
-  fi
-  if ! cmp -s "$src" "$dest"; then
-    cp "$src" "$dest"
-  fi
-  chmod 0755 "$dest"
+version_key() {
+  printf '%s\n' "$1" | awk -F '[.-]' '{ printf "%04d%02d%02d%04d\n", $1, $2, $3, $4 }'
 }
 
 WANT_CURSOR=0
@@ -127,27 +81,6 @@ add_conflict_if_newer() {
   fi
 }
 
-is_generated_runtime_file() {
-  case "$1" in
-    */__pycache__/*|*.pyc|*.pyo|*/.DS_Store|.DS_Store) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-add_destination_only_conflicts() {
-  local src_root="$1"
-  local dest_root="$2"
-  local label="$3"
-
-  [ -d "$dest_root" ] || return 0
-  while IFS= read -r -d '' dest; do
-    local rel="${dest#"$dest_root"/}"
-    if [ ! -e "$src_root/$rel" ] && ! is_generated_runtime_file "$rel"; then
-      CONFLICTS+=("$label/$rel (มีเฉพาะปลายทาง)")
-    fi
-  done < <(find "$dest_root" \( -type f -o -type l \) -print0)
-}
-
 detect_newer_destination_conflicts() {
   CONFLICTS=()
 
@@ -159,76 +92,9 @@ detect_newer_destination_conflicts() {
   while IFS= read -r -d '' src; do
     local rel="${src#"$PAYLOAD"/}"
     add_conflict_if_newer "$src" "$DEST_ROOT/$rel" "$rel"
-  done < <(find "$PAYLOAD/skills/prompt-shortcuts" -type f -print0)
-  add_destination_only_conflicts \
-    "$PAYLOAD/skills/prompt-shortcuts" \
-    "$SKILL_SRC" \
-    "skills/prompt-shortcuts"
-
-  while IFS= read -r -d '' src; do
-    local rel="${src#"$PAYLOAD"/}"
-    add_conflict_if_newer "$src" "$DEST_ROOT/$rel" "$rel"
-  done < <(find "$AGENT_SKILL_PAYLOAD" -type f -print0)
-  add_destination_only_conflicts \
-    "$AGENT_SKILL_PAYLOAD" \
-    "$AGENT_SKILL_SRC" \
-    "skills/agent-center"
-
-  if [ -d "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ]; then
-    while IFS= read -r -d '' src; do
-      local rel="${src#"$PAYLOAD/skills/prompt-shortcuts"/}"
-      add_conflict_if_newer \
-        "$src" \
-        "$CODEX_LINK/$rel" \
-        "Codex skill/prompt-shortcuts/$rel"
-    done < <(find "$PAYLOAD/skills/prompt-shortcuts" -type f -print0)
-    add_destination_only_conflicts \
-      "$PAYLOAD/skills/prompt-shortcuts" \
-      "$CODEX_LINK" \
-      "Codex skill/prompt-shortcuts"
-  fi
-
-  if [ -d "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ]; then
-    while IFS= read -r -d '' src; do
-      local rel="${src#"$AGENT_SKILL_PAYLOAD"/}"
-      add_conflict_if_newer \
-        "$src" \
-        "$CODEX_AGENT_LINK/$rel" \
-        "Codex skill/agent-center/$rel"
-    done < <(find "$AGENT_SKILL_PAYLOAD" -type f -print0)
-    add_destination_only_conflicts \
-      "$AGENT_SKILL_PAYLOAD" \
-      "$CODEX_AGENT_LINK" \
-      "Codex skill/agent-center"
-  fi
-
-  while IFS= read -r -d '' src; do
-    local rel="${src#"$AGENT_SKILL_PAYLOAD"/}"
-    add_conflict_if_newer \
-      "$src" \
-      "$HERMES_AGENT_SKILL_DEST/$rel" \
-      "Hermes runtime skill/agent-center/$rel"
-  done < <(find "$AGENT_SKILL_PAYLOAD" -type f -print0)
-  add_destination_only_conflicts \
-    "$AGENT_SKILL_PAYLOAD" \
-    "$HERMES_AGENT_SKILL_DEST" \
-    "Hermes runtime skill/agent-center"
-
-  while IFS= read -r -d '' src; do
-    local rel="${src#"$AGENT_PLUGIN_SRC"/}"
-    add_conflict_if_newer \
-      "$src" \
-      "$AGENT_PLUGIN_DEST/$rel" \
-      "Hermes runtime plugin/agent-center/$rel"
-  done < <(find "$AGENT_PLUGIN_SRC" -type f \
-    ! -path '*/__pycache__/*' \
-    ! -name '*.pyc' \
-    ! -name '*.pyo' \
-    -print0)
-  add_destination_only_conflicts \
-    "$AGENT_PLUGIN_SRC" \
-    "$AGENT_PLUGIN_DEST" \
-    "Hermes runtime plugin/agent-center"
+  done < <(find \
+    "$PAYLOAD/skills/prompt-shortcuts" "$PAYLOAD/skills/agent-center" \
+    -type f ! -name '.DS_Store' ! -name '._*' -print0)
 }
 
 shortcuts_payload_differs() {
@@ -236,29 +102,13 @@ shortcuts_payload_differs() {
     return 0
   fi
 
-  if ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$PAYLOAD/skills/prompt-shortcuts" "$SKILL_SRC" >/dev/null 2>&1; then
+  if ! diff -qr --exclude='.DS_Store' --exclude='._*' \
+    "$PAYLOAD/skills/prompt-shortcuts" "$SKILL_SRC" >/dev/null 2>&1; then
     return 0
   fi
 
-  if ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$AGENT_SKILL_PAYLOAD" "$AGENT_SKILL_SRC" >/dev/null 2>&1; then
-    return 0
-  fi
-
-  if ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$AGENT_SKILL_PAYLOAD" "$HERMES_AGENT_SKILL_DEST" >/dev/null 2>&1; then
-    return 0
-  fi
-
-  if [ -d "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ] \
-    && ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$AGENT_SKILL_PAYLOAD" "$CODEX_AGENT_LINK" >/dev/null 2>&1; then
-    return 0
-  fi
-
-  if [ -d "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ] \
-    && ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$PAYLOAD/skills/prompt-shortcuts" "$CODEX_LINK" >/dev/null 2>&1; then
-    return 0
-  fi
-
-  if ! diff -qr -x '__pycache__' -x '*.pyc' -x '*.pyo' "$AGENT_PLUGIN_SRC" "$AGENT_PLUGIN_DEST" >/dev/null 2>&1; then
+  if ! diff -qr --exclude='.DS_Store' --exclude='._*' \
+    "$PAYLOAD/skills/agent-center" "$AGENT_CENTER_SRC" >/dev/null 2>&1; then
     return 0
   fi
 
@@ -270,7 +120,7 @@ prune_old_shortcuts_backups() {
   local backup
   while IFS= read -r backup; do
     backups+=("$backup")
-  done < <(find "$DEST_ROOT" -maxdepth 1 -type d -name '.backup-shortcuts-*' | sort)
+  done < <(find "$BACKUP_ROOT" -maxdepth 1 -type d -name 'backup-*' | sort)
 
   local count="${#backups[@]}"
   if [ "$count" -le 5 ]; then
@@ -280,15 +130,35 @@ prune_old_shortcuts_backups() {
   local remove_count=$((count - 5))
   local i
   for ((i = 0; i < remove_count; i++)); do
-    rm -rf -- "${backups[$i]}"
+    mkdir -p "$BACKUP_QUARANTINE"
+    local name
+    name="$(basename "${backups[$i]}")-$(date +%s)-$i"
+    mv "${backups[$i]}" "$BACKUP_QUARANTINE/$name"
   done
 }
 
+migrate_legacy_shortcuts_backups() {
+  local legacy
+  if [ ! -d "$DEST_ROOT" ]; then
+    return 0
+  fi
+  mkdir -p "$BACKUP_ROOT"
+  while IFS= read -r legacy; do
+    [ -n "$legacy" ] || continue
+    local name target suffix
+    name="$(basename "$legacy")"
+    target="$BACKUP_ROOT/legacy-$name"
+    suffix=1
+    while [ -e "$target" ]; do
+      target="$BACKUP_ROOT/legacy-$name-$suffix"
+      suffix=$((suffix + 1))
+    done
+    mv "$legacy" "$target"
+  done < <(find "$DEST_ROOT" -maxdepth 1 -type d -name '.backup-shortcuts-*' | sort)
+}
+
 backup_existing_shortcuts_if_needed() {
-  if [ ! -d "$SKILL_SRC" ] && [ ! -d "$AGENT_SKILL_SRC" ] \
-    && [ ! -d "$HERMES_AGENT_SKILL_DEST" ] && [ ! -d "$AGENT_PLUGIN_DEST" ] \
-    && { [ ! -d "$CODEX_LINK" ] || [ -L "$CODEX_LINK" ]; } \
-    && { [ ! -d "$CODEX_AGENT_LINK" ] || [ -L "$CODEX_AGENT_LINK" ]; }; then
+  if [ ! -d "$SKILL_SRC" ]; then
     return 0
   fi
 
@@ -298,10 +168,11 @@ backup_existing_shortcuts_if_needed() {
 
   local stamp
   stamp="$(date +%Y%m%d-%H%M%S)"
-  local backup_dir="$DEST_ROOT/.backup-shortcuts-$stamp"
+  mkdir -p "$BACKUP_ROOT"
+  local backup_dir="$BACKUP_ROOT/backup-$stamp"
   local suffix=1
   while [ -e "$backup_dir" ]; do
-    backup_dir="$DEST_ROOT/.backup-shortcuts-$stamp-$suffix"
+    backup_dir="$BACKUP_ROOT/backup-$stamp-$suffix"
     suffix=$((suffix + 1))
   done
 
@@ -309,23 +180,11 @@ backup_existing_shortcuts_if_needed() {
   if [ -f "$REGISTRY" ]; then
     cp "$REGISTRY" "$backup_dir/ai-context/"
   fi
-  if [ -d "$SKILL_SRC" ]; then
-    rsync -a "$SKILL_SRC/" "$backup_dir/skills/prompt-shortcuts/"
-  fi
-  if [ -d "$AGENT_SKILL_SRC" ]; then
-    rsync -a "$AGENT_SKILL_SRC/" "$backup_dir/skills/agent-center/"
-  fi
-  if [ -d "$HERMES_AGENT_SKILL_DEST" ]; then
-    rsync -a "$HERMES_AGENT_SKILL_DEST/" "$backup_dir/runtime-skills/agent-center/"
-  fi
-  if [ -d "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ]; then
-    rsync -a "$CODEX_AGENT_LINK/" "$backup_dir/codex-skills/agent-center/"
-  fi
-  if [ -d "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ]; then
-    rsync -a "$CODEX_LINK/" "$backup_dir/codex-skills/prompt-shortcuts/"
-  fi
-  if [ -d "$AGENT_PLUGIN_DEST" ]; then
-    rsync -a "$AGENT_PLUGIN_DEST/" "$backup_dir/runtime-plugins/agent-center/"
+  rsync -a --exclude '.DS_Store' --exclude '._*' \
+    "$SKILL_SRC/" "$backup_dir/skills/prompt-shortcuts/"
+  if [ -d "$AGENT_CENTER_SRC" ]; then
+    rsync -a --exclude '.DS_Store' --exclude '._*' \
+      "$AGENT_CENTER_SRC/" "$backup_dir/skills/agent-center/"
   fi
   prune_old_shortcuts_backups
   say "      สำรองของเดิมไว้ที่ $backup_dir"
@@ -340,16 +199,39 @@ if [ ! -f "$VERSION_FILE" ]; then
   say "ผิดพลาด: ไม่พบหมายเลขชุดติดตั้งที่ $VERSION_FILE"
   exit 1
 fi
-if [ ! -f "$AGENT_SKILL_PAYLOAD/SKILL.md" ]; then
-  say "ผิดพลาด: ไม่พบ Agent Center skill ที่ $AGENT_SKILL_PAYLOAD"
+if [ ! -f "$MANIFEST_FILE" ] || [ ! -f "$BUNDLE_VERIFY_SRC" ]; then
+  say "ผิดพลาด: ชุดติดตั้งขาดใบรายการแฮชหรือตัวตรวจ"
   exit 1
 fi
-if [ ! -f "$AGENT_PLUGIN_SRC/plugin.yaml" ]; then
-  say "ผิดพลาด: ไม่พบ Agent Center plugin ที่ $AGENT_PLUGIN_SRC"
+if ! python3 "$BUNDLE_VERIFY_SRC" verify-package \
+  --team-root "$SCRIPT_DIR" --manifest "$MANIFEST_FILE" >/dev/null; then
+  say "ผิดพลาด: แฮชไฟล์ในชุดติดตั้งไม่ตรงกับใบรายการ จะไม่ติดตั้ง"
+  python3 "$BUNDLE_VERIFY_SRC" verify-package \
+    --team-root "$SCRIPT_DIR" --manifest "$MANIFEST_FILE" || true
   exit 1
 fi
-if ! command -v hermes >/dev/null 2>&1; then
-  say "ผิดพลาด: ไม่พบคำสั่ง hermes — Use Agent ต้องมี Hermes Agent ก่อนติดตั้ง"
+PACKAGE_VERSION="$(tr -d '[:space:]' < "$VERSION_FILE")"
+if [ -f "$INSTALLED_VERSION" ]; then
+  CURRENT_VERSION="$(tr -d '[:space:]' < "$INSTALLED_VERSION")"
+  if [ -n "$CURRENT_VERSION" ] \
+    && [[ "$(version_key "$CURRENT_VERSION")" > "$(version_key "$PACKAGE_VERSION")" ]] \
+    && [ "$ALLOW_DOWNGRADE" != "1" ]; then
+    say "หยุดติดตั้ง: เครื่องนี้มี Shortcut รุ่น $CURRENT_VERSION ซึ่งใหม่กว่าชุด $PACKAGE_VERSION"
+    say "ชุดเก่าจะไม่ถูกนำกลับมาทับชุดใหม่ หากเจ้าของตั้งใจย้อนรุ่นจริงต้องกำหนด HERMES_SHORTCUT_ALLOW_DOWNGRADE=1"
+    exit 3
+  fi
+fi
+for required in \
+  "$PAYLOAD/skills/prompt-shortcuts/references/use-agent.md" \
+  "$PAYLOAD/skills/prompt-shortcuts/references/work-execution-policy.md" \
+  "$PAYLOAD/skills/agent-center/SKILL.md"; do
+  if [ ! -f "$required" ]; then
+    say "ผิดพลาด: ชุดติดตั้งขาดไฟล์ควบคุม $required"
+    exit 1
+  fi
+done
+if ! grep -q '| `Use Agent`' "$PAYLOAD/skills/prompt-shortcuts/SKILL.md"; then
+  say "ผิดพลาด: ชุดติดตั้งยังไม่ได้ลงทะเบียน Use Agent"
   exit 1
 fi
 if ! command -v rsync >/dev/null 2>&1; then
@@ -372,64 +254,90 @@ fi
 
 # --- 1) คัดชุด Shortcut เข้าโฟลเดอร์บ้าน ---
 say "[1/4] คัดชุด Shortcut ไป $DEST_ROOT"
+migrate_legacy_shortcuts_backups
 backup_existing_shortcuts_if_needed
 mkdir -p "$DEST_ROOT/ai-context" "$DEST_ROOT/skills"
 cp "$PAYLOAD/ai-context/prompt-shortcut-registry.md" "$DEST_ROOT/ai-context/"
 mkdir -p "$SKILL_SRC"
-rsync -a --delete "$PAYLOAD/skills/prompt-shortcuts/" "$SKILL_SRC/"
-mkdir -p "$AGENT_SKILL_SRC" "$HERMES_AGENT_SKILL_DEST" "$AGENT_PLUGIN_DEST"
-rsync -a --delete "$AGENT_SKILL_PAYLOAD/" "$AGENT_SKILL_SRC/"
-rsync -a --delete "$AGENT_SKILL_PAYLOAD/" "$HERMES_AGENT_SKILL_DEST/"
-rsync -a --delete --exclude='__pycache__/' "$AGENT_PLUGIN_SRC/" "$AGENT_PLUGIN_DEST/"
+rsync -a --delete --exclude '.DS_Store' --exclude '._*' \
+  "$PAYLOAD/skills/prompt-shortcuts/" "$SKILL_SRC/"
+mkdir -p "$AGENT_CENTER_SRC"
+rsync -a --delete --exclude '.DS_Store' --exclude '._*' \
+  "$PAYLOAD/skills/agent-center/" "$AGENT_CENTER_SRC/"
 cp "$VERSION_FILE" "$INSTALLED_VERSION"
-REF_COUNT="$(ls -1 "$SKILL_SRC/references/"*.md 2>/dev/null | wc -l | tr -d ' ')"
-say "      สำเร็จ: รุ่น $(tr -d '[:space:]' < "$VERSION_FILE") · ทะเบียน 1 ไฟล์ + prompt $REF_COUNT ไฟล์"
-say "      สำเร็จ: ติดตั้ง Agent Center skill และ plugin ที่ $HERMES_RUNTIME_HOME"
-if ! hermes plugins enable agent-center >/dev/null; then
-  say "ผิดพลาด: คัด Agent Center แล้ว แต่เปิดใช้ผ่าน Hermes Agent ไม่สำเร็จ"
+cp "$MANIFEST_FILE" "$INSTALLED_MANIFEST"
+if ! cmp -s "$PAYLOAD/ai-context/prompt-shortcut-registry.md" "$REGISTRY" \
+  || ! diff -qr --exclude='.DS_Store' --exclude='._*' \
+    "$PAYLOAD/skills/prompt-shortcuts" "$SKILL_SRC" >/dev/null 2>&1 \
+  || ! diff -qr --exclude='.DS_Store' --exclude='._*' \
+    "$PAYLOAD/skills/agent-center" "$AGENT_CENTER_SRC" >/dev/null 2>&1; then
+  say "ผิดพลาด: ไฟล์ที่ติดตั้งไม่ตรงกับชุดแจก จะไม่รายงานว่าพร้อมใช้"
   exit 1
 fi
-say "      สำเร็จ: เปิดใช้ Agent Center ใน Hermes Agent"
-say "      สำเร็จ: Agent Center จะใช้บัญชี Subscription ที่ล็อกอินอยู่ โดยไม่เปิดสิทธิ์เลือก API"
+REF_COUNT="$(ls -1 "$SKILL_SRC/references/"*.md 2>/dev/null | wc -l | tr -d ' ')"
+say "      สำเร็จ: รุ่น $(tr -d '[:space:]' < "$VERSION_FILE") · ทะเบียน 1 ไฟล์ + prompt $REF_COUNT ไฟล์ + Agent Center 1 ชุด"
 
 # ติดตั้งด่านล็อกงานเขียนให้ใช้ได้จากทุก project แม้ project นั้นไม่มี repo Hermes Agent
 if [ ! -f "$WRITE_PERMIT_SRC" ]; then
   say "ผิดพลาด: ไม่พบด่านล็อกงานเขียนที่ $WRITE_PERMIT_SRC"
   exit 1
 fi
-install_executable_file "$WRITE_PERMIT_SRC" "$WRITE_PERMIT_BIN"
+mkdir -p "$HOME/.local/bin"
+if ! cmp -s "$BUNDLE_VERIFY_SRC" "$BUNDLE_VERIFY_BIN"; then
+  cp "$BUNDLE_VERIFY_SRC" "$BUNDLE_VERIFY_BIN"
+fi
+chmod 0755 "$BUNDLE_VERIFY_BIN"
+if ! cmp -s "$WRITE_PERMIT_SRC" "$WRITE_PERMIT_BIN"; then
+  cp "$WRITE_PERMIT_SRC" "$WRITE_PERMIT_BIN"
+fi
+chmod 0755 "$WRITE_PERMIT_BIN"
 say "      สำเร็จ: ติดตั้งด่านล็อกงานเขียนที่ $WRITE_PERMIT_BIN"
 if [ ! -f "$HOOK_DOCTOR_SRC" ]; then
   say "ผิดพลาด: ไม่พบตัวตรวจสุขภาพ Hook ที่ $HOOK_DOCTOR_SRC"
   exit 1
 fi
-install_executable_file "$HOOK_DOCTOR_SRC" "$HOOK_DOCTOR_BIN"
+if ! cmp -s "$HOOK_DOCTOR_SRC" "$HOOK_DOCTOR_BIN"; then
+  cp "$HOOK_DOCTOR_SRC" "$HOOK_DOCTOR_BIN"
+fi
+chmod 0755 "$HOOK_DOCTOR_BIN"
 say "      สำเร็จ: ติดตั้งตัวตรวจสุขภาพ Hook ที่ $HOOK_DOCTOR_BIN"
-if [ ! -f "$SAVE_GIT_SRC" ]; then
-  say "ผิดพลาด: ไม่พบด่าน Save Git ที่ $SAVE_GIT_SRC"
-  exit 1
-fi
-install_executable_file "$SAVE_GIT_SRC" "$SAVE_GIT_BIN"
-say "      สำเร็จ: ติดตั้งด่าน Save Git ที่ $SAVE_GIT_BIN"
-if [ ! -f "$NEW_CHAT_INSTALLER" ]; then
-  say "ผิดพลาด: ไม่พบตัวติดตั้ง New Chat ที่ $NEW_CHAT_INSTALLER"
-  exit 1
-fi
-bash "$NEW_CHAT_INSTALLER"
 if [ ! -f "$TEAM_HOOK_INSTALLER" ]; then
   say "ผิดพลาด: ไม่พบตัวติดตั้ง Hook ทีมที่ $TEAM_HOOK_INSTALLER"
   exit 1
 fi
 python3 "$TEAM_HOOK_INSTALLER"
-if ! "$HOOK_DOCTOR_BIN" >/dev/null; then
-  say "      ตัวตรวจ Hook รอบแรกไม่ผ่าน ลองตรวจ Hook ซ้ำอีก 1 ครั้ง"
-  if ! "$HOOK_DOCTOR_BIN" >/dev/null; then
-    say "ผิดพลาด: ติดตั้ง Hook แล้วแต่ตรวจ 6 ด่านไม่ผ่าน 2 รอบ"
-    "$HOOK_DOCTOR_BIN" || true
-    exit 1
-  fi
+# ตัวช่วยติดตั้ง Hook รุ่นเก่าอาจมีรายชื่อค้าง จึงคัดทุก Hook จากชุดที่
+# ใบรายการตรวจแล้วซ้ำอีกชั้น เพื่อให้เครื่องว่างได้รับไฟล์ครบเสมอ
+for hook_root in "$HOME/.claude/hooks" "$HOME/.codex/hooks"; do
+  mkdir -p "$hook_root"
+  for hook_src in "$SCRIPT_DIR/hooks/"*.py; do
+    hook_name="$(basename "$hook_src")"
+    case "$hook_name" in
+      ._*|.*) continue ;;
+    esac
+    cp "$hook_src" "$hook_root/$hook_name"
+    chmod 0755 "$hook_root/$hook_name"
+  done
+done
+if ! "$BUNDLE_VERIFY_BIN" verify-installed \
+  --root "$DEST_ROOT" \
+  --hook-root "$HOME/.claude/hooks" \
+  --hook-root "$HOME/.codex/hooks" \
+  --manifest "$INSTALLED_MANIFEST" >/dev/null; then
+  say "ผิดพลาด: ไฟล์ที่ติดตั้งหรือด่านก่อนส่งมีแฮชไม่ตรง"
+  "$BUNDLE_VERIFY_BIN" verify-installed \
+    --root "$DEST_ROOT" \
+    --hook-root "$HOME/.claude/hooks" \
+    --hook-root "$HOME/.codex/hooks" \
+    --manifest "$INSTALLED_MANIFEST" || true
+  exit 1
 fi
-say "      สำเร็จ: Hook ภาษาคน/ผู้ตรวจอิสระ/หลักฐาน/คำตอบพื้นที่/ทำงานต่อเป็นเฟส/New Chat ผ่าน 6/6"
+if ! "$HOOK_DOCTOR_BIN" >/dev/null; then
+  say "ผิดพลาด: ติดตั้ง Hook แล้วแต่ตรวจ 3 ด่านไม่ผ่าน"
+  "$HOOK_DOCTOR_BIN" || true
+  exit 1
+fi
+say "      สำเร็จ: Hook ภาษาคน/ผู้ตรวจอิสระ/หลักฐานครบ ผ่าน 3/3"
 
 # --- 2) ต่อ Claude Code (ทุกโปรเจกต์ผ่าน global memory) ---
 say "[2/4] ต่อ Claude Code ผ่าน ~/.claude/CLAUDE.md"
@@ -447,7 +355,7 @@ fi
 {
   printf '\n%s\n' "$MARK_START"
   printf '## Prompt Shortcuts (ติดตั้งโดย install-shortcuts.sh)\n\n'
-  printf 'เมื่อผู้ใช้เรียก Shortcut เช่น `Use Act-As`, `Use Comply`, `Use Continue`, `Review Chat` หรือชื่อย่อใกล้เคียง\n'
+  printf 'เมื่อผู้ใช้เรียก Shortcut เช่น `Use Act-As`, `Use Comply`, `Use Agent`, `Use Continue`, `Review Chat` หรือชื่อย่อใกล้เคียง\n'
   printf 'ให้เปิดอ่านทะเบียนนี้ก่อนเสมอ แล้วเปิดไฟล์ prompt ที่แมปไว้ ห้ามเดาจากความจำ:\n\n'
   printf -- '- `%s`\n' "$REGISTRY"
   printf '%s\n' "$MARK_END"
@@ -457,22 +365,14 @@ say "      สำเร็จ: เพิ่มตัวชี้ทะเบี�
 # --- 3) ต่อ Codex (ทางลัด skill) ---
 say "[3/4] ต่อ Codex ผ่าน ~/.codex/skills/prompt-shortcuts"
 mkdir -p "$HOME/.codex/skills"
+CODEX_LINK="$HOME/.codex/skills/prompt-shortcuts"
 if [ -L "$CODEX_LINK" ] || [ -f "$CODEX_LINK" ]; then
   rm -f "$CODEX_LINK"
 fi
-if [ -L "$CODEX_AGENT_LINK" ] || [ -f "$CODEX_AGENT_LINK" ]; then
-  rm -f "$CODEX_AGENT_LINK"
-fi
-if [ -e "$CODEX_AGENT_LINK" ] && [ ! -L "$CODEX_AGENT_LINK" ]; then
-  say "      พบโฟลเดอร์เดิมที่ $CODEX_AGENT_LINK — คัดให้ตรงกับชุดติดตั้งล่าสุด"
-  rsync -a --delete "$AGENT_SKILL_SRC/" "$CODEX_AGENT_LINK/"
-else
-  ln -s "$AGENT_SKILL_SRC" "$CODEX_AGENT_LINK"
-  say "      สำเร็จ: $CODEX_AGENT_LINK -> $AGENT_SKILL_SRC"
-fi
 if [ -e "$CODEX_LINK" ] && [ ! -L "$CODEX_LINK" ]; then
   say "      พบโฟลเดอร์เดิมที่ $CODEX_LINK — คัดให้ตรงกับชุดติดตั้งล่าสุด"
-  rsync -a --delete "$SKILL_SRC/" "$CODEX_LINK/"
+  rsync -a --delete --exclude '.DS_Store' --exclude '._*' \
+    "$SKILL_SRC/" "$CODEX_LINK/"
 else
   ln -s "$SKILL_SRC" "$CODEX_LINK"
   say "      สำเร็จ: $CODEX_LINK -> $SKILL_SRC"
@@ -495,24 +395,20 @@ else
   fi
 fi
 
-# ติดตั้งเครื่องมือ Use Migrate Web (MW) เป็นด่านบังคับของการติดตั้ง
-MW_SETUP="$SCRIPT_DIR/../scripts/mw/mw-setup.sh"
-if [ ! -f "$MW_SETUP" ]; then
-  say "ผิดพลาด: ไม่พบตัวติดตั้งเครื่องมือ Use Migrate Web ที่ $MW_SETUP"
-  exit 1
-fi
 say ""
-say "ติดตั้งเครื่องมือ Use Migrate Web (MW)..."
-if ! bash "$MW_SETUP"; then
-  say "ผิดพลาด: ติดตั้งเครื่องมือ Use Migrate Web (MW) ไม่สำเร็จ"
-  exit 1
+say "เสร็จสิ้น. ปิดแล้วเปิดโปรแกรม AI ใหม่ 1 รอบ แล้วลองพิมพ์ Shortcut เช่น  Use Comply"
+
+# ติดตั้งเครื่องมือ Use Migrate Web (MW) ถ้ามีใน repo — best-effort (ไม่ทำ shortcut install พัง)
+MW_SETUP="$SCRIPT_DIR/../scripts/mw/mw-setup.sh"
+if [ -f "$MW_SETUP" ]; then
+  say ""
+  say "ติดตั้งเครื่องมือ Use Migrate Web (MW)..."
+  bash "$MW_SETUP" || say "  (ข้ามเครื่องมือ MW ชั่วคราว — ติดตั้งภายหลังด้วย: bash scripts/mw/mw-setup.sh)"
 fi
 
 if [ -f "$SCRIPT_DIR/check-shortcuts.sh" ]; then
   say ""
   HERMES_SHORTCUT_EXPECTED_VERSION="$(tr -d '[:space:]' < "$VERSION_FILE")" \
+    HERMES_SHORTCUT_EXPECTED_MANIFEST="$MANIFEST_FILE" \
     bash "$SCRIPT_DIR/check-shortcuts.sh"
 fi
-
-say ""
-say "เสร็จสิ้น. ปิดแล้วเปิดโปรแกรม AI ใหม่ 1 รอบ แล้วลองพิมพ์ Shortcut เช่น  Use Comply"

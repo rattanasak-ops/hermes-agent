@@ -9,6 +9,8 @@ metadata:
 
 This skill loads standard reusable prompts from HermesAgent. The v2 prompt files in `references/` are the source of truth; do not paraphrase them when the user asks to use a shortcut.
 
+Before applying any mapped prompt, read and enforce `references/next-action-contract.md`. This shared contract applies to every Shortcut, so individual prompt files do not need duplicate closing rules.
+
 ## Shortcut Map
 
 | Shortcut | Aliases | Prompt File |
@@ -28,7 +30,7 @@ This skill loads standard reusable prompts from HermesAgent. The v2 prompt files
 | `Use New Chat` | `use-new-chat`, `Start New Chat`, `New Chat Startup`, `Initialize Hermes Agent chat`, `เริ่ม New Chat`, `เปิด New Chat`, `เริ่มแชทใหม่`, `เปิดแชทใหม่` | `references/use-new-chat.md` |
 | `Use Migrate Web` | `use-migrate-web`, `Migrate Web`, `migrate-web`, `ใช้ Migrate Web`, `ย้ายเว็บตาม Flow`, `ทำเว็บ 13 ขั้น`, `Flow ย้ายเว็บ` | `references/use-migrate-web.md` |
 | `Use Migrate 0` … `Use Migrate 13` | `use-migrate-0` … `use-migrate-13`, `ใช้ Migrate <เลข>` | `references/use-migrate-<เลข>.md` + `references/use-migrate-phase-contract.md` |
-| `Use Close Chat` | `use-close-chat`, `Close Chat`, `close-chat`, `ใช้ Close Chat`, `ปิดแชท`, `ปิดงานแชท`, `จบแชท` | `references/use-close-chat.md` |
+| `Use Close Chat` | `use-close-chat`, `Close Chat`, `close-chat`, `Use Post Chat`, `use-post-chat`, `Post Chat`, `ใช้ Close Chat`, `ปิดแชท`, `ปิดงานแชท`, `จบแชท` | `references/use-close-chat.md` |
 | `Use Save Git` | `use-save-git`, `Save Git`, `save-git`, `Save Grid`, `save-grid`, `Use Save Grid`, `ใช้ Save Git`, `เซฟ Git`, `ก่อน push`, `ก่อน merge`, `ก่อน deploy`, `Git Safe Flow`, `GitLab Deploy Safe Flow`, `Use GitLab Deploy Safe Flow`, `Use Ship Gate` | `references/use-save-git.md` |
 | `Use Merge to Production` | `use-merge-to-production`, `Merge to Production`, `merge-to-production`, `ใช้ Merge to Production`, `ขึ้น production`, `deploy production`, `Ship to Production` | `references/use-merge-to-production.md` |
 | `Use Continue` | `use-continue`, `Continue`, `continue`, `ทำต่อ`, `ทำต่อเอง`, `ทำงานต่อ`, `ทำต่ออัตโนมัติ`, `ไม่ต้องรอผม`, legacy: `Go to Sleep`, `go-to-sleep`, `Sleep Mode`, `sleep-mode`, `เข้าโหมดนอน`, `โหมดนอน` | `references/use-continue.md` |
@@ -51,7 +53,7 @@ This skill loads standard reusable prompts from HermesAgent. The v2 prompt files
 
 When the user invokes a shortcut:
 
-1. Read `references/work-execution-policy.md` first, then read the mapped prompt file in full. Read `references/worktree-lifecycle-contract.md` only when the owner explicitly asks to create, hand off, close, inspect, or clean up a Worktree.
+1. Read `references/next-action-contract.md` and `references/work-execution-policy.md` first, then read the mapped prompt file in full. Read `references/worktree-lifecycle-contract.md` only when the owner explicitly asks to create, hand off, close, inspect, or clean up a Worktree.
 2. Apply the prompt to the user's current task or the task text that follows the shortcut.
 3. If the shortcut is invoked without a target task, ask what task the user wants to apply it to.
 4. Follow any safety or approval constraints inside the loaded prompt exactly. If an older prompt creates/switches a branch or Worktree, requires `NEW_CHAT_READY`/`WTL_READY`, or forces AI Relay, Work Execution Policy v2 takes precedence.
@@ -107,7 +109,7 @@ For `Use New Chat`, inspect only the workspace and branch already open in the ap
 
 For `Use Migrate 0` through `Use Migrate 13`, read `references/use-migrate-phase-contract.md` and the exact numbered phase file. The owner advances phases by number. These phases still obey `CURRENT_WORKSPACE_ONLY`; they may lock a menu inside the current branch but may not create or switch a branch/Worktree.
 
-For `Use Close Chat`, run preview then close/write only after every explicitly requested merge, main, VPS, and team rollout phase is finished or genuinely blocked by external authority. Do not write premature closeout files into an active code delivery. Reuse a matching Save Git receipt instead of repeating heavy gates, but always run fresh Git status. Return CLOSED_CLEAN, CLOSED_WITH_PENDING, or NEED_OWNER_ACTION_BEFORE_CLOSE; it does not push, merge, or deploy.
+For `Use Close Chat` and its full alias `Use Post Chat`, load the same `references/use-close-chat.md` file. Run preview then close/write only after every explicitly requested merge, main, VPS, and team rollout phase is finished or genuinely blocked by external authority. Do not write premature closeout files into an active code delivery. Reuse a matching Save Git receipt instead of repeating heavy gates, but always run fresh Git status. Seal all memory targets under one close_id and verify the final memory receipt. Return CLOSED_CLEAN, CLOSED_WITH_PENDING, or NEED_OWNER_ACTION_BEFORE_CLOSE; it does not push, merge, or deploy.
 
 For `Use Save Git` (including `Save Grid`), run the Git/GitLab/VPS gate only before commit, push, merge, deploy, or final Git readiness claims. A gate block never permits creating or switching a branch/Worktree. Diagnose reused-branch and squash history in the current branch first. If no Git action applies, return `SAVE_GIT_NOT_APPLICABLE` without running five stages. Emit a receipt bound to project/task/branch/SHA.
 

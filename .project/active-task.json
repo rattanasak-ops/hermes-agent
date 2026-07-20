@@ -1,0 +1,70 @@
+{
+  "schema": "hermes-goal-contract-v1",
+  "task_id": "SCG-P9-I4",
+  "plan_id": "SCG",
+  "goal": "นำ Goal Contract และชุด Shortcut รุ่น 2026.07.19-12 เข้า main โดยไม่ปะปนงานจากกิ่งเก่า",
+  "deliverables": [
+    "คำขอรวมงานไม่เกิน 30 ไฟล์",
+    "ชุดตรวจผ่าน",
+    "ไม่ลบไฟล์จาก main โดยไม่ได้ตั้งใจ"
+  ],
+  "branch": "codex/scg-shortcut-rollout",
+  "base_sha": "7bf4315fef4e0970c73423b64437873c5757682b",
+  "allowed_paths": [
+    ".project/active-task.json",
+    ".project/active-task.md",
+    "team-shortcuts/VERSION",
+    "team-shortcuts/install-shortcuts.sh",
+    "team-shortcuts/payload/ai-context/prompt-shortcut-registry.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/Prompt Shortcuts.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/SKILL.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/goal-contract.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/next-action-contract.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-act-as.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-agent.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-close-chat.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-comply.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-continue.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-create-design-system.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-flow-guardian.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-migrate-web.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-new-chat.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-qa-qc.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-save-git.md",
+    "team-shortcuts/sync-from-vault.sh",
+    "team-shortcuts/BUNDLE-MANIFEST.json",
+    "tests/run_agent/test_run_agent.py",
+    "tests/team_shortcuts/test_bundle_manifest.py",
+    "tests/team_shortcuts/test_goal_contract_distribution.py",
+    "tests/team_shortcuts/test_goal_drift_real_incidents.py",
+    "tests/team_shortcuts/test_goal_shortcut_chain.py",
+    "tests/team_shortcuts/test_new_chat_write_permit.py",
+    "tests/team_shortcuts/test_phase_goal_contract.py",
+    "tests/team_shortcuts/test_team_shortcut_distribution.py",
+    "tests/team_shortcuts/test_phase_distribution.py"
+  ],
+  "forbidden_paths": [
+    ".git/**",
+    ".env",
+    ".env.*",
+    "**/secrets/**"
+  ],
+  "work_types": [
+    "release",
+    "code",
+    "test",
+    "docs",
+    "shortcut_governance",
+    "memory"
+  ],
+  "owner_scope_token": "อนุญาตให้สร้างกิ่ง codex/scg-goal-contract-core และ codex/scg-shortcut-rollout สำหรับ SCG-P9-I4 โดยไม่สร้าง Worktree",
+  "status": "active",
+  "primary_issues": [
+    "SCG-P9-I4"
+  ],
+  "support_issues": [],
+  "next_prompt": "AUTO_CONTINUE: ตรวจและรวมกิ่ง codex/scg-shortcut-rollout",
+  "frozen_at": null,
+  "merge_sha": null,
+  "goal_hash": "a5e5df1cd50dc369d944813fde2f7d724e6d4bcc2a69b8315d1106d6194c7a49"
+}

@@ -6,6 +6,7 @@ import asyncio
 import importlib.util
 import json
 import shutil
+import subprocess
 import sys
 import types
 from copy import deepcopy
@@ -71,6 +72,10 @@ class FakeRunner:
         reported_family: dict[str, str] | None = None,
         initial_paths: list[str] | None = None,
         changed_paths: list[str] | None = None,
+        initial_ignored_paths: list[str] | None = None,
+        changed_ignored_paths: list[str] | None = None,
+        reviewer_text: str | None = None,
+        evidence_error: execution.SubscriptionSeatError | None = None,
     ):
         self.calls: list[dict] = []
         self.fail_seat = fail_seat
@@ -78,7 +83,12 @@ class FakeRunner:
         self.reported_family = reported_family or {}
         self.initial_paths = initial_paths or []
         self.changed_paths = changed_paths or ["plugins/agent_center/execution.py"]
+        self.initial_ignored_paths = initial_ignored_paths or []
+        self.changed_ignored_paths = changed_ignored_paths or []
+        self.reviewer_text = reviewer_text
+        self.evidence_error = evidence_error
         self.state_calls = 0
+        self.ignored_calls = 0
 
     async def run_seat(self, **kwargs):
         await asyncio.sleep(0)
@@ -94,11 +104,16 @@ class FakeRunner:
             "grok": "grok-4.3-subscription",
             "opus": "claude-opus-subscription",
         }[family]
-        text = (
-            "same answer"
-            if self.identical_planners and seat_name.startswith("planner_")
-            else f"answer from {seat_name}"
-        )
+        if seat_name == "reviewer":
+            text = self.reviewer_text or (
+                "No blocking findings.\nREVIEW_DECISION: PASS"
+            )
+        else:
+            text = (
+                "same answer"
+                if self.identical_planners and seat_name.startswith("planner_")
+                else f"answer from {seat_name}"
+            )
         return {
             "seat": seat_name,
             "provider": f"{family}-subscription",
@@ -117,7 +132,17 @@ class FakeRunner:
         self.state_calls += 1
         return list(self.initial_paths if self.state_calls == 1 else self.changed_paths)
 
-    async def workspace_evidence(self, cwd):
+    async def workspace_ignored(self, cwd, *, allowed_paths):
+        self.ignored_calls += 1
+        return list(
+            self.initial_ignored_paths
+            if self.ignored_calls == 1
+            else self.changed_ignored_paths
+        )
+
+    async def workspace_evidence(self, cwd, *, changed_paths, allowed_paths):
+        if self.evidence_error:
+            raise self.evidence_error
         return "M plugins/agent_center/execution.py\n"
 
 
@@ -178,6 +203,62 @@ def test_build_runs_worker_then_different_read_only_reviewer():
     )
     assert set(out["receipt"]["seat_evidence"]) == set(policies.BUILD_SEAT_NAMES)
     assert out["receipt_report"]["code"] == "receipt_runtime_valid"
+    assert "independent reviewer returned explicit PASS" in out["receipt"]["gate_results"]
+
+
+def test_build_reviewer_fail_blocks_completion_and_receipt():
+    packet = _packet("build")
+    runner = FakeRunner(
+        reviewer_text="Blocking finding exists.\nREVIEW_DECISION: FAIL"
+    )
+
+    out = _run({"packet": packet, "request": "Implement it."}, runner)
+
+    assert out["ok"] is False
+    assert out["code"] == "REVIEW_REJECTED"
+    assert out["blocked"] is True
+    assert out["review_decision"] == "FAIL"
+    assert out["receipt"] is None
+    assert "reviewer" in out["outputs"]
+
+
+@pytest.mark.parametrize(
+    "reviewer_text",
+    [
+        "No machine-readable decision.",
+        "REVIEW_DECISION: pass",
+        "REVIEW_DECISION: PASS\nREVIEW_DECISION: FAIL",
+        "```\nREVIEW_DECISION: PASS\n```",
+    ],
+)
+def test_build_reviewer_missing_or_ambiguous_decision_fails_closed(reviewer_text):
+    packet = _packet("build")
+
+    out = _run(
+        {"packet": packet, "request": "Implement it."},
+        FakeRunner(reviewer_text=reviewer_text),
+    )
+
+    assert out["ok"] is False
+    assert out["code"] == "REVIEW_DECISION_INVALID"
+    assert out["review_decision"] == "INVALID"
+    assert out["receipt"] is None
+
+
+def test_incomplete_review_evidence_blocks_before_reviewer_with_specific_code():
+    packet = _packet("build")
+    runner = FakeRunner(
+        evidence_error=execution.SubscriptionSeatError(
+            "review_evidence_incomplete", "new file is too large"
+        )
+    )
+
+    out = _run({"packet": packet, "request": "Implement it."}, runner)
+
+    assert out["ok"] is False
+    assert out["code"] == "REVIEW_EVIDENCE_INCOMPLETE"
+    assert out["receipt"] is None
+    assert "reviewer" not in [call["seat_name"] for call in runner.calls]
 
 
 def test_build_blocks_dirty_workspace_before_worker():
@@ -189,6 +270,37 @@ def test_build_blocks_dirty_workspace_before_worker():
     assert out["ok"] is False
     assert out["code"] == "CURRENT_WORKSPACE_DIRTY"
     assert "worker" not in [call["seat_name"] for call in runner.calls]
+
+
+def test_build_blocks_preexisting_ignored_path_before_worker():
+    packet = _packet("build")
+    runner = FakeRunner(
+        initial_ignored_paths=["plugins/agent_center/private-note.txt"]
+    )
+
+    out = _run({"packet": packet, "request": "Build it."}, runner)
+
+    assert out["ok"] is False
+    assert out["code"] == "BUILD_SCOPE_IGNORED_PATHS_PRESENT"
+    assert out["ignored_paths"] == ["plugins/agent_center/private-note.txt"]
+    assert out["receipt"] is None
+    assert "worker" not in [call["seat_name"] for call in runner.calls]
+
+
+def test_build_blocks_new_ignored_path_before_reviewer():
+    packet = _packet("build")
+    runner = FakeRunner(
+        changed_ignored_paths=["plugins/agent_center/private-note.txt"]
+    )
+
+    out = _run({"packet": packet, "request": "Build it."}, runner)
+
+    assert out["ok"] is False
+    assert out["code"] == "BUILD_IGNORED_PATH_CREATED"
+    assert out["ignored_paths"] == ["plugins/agent_center/private-note.txt"]
+    assert out["receipt"] is None
+    assert "worker" in [call["seat_name"] for call in runner.calls]
+    assert "reviewer" not in [call["seat_name"] for call in runner.calls]
 
 
 def test_build_blocks_changed_path_outside_packet_scope():
@@ -232,6 +344,19 @@ def test_executor_rejects_invalid_packet_before_any_subscription_call():
     runner = FakeRunner()
 
     out = _run({"packet": packet, "request": "Do not run."}, runner)
+
+    assert out["code"] == "packet_invalid"
+    assert runner.calls == []
+
+
+def test_executor_rejects_string_allowed_paths_before_writable_seat():
+    packet = _packet("build")
+    packet["allowed_paths"] = "plugins/agent_center/**"
+    body = {key: value for key, value in packet.items() if key != "packet_id"}
+    packet["packet_id"] = routing._content_id("packet", body)
+    runner = FakeRunner()
+
+    out = _run({"packet": packet, "request": "Do not widen scope."}, runner)
 
     assert out["code"] == "packet_invalid"
     assert runner.calls == []
@@ -284,8 +409,11 @@ def test_executor_requires_non_empty_request_and_bounded_timeout():
 def test_subscription_commands_use_logins_and_never_api_overrides(tmp_path):
     binaries = {name: f"/bin/{name}" for name in ("codex", "claude", "hermes")}
     runner = execution.SubscriptionSeatRunner(which=binaries.get)
-    codex = runner._command(
+    codex_worker = runner._command(
         family="codex", prompt="p", cwd=str(tmp_path), writable=True
+    )
+    codex_read_only = runner._command(
+        family="codex", prompt="p", cwd=str(tmp_path), writable=False
     )
     claude = runner._command(
         family="opus", prompt="p", cwd=str(tmp_path), writable=False
@@ -293,8 +421,13 @@ def test_subscription_commands_use_logins_and_never_api_overrides(tmp_path):
     grok = runner._command(
         family="grok", prompt="p", cwd=str(tmp_path), writable=False
     )
-    joined = " ".join(codex + claude + grok).lower()
-    assert "workspace-write" in codex
+    joined = " ".join(codex_worker + codex_read_only + claude + grok).lower()
+    assert "workspace-write" in codex_worker
+    assert "--ignore-user-config" not in codex_worker
+    assert "--ignore-user-config" in codex_read_only
+    assert "--ignore-rules" not in codex_read_only
+    assert codex_read_only.count("--disable") == 1
+    assert "multi_agent" in codex_read_only
     assert "plan" in claude
     assert "https://api.anthropic.com" in joined
     assert "xai-oauth" in grok
@@ -326,6 +459,117 @@ def test_path_scope_rejects_traversal_absolute_and_invalid_patterns():
     assert not execution._path_allowed("../secret.txt", ["**"])
     assert not execution._path_allowed("/tmp/secret.txt", ["**"])
     assert not execution._path_allowed("secret.txt", ["../**"])
+    assert not execution._path_allowed("unrelated/file.py", "plugins/agent_center/**")
+    assert not execution._path_allowed("unrelated/file.py", [42, ""])
+
+    with pytest.raises(execution.SubscriptionSeatError) as traversal:
+        execution._git_scope_pathspecs(["../**"])
+    assert traversal.value.code == "workspace_scope_invalid"
+    with pytest.raises(execution.SubscriptionSeatError):
+        execution._git_scope_pathspecs(["/tmp/**"])
+    with pytest.raises(execution.SubscriptionSeatError):
+        execution._git_scope_pathspecs("plugins/agent_center/**")
+    with pytest.raises(execution.SubscriptionSeatError):
+        execution._git_scope_pathspecs([42])
+
+
+def test_workspace_ignored_finds_only_ignored_files_in_allowed_scope(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / ".gitignore").write_text("hidden/**\noutside/**\n", encoding="utf-8")
+    hidden = tmp_path / "hidden"
+    hidden.mkdir()
+    (hidden / "proof.txt").write_text("ignored", encoding="utf-8")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "other.txt").write_text("ignored", encoding="utf-8")
+    runner = execution.SubscriptionSeatRunner()
+
+    paths = asyncio.run(
+        runner.workspace_ignored(str(tmp_path), allowed_paths=["hidden/**"])
+    )
+
+    assert paths == ["hidden/proof.txt"]
+    assert asyncio.run(
+        runner.workspace_ignored(str(tmp_path), allowed_paths=["safe/**"])
+    ) == []
+
+
+def test_untracked_text_content_is_included_bounded_and_redacted(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    new_dir = tmp_path / "new"
+    new_dir.mkdir()
+    new_file = new_dir / "proof.txt"
+    credential_name = "api_" + "key"
+    credential_value = "fixture-" + "credential-value"
+    new_file.write_text(
+        f"visible evidence\n{credential_name}={credential_value}\n",
+        encoding="utf-8",
+    )
+    runner = execution.SubscriptionSeatRunner()
+
+    paths = asyncio.run(runner.workspace_state(str(tmp_path)))
+    evidence = asyncio.run(
+        runner.workspace_evidence(
+            str(tmp_path),
+            changed_paths=paths,
+            allowed_paths=["new/**"],
+        )
+    )
+
+    assert paths == ["new/proof.txt"]
+    assert "untracked:new/proof.txt" in evidence
+    assert "visible evidence" in evidence
+    assert credential_value not in evidence
+    assert "<redacted>" in evidence
+    assert "sha256=" in evidence
+
+
+def test_untracked_binary_content_is_omitted_with_hash(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    binary = tmp_path / "asset.bin"
+    binary.write_bytes(b"header\x00secret-binary")
+    runner = execution.SubscriptionSeatRunner()
+
+    paths = asyncio.run(runner.workspace_state(str(tmp_path)))
+    evidence = asyncio.run(
+        runner.workspace_evidence(
+            str(tmp_path),
+            changed_paths=paths,
+            allowed_paths=["asset.bin"],
+        )
+    )
+
+    assert "[binary content omitted]" in evidence
+    assert "secret-binary" not in evidence
+    assert "sha256=" in evidence
+
+
+def test_oversized_untracked_file_blocks_instead_of_sending_partial_content(tmp_path):
+    oversized = tmp_path / "large.txt"
+    oversized.write_bytes(b"x" * (execution._MAX_UNTRACKED_FILE_BYTES + 1))
+
+    with pytest.raises(execution.SubscriptionSeatError) as error:
+        execution._read_untracked_evidence(str(tmp_path), ["large.txt"])
+
+    assert error.value.code == "review_evidence_incomplete"
+
+
+def test_untracked_symlink_and_sensitive_path_fail_closed(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    target = tmp_path / "target.txt"
+    target.write_text("safe", encoding="utf-8")
+    link = tmp_path / "link.txt"
+    link.symlink_to(target)
+
+    with pytest.raises(execution.SubscriptionSeatError) as link_error:
+        execution._read_untracked_evidence(str(tmp_path), ["link.txt"])
+    assert link_error.value.code == "review_evidence_unsafe_file"
+
+    sensitive_file = tmp_path / ".env"
+    sensitive_file.write_text("SAMPLE=not-read", encoding="utf-8")
+    with pytest.raises(execution.SubscriptionSeatError) as secret_error:
+        execution._read_untracked_evidence(str(tmp_path), [".env"])
+    assert secret_error.value.code == "review_evidence_sensitive_path"
 
 
 def test_real_subprocess_captures_nonzero_stderr(tmp_path):

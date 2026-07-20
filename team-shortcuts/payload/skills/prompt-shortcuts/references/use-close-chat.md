@@ -5,6 +5,9 @@ aliases:
   - use-close-chat
   - Close Chat
   - close-chat
+  - Use Post Chat
+  - use-post-chat
+  - Post Chat
   - ใช้ Close Chat
   - ปิดแชท
   - ปิดงานแชท
@@ -16,29 +19,31 @@ tags:
   - session-memory
   - context-management
 status: active
-version: 2.5
-updated: 2026-07-17
+version: 2.7
+updated: 2026-07-19
 schema: memory-schema-v1.2
 pairs_with: use-new-chat >= 1.8
 ---
 
-# Use Close Chat (v2.5 · 2026-07-17)
+# Use Close Chat / Use Post Chat (v2.7 · 2026-07-19)
 
 คู่กับ Use New Chat ≥ v1.8 · อ้าง Memory Schema v1.2 · เช็ก schema version ตอนเริ่ม · ไม่ตรง = เตือน + ห้ามเขียนไฟล์ความจำจนกว่าจะอ่าน schema ล่าสุด
 
 ปิดแชทแบบปลอดภัย + เขียน "ความจำถาวร" ให้แชทหน้าอ่านตอนเปิด · แก้ปัญหา AI ลืมว่าทำอะไร แก้อะไร ถึงไหน + กัน AI โกหกว่าเสร็จทั้งที่ยังไม่ตรวจ
 
-> บทบาทไม่ทับกัน: Close Chat = พรีวิว+ปิดงาน+เขียน memory · Review Chat = alias โหมดพรีวิวของ Close Chat · Save Git = ตรวจการส่ง Git · Merge to Production = merge/deploy · New Chat = เปิดงาน+อ่าน memory
+> บทบาทไม่ทับกัน: Close Chat = พรีวิว+ปิดงาน+เขียน memory · Use Post Chat = alias เต็มของ Close Chat ผ่าน Prompt ไฟล์เดียวกัน · Review Chat = alias โหมดพรีวิวของ Close Chat · Save Git = ตรวจการส่ง Git · Merge to Production = merge/deploy · New Chat = เปิดงาน+อ่าน memory
 > Close Chat **ไม่ push/merge/deploy เอง** ชี้ไป Use Save Git / Use Merge to Production
 
 ## Prompt
+
+[ด่าน Goal Contract] อ่าน [[skills/prompt-shortcuts/references/goal-contract|goal-contract.md]] ก่อน PREVIEW/CLOSE · batch ปิดแชทต้องผูก `task_id/plan_id/goal_hash` ปัจจุบัน และห้ามกระจายแผนหรือเป้าหมายที่ไม่ตรงใบงาน · งานถัดไปคัดจาก `next_prompt` เพียงหนึ่งบรรทัด · จบด้วย `Prompt ถัดไป:` หรือ `AUTO_CONTINUE:`
 
 ```text
 Use Close Chat
 
 คู่กับ Use New Chat ≥ v1.8 · อ้าง Memory Schema v1.2 · เช็ก schema version ตอนเริ่ม · ไม่ตรง = เตือน + ห้ามเขียนไฟล์ความจำจนกว่าจะอ่าน schema ล่าสุด
 ปิดแชทแบบปลอดภัย + เขียน "ความจำถาวร" ให้แชทหน้าอ่านตอนเปิด · แก้ปัญหา AI ลืมว่าทำอะไร แก้อะไร ถึงไหน + กัน AI โกหกว่าเสร็จทั้งที่ยังไม่ตรวจ
-บทบาทไม่ทับกัน: Close Chat = พรีวิว+ปิดงาน+เขียน memory · Review Chat = alias โหมดพรีวิวของ Close Chat · Save Git = ตรวจการส่ง Git · Merge to Production = merge/deploy · New Chat = เปิดงาน+อ่าน memory
+บทบาทไม่ทับกัน: Close Chat = พรีวิว+ปิดงาน+เขียน memory · Use Post Chat = alias เต็มของ Close Chat ผ่าน Prompt ไฟล์เดียวกัน · Review Chat = alias โหมดพรีวิวของ Close Chat · Save Git = ตรวจการส่ง Git · Merge to Production = merge/deploy · New Chat = เปิดงาน+อ่าน memory
 Close Chat ไม่ push/merge/deploy เอง ชี้ไป Use Save Git / Use Merge to Production
 
 [โหมดเดียว 2 ช่วง — ยุบงานซ้ำจาก Review Chat]
@@ -101,6 +106,15 @@ Pre-Close Gate (6 ด่าน):
    - `.project/decisions.md` = append decision สำคัญรอบนี้ (ห้ามเขียนทับของเดิม)
    - (งานกำลังทำ/ค้าง ไม่มีไฟล์แยกแล้ว — อยู่ในหัวข้อ `งานค้าง/ส่งต่อ` ของ OverviewProgress ข้อ 1)
 
+[Atomic Memory Receipt — เขียนความจำหนึ่งรอบให้เป็นชุดเดียว]
+- สร้าง `close_id` ใหม่หนึ่งค่า และใส่ค่าเดียวกันใน OverviewProgress, session log, latest-close และ decisions
+- อ่าน `previous_close_id` จาก `.project/memory-receipt.json` ถ้ามี ห้ามเดาหรือใช้ค่าจากแชทเก่า
+- เตรียมเนื้อหาทั้งหมดใต้ `.project/scratchpad/` และสร้าง batch JSON ที่มี `close_id`, `previous_close_id`, branch, SHA, writer, เวลาเริ่ม/ปิด และคู่ source→target
+- เรียก `memory_receipt.py --cwd <Git root> apply-batch --batch <batch ใน .project/scratchpad/>` จาก Hook ที่ติดตั้ง หรือจาก `team-shortcuts/hooks/` ใน repo ชุดกระจาย
+- ตัวเขียนต้องใช้ตัวล็อกเดียวต่อโปรเจกต์ ตรวจรหัสรอบชนกัน คืนไฟล์เดิมเมื่อเขียนไม่ครบ เก็บประวัติใบรับรอง และเขียน `.project/memory-receipt.json` เป็นไฟล์สุดท้าย
+- ถ้าได้ `PROJECT_MEMORY_WRITE_BLOCKED` ห้ามข้ามไปเขียนไฟล์เป้าหมายตรง ๆ ให้รายงานสาเหตุและคงรอบก่อนหน้าไว้
+- ปิด clean ได้เมื่อรัน `memory_receipt.py --cwd <Git root> verify` แล้วได้ `MEMORY_RECEIPT_OK` เท่านั้น
+
 Business Plan Sync (capability-based — ทำเฉพาะเมื่อมี `.project/BusinessPlan.md`):
 ถามตัวเอง: รอบนี้มี feature ใหม่ / ราคาเปลี่ยน / เจอ insight ลูกค้าใหม่ / คู่แข่งเปลี่ยน ที่ขยับแผนธุรกิจไหม
 - ไม่มี → ระบุใน Output ว่า "Business Plan: รอบนี้ไม่มีการเปลี่ยนด้านธุรกิจ"
@@ -126,11 +140,18 @@ Decision Token ปิด (ตาม Schema §2):
 รูปแบบ Output บังคับ:
 
 Close Chat Report
-สรุปภาษาคน: ทำอะไรไป / เหลืออะไร / ลืมคำสั่งไหนไหม
+## สรุปภาษาคน
+ไม่เกิน 5 บรรทัด: ทำอะไรไป / เหลืออะไร / ลืมคำสั่งไหนไหม
+## สรุป Phase
+| Phase | สถานะ N/M | % | แปลเป็นภาษาคน |
+## งานต่อไปคืออะไร
+หนึ่งงานที่ชัดเจน
+## Prompt ที่ควรใช้ต่อ
+ข้อความเปิดแชทหน้าที่คัดลอกได้ เมื่อเจ้าของต้องเปิดหรือส่งต่อแชท
 Tasks: <task> = verified(หลักฐาน) | claimed(เหตุที่ยังไม่ตรวจ)   ← ไล่ทุกอัน
 Quality Gate: <gate ที่ค้นเจอ> = ผล + output (หรือ N/A / ไม่พบ gate)
 Deploy: merge SHA / CI status / live SHA   (หรือ N/A ถ้ายังไม่ถึง merge)
-Memory written: session log path / OverviewProgress(4 หัวข้อบน) / decisions.md(+N บรรทัด) / migration(ถ้าย้ายไฟล์เก่า)
+Memory written: close_id / memory-receipt.json = MEMORY_RECEIPT_OK / session log path / OverviewProgress(4 หัวข้อบน) / decisions.md(+N บรรทัด) / migration(ถ้าย้ายไฟล์เก่า)
 Business Plan: <อัปอะไรใน .project/BusinessPlan(.md/-Full.md) หรือ "ไม่มีการเปลี่ยนด้านธุรกิจ" หรือ N/A ถ้าไม่มีไฟล์>
 QA/QC: <อัปอะไรใน .project/qaqc-scan.md หรือ "รอบนี้ไม่มีการสแกน/แก้" หรือ N/A ถ้าไม่มีไฟล์>
 Spec: <อัปอะไรในไฟล์สเปค (status/ตารางแม่ N-M) หรือ "รอบนี้ไม่มีการเปลี่ยนสเปค" หรือ N/A ถ้าไม่มีสเปคจับคู่แผน>
@@ -151,6 +172,8 @@ Evidence: timestamp / host / cwd / commands ที่รันจริง
 
 ## Changelog
 
+- v2.7 (2026-07-19): จัดรายงานปิดแชทให้เริ่มด้วยภาษาคน ตาราง Phase งานถัดไปหนึ่งงาน และ Prompt เปิดแชทหน้า
+- v2.6 (2026-07-19 · SCG-P3): เพิ่ม alias `Use Post Chat` ไป Prompt เดียวกับ Close Chat · บังคับ close_id เดียวทั้งชุด ตัวล็อก การคืนไฟล์เดิมเมื่อเขียนสะดุด ประวัติใบรับรอง และเขียน memory-receipt เป็นไฟล์สุดท้าย
 - v2.5 (2026-07-17 · SPEC-CENTRAL): เพิ่มขั้น Spec Sync (capability-based — เฉพาะเมื่อมีสเปคจับคู่แผน · Schema §1d) ตามแบบ Business Plan/QA-QC Sync · อัป status/ตารางแม่เฉพาะแถว verified มีหลักฐาน · owner_approved แตะได้เมื่อเจ้าของพิมพ์อนุมัติจริง + จดหลักฐาน · เพิ่มบรรทัด `Spec:` ใน Output
 - v2.4 (2026-07-14): ยุบ Review Chat เป็นโหมด PREVIEW ของ Close Chat · เพิ่ม Save Git Evidence Receipt เพื่อลดการตรวจซ้ำ โดยยังบังคับ git status สดและตรวจค่า project/task/branch/SHA ก่อนรับหลักฐาน
 - v2.3 (2026-07-10): เพิ่มขั้น QA/QC Scan Sync (capability-based — เฉพาะโปรเจกต์ที่มี `.project/qaqc-scan.md`) + บรรทัด QA/QC ใน Output · คู่กับ Use QA QC v1.0 (แผน QAQC-P4-I2) · verified ใน qaqc-scan.md ใช้บันไดหลักฐานเดิม ไม่หย่อน

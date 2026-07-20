@@ -20,7 +20,42 @@ from . import catalog, policies
 
 
 CONSULTOR_ID = "consultor"
-PACKET_SCHEMA_VERSION = "2.0"
+PACKET_SCHEMA_VERSION = "2.1"
+
+# Process shortcuts are kept separate from the domain skill catalog.  Skills
+# describe specialist capability; shortcuts describe the owner-facing workflow
+# that controls a whole phase.  Keeping the two lists separate prevents a
+# process rule such as the zero-question phase contract from being mistaken for
+# a trainable design or engineering skill.
+DOMAIN_SHORTCUTS = {
+    "discovery": ("Use Scan Feature",),
+    "business-product": ("Use Business Plan",),
+    "creative-brand": ("Use WOW Resource",),
+    "graphic": ("Use WOW Resource",),
+    "ux": ("Use WOW Resource",),
+    "ui-web-design": ("Use WOW Resource", "Use Impeccable"),
+    "motion": ("Use WOW Resource",),
+    "design-system": ("Use Create Design System",),
+    "web-engine": ("Use FeatureSpec",),
+    "engineering": ("Use FeatureSpec",),
+    "quality": ("Use QA QC",),
+}
+
+SHORTCUT_STAGES = {
+    "Use Agent": "intake",
+    "Use Flow Guardian": "workspace_gate",
+    "Use Comply": "phase_plan",
+    "Use Scan Feature": "domain_work",
+    "Use Business Plan": "domain_work",
+    "Use WOW Resource": "domain_work",
+    "Use Impeccable": "domain_work",
+    "Use Create Design System": "domain_work",
+    "Use FeatureSpec": "domain_work",
+    "Use QA QC": "domain_work",
+    "Use Continue": "phase_execution",
+    "Use Save Git": "phase_boundary",
+    "Use Close Chat": "phase_close",
+}
 
 DIAGNOSIS_REQUIRED_STR_FIELDS = ("project_id", "goal", "phase")
 # Must be a list of strings AND carry at least one entry.
@@ -291,6 +326,76 @@ def _select_skills(wanted: list[str]) -> list[dict[str, Any]]:
     return selected
 
 
+def _shortcut_record(name: str, reason: str) -> dict[str, str]:
+    """Build one deterministic process-shortcut record."""
+
+    return {"name": name, "stage": SHORTCUT_STAGES[name], "reason": reason}
+
+
+def build_phase_workflow(diagnosis: dict[str, Any]) -> dict[str, Any]:
+    """Select process shortcuts and encode the large-phase work contract.
+
+    The entry shortcut is always first.  Build work adds the workspace gate,
+    one phase planner, uninterrupted safe execution, and one Git/closeout gate
+    at the phase boundary.  Domain shortcuts are inserted between planning and
+    execution in catalog-domain order and de-duplicated by shortcut name.
+    """
+
+    execution_mode = diagnosis.get("execution_mode")
+    domains = list(diagnosis.get("domains", []))
+    selected: list[dict[str, str]] = [
+        _shortcut_record("Use Agent", "single owner-facing entry and team router")
+    ]
+
+    if execution_mode == "build":
+        selected.append(
+            _shortcut_record(
+                "Use Flow Guardian", "verify the current workspace before phase writes"
+            )
+        )
+
+    if execution_mode in {"plan", "build"}:
+        selected.append(
+            _shortcut_record(
+                "Use Comply", "split the approved large phase into evidence-backed work"
+            )
+        )
+
+    seen = {item["name"] for item in selected}
+    for domain in domains:
+        for name in DOMAIN_SHORTCUTS.get(domain, ()):
+            if name in seen:
+                continue
+            selected.append(
+                _shortcut_record(name, f"selected for the '{domain}' domain")
+            )
+            seen.add(name)
+
+    if execution_mode == "build":
+        selected.extend(
+            [
+                _shortcut_record(
+                    "Use Continue", "run all safe work without mid-phase questions"
+                ),
+                _shortcut_record(
+                    "Use Save Git", "run the Git evidence gate once at the phase boundary"
+                ),
+                _shortcut_record(
+                    "Use Close Chat", "close the phase only after evidence and Git checks"
+                ),
+            ]
+        )
+
+    return {
+        "entry_shortcut": "Use Agent",
+        "phase_policy": "large_phase",
+        "safe_work_question_budget": 0,
+        "external_approval_batches_per_phase": 1,
+        "review_timing": "phase_boundary",
+        "selected_shortcuts": selected,
+    }
+
+
 def _consultor_intake() -> dict[str, Any]:
     """Return the Consultor as the fixed intake agent (never a producing lead)."""
 
@@ -319,6 +424,7 @@ def build_team_manifest(diagnosis: dict[str, Any]) -> dict[str, Any]:
         "leads": _select_leads(wanted),
         "specialists": _select_specialists(wanted),
         "skills": _select_skills(wanted),
+        "workflow": build_phase_workflow(diagnosis),
     }
 
 
@@ -452,6 +558,28 @@ def validate_work_packet(packet: Any) -> dict[str, Any]:
         if field not in packet:
             errors.append(f"packet: missing field '{field}'")
 
+    packet_diagnosis = validate_diagnosis(packet)
+    if not packet_diagnosis["ok"]:
+        errors.extend(
+            error.replace("diagnosis:", "packet:", 1)
+            for error in packet_diagnosis["errors"]
+        )
+    else:
+        for field, normalized_value in packet_diagnosis["diagnosis"].items():
+            if packet.get(field) != normalized_value:
+                errors.append(
+                    f"packet: '{field}' must use its normalized diagnosis value"
+                )
+
+    seat_policy = packet.get("seat_policy")
+    if not isinstance(seat_policy, list) or not seat_policy or not all(
+        isinstance(reason, str) and bool(reason.strip()) for reason in seat_policy
+    ):
+        errors.append("packet: 'seat_policy' must be a non-empty list of strings")
+
+    if packet.get("training_receipt_required") is not True:
+        errors.append("packet: 'training_receipt_required' must be true")
+
     if packet.get("packet_schema_version") != PACKET_SCHEMA_VERSION:
         errors.append(
             "packet: 'packet_schema_version' must be " + PACKET_SCHEMA_VERSION
@@ -538,6 +666,62 @@ def validate_work_packet(packet: Any) -> dict[str, Any]:
             if team.get(field) != packet.get(field):
                 errors.append(
                     f"packet.team: '{field}' must match packet '{field}'"
+                )
+        expected_team = build_team_manifest(packet)
+        if team != expected_team:
+            errors.append(
+                "packet.team: must match deterministic catalog and phase routing"
+            )
+        workflow = team.get("workflow")
+        if not isinstance(workflow, dict):
+            errors.append("packet.team.workflow: must be an object")
+        else:
+            if workflow.get("entry_shortcut") != "Use Agent":
+                errors.append("packet.team.workflow: entry_shortcut must be 'Use Agent'")
+            if workflow.get("phase_policy") != "large_phase":
+                errors.append("packet.team.workflow: phase_policy must be 'large_phase'")
+            if workflow.get("safe_work_question_budget") != 0:
+                errors.append(
+                    "packet.team.workflow: safe_work_question_budget must be 0"
+                )
+            if workflow.get("external_approval_batches_per_phase") != 1:
+                errors.append(
+                    "packet.team.workflow: external_approval_batches_per_phase must be 1"
+                )
+            if workflow.get("review_timing") != "phase_boundary":
+                errors.append(
+                    "packet.team.workflow: review_timing must be 'phase_boundary'"
+                )
+            shortcuts = workflow.get("selected_shortcuts")
+            if not isinstance(shortcuts, list) or not shortcuts:
+                errors.append(
+                    "packet.team.workflow: selected_shortcuts must be a non-empty list"
+                )
+            else:
+                names: list[str] = []
+                for index, shortcut in enumerate(shortcuts):
+                    label = f"packet.team.workflow.selected_shortcuts[{index}]"
+                    if not isinstance(shortcut, dict):
+                        errors.append(f"{label}: must be an object")
+                        continue
+                    for field in ("name", "stage", "reason"):
+                        if not _clean_str(shortcut.get(field)):
+                            errors.append(f"{label}: '{field}' must be a non-empty string")
+                    name = _clean_str(shortcut.get("name"))
+                    if name:
+                        names.append(name)
+                if names and names[0] != "Use Agent":
+                    errors.append(
+                        "packet.team.workflow: first selected shortcut must be 'Use Agent'"
+                    )
+                if len(names) != len(set(names)):
+                    errors.append(
+                        "packet.team.workflow: selected shortcut names must be unique"
+                    )
+            expected_workflow = build_phase_workflow(packet)
+            if workflow != expected_workflow:
+                errors.append(
+                    "packet.team.workflow: must match deterministic phase routing"
                 )
 
     if packet_id_ok:
