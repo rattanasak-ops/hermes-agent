@@ -9,7 +9,7 @@
     "ไม่ลบไฟล์จาก main โดยไม่ได้ตั้งใจ"
   ],
   "branch": "codex/scg-shortcut-rollout",
-  "base_sha": "247bf0006e2bff7b8870222be6d36d34b489e580",
+  "base_sha": "7bf4315fef4e0970c73423b64437873c5757682b",
   "allowed_paths": [
     ".project/active-task.json",
     ".project/active-task.md",
@@ -66,5 +66,5 @@
   "next_prompt": "AUTO_CONTINUE: ตรวจและรวมกิ่ง codex/scg-shortcut-rollout",
   "frozen_at": null,
   "merge_sha": null,
-  "goal_hash": "c9779b16874b8cd84585837c1ab538fc534dc3beb46b83a4ea72e8aca4c22556"
+  "goal_hash": "a5e5df1cd50dc369d944813fde2f7d724e6d4bcc2a69b8315d1106d6194c7a49"
 }

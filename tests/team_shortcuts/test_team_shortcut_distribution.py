@@ -57,7 +57,9 @@ def test_distribution_has_traceable_version_and_required_runtime_tools():
     assert "ไฟล์ที่ติดตั้งไม่ตรงกับชุดแจก" in installer
     assert "ไม่พบตัวตรวจสุขภาพ Hook" in installer
     assert 'BACKUP_ROOT="${HERMES_SHORTCUT_BACKUP_ROOT:-$HOME/.hermes/backups/shortcuts}"' in installer
-    assert installer.count("diff -qr --exclude='.DS_Store'") == 2
+    assert "diff -qr --exclude='.DS_Store'" in installer
+    assert '"$PAYLOAD/skills/agent-center"' in installer
+    assert '"$AGENT_CENTER_SRC"' in installer
     assert 'mv "${backups[$i]}" "$BACKUP_QUARANTINE/$name"' in installer
     assert 'rm -rf -- "${backups[$i]}"' not in installer
     assert "registry_vs_skill" in checker

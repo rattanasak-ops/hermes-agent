@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -96,3 +98,20 @@ def test_manifest_aggregate_tampering_is_rejected(tmp_path):
         assert "แฮชรวม" in str(exc)
     else:
         raise AssertionError("tampered aggregate was accepted")
+
+
+def test_fresh_installer_copies_every_manifest_file(tmp_path):
+    home = tmp_path / "home"
+    destination = home / "ObsidianVault/HermesAgent"
+    home.mkdir()
+    env = os.environ.copy()
+    env.update({"HOME": str(home), "HERMES_SHORTCUTS_DEST": str(destination), "HERMES_SHORTCUT_BACKUP_ROOT": str(tmp_path / "backups")})
+    completed = subprocess.run(["bash", str(ROOT / "team-shortcuts/install-shortcuts.sh")], cwd=ROOT, env=env, text=True, capture_output=True, timeout=45)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    module = load_module()
+    manifest = module.load_manifest(destination / ".shortcut-manifest.json")
+    result = module.verify_installed(destination, [home / ".claude/hooks", home / ".codex/hooks"], manifest)
+    assert result["ok"] is True, result["problems"]
+    assert (destination / "skills/agent-center/SKILL.md").is_file()
+    assert (home / ".claude/hooks/owner-friction-gate.py").is_file()
+    assert (home / ".codex/hooks/owner-friction-gate.py").is_file()
