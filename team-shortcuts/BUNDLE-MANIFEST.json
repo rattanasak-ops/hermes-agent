@@ -1,11 +1,11 @@
 {
-  "aggregate_sha256": "e2b77e48278337083b602b0f746781c459969d41a97c59146d1f3df6a8c8e07f",
+  "aggregate_sha256": "b51f7bb3867c4f56759a2e1dd62f52bc399d69daa6208d3222c2bd5df9d6442a",
   "file_count": 93,
   "files": [
     {
       "kind": "package",
       "path": "VERSION",
-      "sha256": "b75c90ef776f1c60f59bfecc5daf1247ed52edb024562eec84a32be5c829c6ec",
+      "sha256": "6787aeb9c0fd5e16cad54469ce4d8dfbbdf16bd808bec29c0905ad1f973971be",
       "size": 14
     },
     {
@@ -131,8 +131,8 @@
     {
       "kind": "package",
       "path": "install-shortcuts.sh",
-      "sha256": "b251fd126b65428fdc97e8c92e8053e90a4014d5c56e3228b3d1962dd7012225",
-      "size": 17991
+      "sha256": "6f49921d8b2cf0df0415f42ed6141004b558d2f2fa958ab6f36d3273f62c70d8",
+      "size": 19433
     },
     {
       "kind": "package",
@@ -562,5 +562,5 @@
     }
   ],
   "schema": "hermes-shortcut-bundle-v1",
-  "version": "2026.07.19-12"
+  "version": "2026.07.20-13"
 }

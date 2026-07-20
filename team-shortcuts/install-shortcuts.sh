@@ -27,6 +27,7 @@ BUNDLE_VERIFY_SRC="$SCRIPT_DIR/verify-bundle.py"
 DEST_ROOT="${HERMES_SHORTCUTS_DEST:-$HOME/ObsidianVault/HermesAgent}"
 REGISTRY="$DEST_ROOT/ai-context/prompt-shortcut-registry.md"
 SKILL_SRC="$DEST_ROOT/skills/prompt-shortcuts"
+AGENT_CENTER_SRC="$DEST_ROOT/skills/agent-center"
 WRITE_PERMIT_SRC="$SCRIPT_DIR/../scripts/hermes_write_permit.py"
 WRITE_PERMIT_BIN="$HOME/.local/bin/hermes-write-permit"
 HOOK_DOCTOR_SRC="$SCRIPT_DIR/team-hook-doctor.py"
@@ -91,8 +92,9 @@ detect_newer_destination_conflicts() {
   while IFS= read -r -d '' src; do
     local rel="${src#"$PAYLOAD"/}"
     add_conflict_if_newer "$src" "$DEST_ROOT/$rel" "$rel"
-  done < <(find "$PAYLOAD/skills/prompt-shortcuts" -type f \
-    ! -name '.DS_Store' ! -name '._*' -print0)
+  done < <(find \
+    "$PAYLOAD/skills/prompt-shortcuts" "$PAYLOAD/skills/agent-center" \
+    -type f ! -name '.DS_Store' ! -name '._*' -print0)
 }
 
 shortcuts_payload_differs() {
@@ -102,6 +104,11 @@ shortcuts_payload_differs() {
 
   if ! diff -qr --exclude='.DS_Store' --exclude='._*' \
     "$PAYLOAD/skills/prompt-shortcuts" "$SKILL_SRC" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! diff -qr --exclude='.DS_Store' --exclude='._*' \
+    "$PAYLOAD/skills/agent-center" "$AGENT_CENTER_SRC" >/dev/null 2>&1; then
     return 0
   fi
 
@@ -175,6 +182,10 @@ backup_existing_shortcuts_if_needed() {
   fi
   rsync -a --exclude '.DS_Store' --exclude '._*' \
     "$SKILL_SRC/" "$backup_dir/skills/prompt-shortcuts/"
+  if [ -d "$AGENT_CENTER_SRC" ]; then
+    rsync -a --exclude '.DS_Store' --exclude '._*' \
+      "$AGENT_CENTER_SRC/" "$backup_dir/skills/agent-center/"
+  fi
   prune_old_shortcuts_backups
   say "      สำรองของเดิมไว้ที่ $backup_dir"
 }
@@ -212,7 +223,8 @@ if [ -f "$INSTALLED_VERSION" ]; then
 fi
 for required in \
   "$PAYLOAD/skills/prompt-shortcuts/references/use-agent.md" \
-  "$PAYLOAD/skills/prompt-shortcuts/references/work-execution-policy.md"; do
+  "$PAYLOAD/skills/prompt-shortcuts/references/work-execution-policy.md" \
+  "$PAYLOAD/skills/agent-center/SKILL.md"; do
   if [ ! -f "$required" ]; then
     say "ผิดพลาด: ชุดติดตั้งขาดไฟล์ควบคุม $required"
     exit 1
@@ -249,16 +261,21 @@ cp "$PAYLOAD/ai-context/prompt-shortcut-registry.md" "$DEST_ROOT/ai-context/"
 mkdir -p "$SKILL_SRC"
 rsync -a --delete --exclude '.DS_Store' --exclude '._*' \
   "$PAYLOAD/skills/prompt-shortcuts/" "$SKILL_SRC/"
+mkdir -p "$AGENT_CENTER_SRC"
+rsync -a --delete --exclude '.DS_Store' --exclude '._*' \
+  "$PAYLOAD/skills/agent-center/" "$AGENT_CENTER_SRC/"
 cp "$VERSION_FILE" "$INSTALLED_VERSION"
 cp "$MANIFEST_FILE" "$INSTALLED_MANIFEST"
 if ! cmp -s "$PAYLOAD/ai-context/prompt-shortcut-registry.md" "$REGISTRY" \
   || ! diff -qr --exclude='.DS_Store' --exclude='._*' \
-    "$PAYLOAD/skills/prompt-shortcuts" "$SKILL_SRC" >/dev/null 2>&1; then
+    "$PAYLOAD/skills/prompt-shortcuts" "$SKILL_SRC" >/dev/null 2>&1 \
+  || ! diff -qr --exclude='.DS_Store' --exclude='._*' \
+    "$PAYLOAD/skills/agent-center" "$AGENT_CENTER_SRC" >/dev/null 2>&1; then
   say "ผิดพลาด: ไฟล์ที่ติดตั้งไม่ตรงกับชุดแจก จะไม่รายงานว่าพร้อมใช้"
   exit 1
 fi
 REF_COUNT="$(ls -1 "$SKILL_SRC/references/"*.md 2>/dev/null | wc -l | tr -d ' ')"
-say "      สำเร็จ: รุ่น $(tr -d '[:space:]' < "$VERSION_FILE") · ทะเบียน 1 ไฟล์ + prompt $REF_COUNT ไฟล์"
+say "      สำเร็จ: รุ่น $(tr -d '[:space:]' < "$VERSION_FILE") · ทะเบียน 1 ไฟล์ + prompt $REF_COUNT ไฟล์ + Agent Center 1 ชุด"
 
 # ติดตั้งด่านล็อกงานเขียนให้ใช้ได้จากทุก project แม้ project นั้นไม่มี repo Hermes Agent
 if [ ! -f "$WRITE_PERMIT_SRC" ]; then
@@ -289,6 +306,19 @@ if [ ! -f "$TEAM_HOOK_INSTALLER" ]; then
   exit 1
 fi
 python3 "$TEAM_HOOK_INSTALLER"
+# ตัวช่วยติดตั้ง Hook รุ่นเก่าอาจมีรายชื่อค้าง จึงคัดทุก Hook จากชุดที่
+# ใบรายการตรวจแล้วซ้ำอีกชั้น เพื่อให้เครื่องว่างได้รับไฟล์ครบเสมอ
+for hook_root in "$HOME/.claude/hooks" "$HOME/.codex/hooks"; do
+  mkdir -p "$hook_root"
+  for hook_src in "$SCRIPT_DIR/hooks/"*.py; do
+    hook_name="$(basename "$hook_src")"
+    case "$hook_name" in
+      ._*|.*) continue ;;
+    esac
+    cp "$hook_src" "$hook_root/$hook_name"
+    chmod 0755 "$hook_root/$hook_name"
+  done
+done
 if ! "$BUNDLE_VERIFY_BIN" verify-installed \
   --root "$DEST_ROOT" \
   --hook-root "$HOME/.claude/hooks" \
