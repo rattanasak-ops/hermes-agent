@@ -1,0 +1,69 @@
+{
+  "schema": "hermes-goal-contract-v1",
+  "task_id": "SCG-P9-I4",
+  "plan_id": "SCG",
+  "goal": "นำ Goal Contract และชุด Shortcut รุ่น 2026.07.19-12 เข้า main โดยไม่ปะปนงานจากกิ่งเก่า",
+  "deliverables": [
+    "คำขอรวมงานไม่เกิน 30 ไฟล์",
+    "ชุดตรวจผ่าน",
+    "ไม่ลบไฟล์จาก main โดยไม่ได้ตั้งใจ"
+  ],
+  "branch": "codex/scg-goal-contract-core",
+  "base_sha": "f6408b2992df8c3fcc12ebd80841bb718d5c6607",
+  "allowed_paths": [
+    ".project/active-task.json",
+    ".project/active-task.md",
+    ".project/spec/SCG-GOAL-DRIFT.md",
+    "agent/conversation_loop.py",
+    "agent/next_action_contract.py",
+    "agent/prompt_builder.py",
+    "plugins/shortcut_governance/__init__.py",
+    "plugins/shortcut_governance/cli.py",
+    "plugins/shortcut_governance/plugin.yaml",
+    "plugins/shortcut_governance/store.py",
+    "scripts/plan_index_check.py",
+    "scripts/shortcut_dependency_graph.py",
+    "team-shortcuts/check-shortcuts.sh",
+    "team-shortcuts/hooks/enforce-goal-contract.py",
+    "team-shortcuts/hooks/enforce-memory-receipt.py",
+    "team-shortcuts/hooks/enforce-phase-autonomy.py",
+    "team-shortcuts/hooks/enforce-shortcut-central.py",
+    "team-shortcuts/hooks/enforce-spec-gate.py",
+    "team-shortcuts/hooks/goal_contract.py",
+    "team-shortcuts/hooks/goal_evidence.py",
+    "team-shortcuts/hooks/memory_receipt.py",
+    "team-shortcuts/hooks/phase_state.py",
+    "team-shortcuts/hooks/record-spec-owner.py",
+    "team-shortcuts/hooks/team-stop-gates.py",
+    "team-shortcuts/hooks/validate-thai-language.py",
+    "team-shortcuts/install-team-hooks.py",
+    "team-shortcuts/team-hook-doctor.py",
+    "team-shortcuts/verify-bundle.py",
+    "tests/team_shortcuts/test_goal_contract.py",
+    "tests/team_shortcuts/test_goal_contract_hook.py"
+  ],
+  "forbidden_paths": [
+    ".git/**",
+    ".env",
+    ".env.*",
+    "**/secrets/**"
+  ],
+  "work_types": [
+    "release",
+    "code",
+    "test",
+    "docs",
+    "shortcut_governance",
+    "memory"
+  ],
+  "owner_scope_token": "อนุญาตให้สร้างกิ่ง codex/scg-goal-contract-core และ codex/scg-shortcut-rollout สำหรับ SCG-P9-I4 โดยไม่สร้าง Worktree",
+  "status": "active",
+  "primary_issues": [
+    "SCG-P9-I4"
+  ],
+  "support_issues": [],
+  "next_prompt": "AUTO_CONTINUE: เพิ่ม Workflow และชุดตรวจหลังบัญชี GitHub มีสิทธิ์ workflow",
+  "frozen_at": null,
+  "merge_sha": null,
+  "goal_hash": "5fc4330ffb27805ef8cb4d6013f65c33dabfe657facf67bb4b4a0eb5c1c4df18"
+}

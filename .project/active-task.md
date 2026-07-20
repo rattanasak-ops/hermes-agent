@@ -1,31 +1,52 @@
----
-task_id: SHORTCUT-P7-I1
-goal_id: SHORTCUT-CENTRAL-CLOSE-20260719
-status: owner_input_required_team_machine_access
-writer: codex-current-task
-external_ai_relay: disabled
-workspace_policy: current_workspace_only
-worktree: /Users/rattanasak/Documents/Worktrees/hermes-agent/nat/SHORTCUT-P1-I1-team-rollout-hardening-team-rollout-hardening
-branch: task/nat/SHORTCUT-P1-I1-team-rollout-hardening-team-rollout-hardening
-plan: .project/plan.md
-plan_index: .project/plan-index.md
----
+# Active Task — SCG-P9-I4
 
-# ใบล็อกเป้าหมาย — SHORTCUT-P7-I1
+> สร้างจาก .project/active-task.json · ห้ามแก้ไฟล์นี้เป็นแหล่งข้อมูลหลัก
+> goal_hash: `5fc4330ffb27805ef8cb4d6013f65c33dabfe657facf67bb4b4a0eb5c1c4df18`
+> status: `active` · branch: `codex/scg-goal-contract-core` · base: `f6408b2992df8c3fcc12ebd80841bb718d5c6607`
 
-## เป้าหมายแม่
+## เป้าหมาย
 
-ปิด Shortcut กลางให้เข้า `main` ติดตั้ง Mac/VPS/เครื่องทีม และทำให้ AI ทุกโปรเจกต์ยึดพื้นที่ปัจจุบันโดยไม่สร้าง Worktree เอง
+นำ Goal Contract และชุด Shortcut รุ่น 2026.07.19-12 เข้า main โดยไม่ปะปนงานจากกิ่งเก่า
 
-## สถานะหลักฐาน
+## ผลที่ต้องส่ง
 
-- ต้นเหตุและด่านรวมโค้ดแก้แล้ว 6/6
-- PR #84 และ #85 รวมเข้า `main` แล้ว 2/2
-- Mac ผ่านทุกด่านที่เกี่ยวข้อง 7 ชุด
-- VPS ผ่าน Shortcut 33/33, Hook 6/6 และ MW 7/7
-- แผนกลาง 10 ชุดแยกหนึ่ง `plan_id` ต่อไฟล์ และ active 1/1
-- เครื่องทีมรายบุคคลยังไม่มีบัญชี host/ช่องทางเข้าถึง 0/1 งานรวม
+- คำขอรวมงานไม่เกิน 30 ไฟล์
+- ชุดตรวจผ่าน
+- ไม่ลบไฟล์จาก main โดยไม่ได้ตั้งใจ
 
-## ขั้นตอนถัดไปเพียงหนึ่งขั้น
+## เส้นทางที่อนุญาต
 
-เมื่อเจ้าของให้บัญชีเครื่องทีมที่เข้าถึงได้ ให้รันตัวติดตั้งจาก `main` และบันทึกผลตรวจแยกต่อเครื่อง โดยไม่คัดลอกทั้ง Obsidian vault และไม่สร้าง Worktree ใหม่
+- `.project/active-task.json`
+- `.project/active-task.md`
+- `.project/spec/SCG-GOAL-DRIFT.md`
+- `agent/conversation_loop.py`
+- `agent/next_action_contract.py`
+- `agent/prompt_builder.py`
+- `plugins/shortcut_governance/__init__.py`
+- `plugins/shortcut_governance/cli.py`
+- `plugins/shortcut_governance/plugin.yaml`
+- `plugins/shortcut_governance/store.py`
+- `scripts/plan_index_check.py`
+- `scripts/shortcut_dependency_graph.py`
+- `team-shortcuts/check-shortcuts.sh`
+- `team-shortcuts/hooks/enforce-goal-contract.py`
+- `team-shortcuts/hooks/enforce-memory-receipt.py`
+- `team-shortcuts/hooks/enforce-phase-autonomy.py`
+- `team-shortcuts/hooks/enforce-shortcut-central.py`
+- `team-shortcuts/hooks/enforce-spec-gate.py`
+- `team-shortcuts/hooks/goal_contract.py`
+- `team-shortcuts/hooks/goal_evidence.py`
+- `team-shortcuts/hooks/memory_receipt.py`
+- `team-shortcuts/hooks/phase_state.py`
+- `team-shortcuts/hooks/record-spec-owner.py`
+- `team-shortcuts/hooks/team-stop-gates.py`
+- `team-shortcuts/hooks/validate-thai-language.py`
+- `team-shortcuts/install-team-hooks.py`
+- `team-shortcuts/team-hook-doctor.py`
+- `team-shortcuts/verify-bundle.py`
+- `tests/team_shortcuts/test_goal_contract.py`
+- `tests/team_shortcuts/test_goal_contract_hook.py`
+
+## Prompt ถัดไป
+
+AUTO_CONTINUE: เพิ่ม Workflow และชุดตรวจหลังบัญชี GitHub มีสิทธิ์ workflow

@@ -1,0 +1,9 @@
+name: shortcut-governance
+version: 0.1.0
+description: "Track repeated Shortcut failures and create central repair prompts."
+author: "Hermes Agent"
+kind: standalone
+platforms:
+  - linux
+  - macos
+  - windows
