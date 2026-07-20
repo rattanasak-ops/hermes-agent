@@ -33,6 +33,7 @@ except ImportError:  # pragma: no cover - Windows fallback uses process-local wr
 
 SCHEMA_VERSION = "worktree-lifecycle-v1"
 ACTIVE_STATES = {"CREATED", "ACTIVE", "PAUSED", "IN_REVIEW", "BLOCKED"}
+CAPACITY_STATES = {"ACTIVE", "PAUSED"}
 CLEANUP_SOURCE_STATES = {"MERGED", "ABANDONED_BY_OWNER", "CLEANUP_READY", "QUARANTINED"}
 DEFAULT_PORT_RANGE = (8100, 8999)
 QUARANTINE_HOURS = 72
@@ -677,7 +678,7 @@ def command_open(args: argparse.Namespace) -> Dict[str, Any]:
             for item in data["tasks"].values()
             if item.get("project_id") == project_id
             and item.get("staff_id") == staff_id
-            and item.get("state") in ACTIVE_STATES
+            and item.get("state") in CAPACITY_STATES
         )
         if open_count >= 3 and not args.allow_over_limit:
             raise WorktreeLifecycleError("มี Worktree ที่เปิดอยู่ครบ 3 งานแล้ว ต้องอนุมัติ --allow-over-limit")
