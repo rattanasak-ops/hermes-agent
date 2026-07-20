@@ -1,53 +1,19 @@
-# Active Task — SCG-P9-I4
+# Active Task — WRK-GOV-V1
 
-> สร้างจาก .project/active-task.json · ห้ามแก้ไฟล์นี้เป็นแหล่งข้อมูลหลัก
-> goal_hash: `c9779b16874b8cd84585837c1ab538fc534dc3beb46b83a4ea72e8aca4c22556`
-> status: `active` · branch: `codex/scg-shortcut-rollout` · base: `247bf0006e2bff7b8870222be6d36d34b489e580`
+> สร้างจาก `.project/active-task.json` · ห้ามแก้ไฟล์นี้เป็นแหล่งข้อมูลหลัก
+> goal_hash: `1d71681b0748f4e0cb15a29503363bcf6a726507011a38665a5f247d8dfcf50b`
+> status: `active` · branch: `codex/wrk-gov-v1` · base: `bb76103ee110f87bac9cae3a301758c0996f19c8`
 
 ## เป้าหมาย
 
-นำ Goal Contract และชุด Shortcut รุ่น 2026.07.19-12 เข้า main โดยไม่ปะปนงานจากกิ่งเก่า
+สร้างมาตรฐานกลางสำหรับกู้คืนและกำกับงาน Git ที่ค้างในทุกโครงการส่วนตัว โดยใช้ได้กับ Notebook, VPS, เครื่องพนักงาน, แชทเก่า และ Shortcut ทั้งหมด พร้อมคง `fix/mw-flow-station-gate` เป็นพื้นที่อ่านอย่างเดียว
 
 ## ผลที่ต้องส่ง
 
-- คำขอรวมงานไม่เกิน 30 ไฟล์
-- ชุดตรวจผ่าน
-- ไม่ลบไฟล์จาก main โดยไม่ได้ตั้งใจ
-
-## เส้นทางที่อนุญาต
-
-- `.project/active-task.json`
-- `.project/active-task.md`
-- `team-shortcuts/VERSION`
-- `team-shortcuts/install-shortcuts.sh`
-- `team-shortcuts/payload/ai-context/prompt-shortcut-registry.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/Prompt Shortcuts.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/SKILL.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/goal-contract.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/next-action-contract.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-act-as.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-agent.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-close-chat.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-comply.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-continue.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-create-design-system.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-flow-guardian.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-migrate-web.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-new-chat.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-qa-qc.md`
-- `team-shortcuts/payload/skills/prompt-shortcuts/references/use-save-git.md`
-- `team-shortcuts/sync-from-vault.sh`
-- `team-shortcuts/BUNDLE-MANIFEST.json`
-- `tests/run_agent/test_run_agent.py`
-- `tests/team_shortcuts/test_bundle_manifest.py`
-- `tests/team_shortcuts/test_goal_contract_distribution.py`
-- `tests/team_shortcuts/test_goal_drift_real_incidents.py`
-- `tests/team_shortcuts/test_goal_shortcut_chain.py`
-- `tests/team_shortcuts/test_new_chat_write_permit.py`
-- `tests/team_shortcuts/test_phase_goal_contract.py`
-- `tests/team_shortcuts/test_team_shortcut_distribution.py`
-- `tests/team_shortcuts/test_phase_distribution.py`
+- มาตรฐาน WRK-GOV-V1 พร้อมแบบข้อมูลและใบส่งต่อแชทเก่า
+- สิทธิ์ผู้เขียนไฟล์กลางหนึ่งรายพร้อมหลักฐานตรวจได้
+- ชุดตรวจความเข้ากันได้กับ Shortcut และหลักฐานว่าพื้นที่กู้คืนไม่เปลี่ยน
 
 ## Prompt ถัดไป
 
-AUTO_CONTINUE: ตรวจและรวมกิ่ง codex/scg-shortcut-rollout
+AUTO_CONTINUE: สร้างสิทธิ์ผู้เขียนไฟล์กลางและย้ายเฉพาะส่วน WRK-GOV-V1 จากพื้นที่กู้คืนเข้าสำเนาสะอาด

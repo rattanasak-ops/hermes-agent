@@ -1,47 +1,40 @@
 {
   "schema": "hermes-goal-contract-v1",
-  "task_id": "SCG-P9-I4",
-  "plan_id": "SCG",
-  "goal": "นำ Goal Contract และชุด Shortcut รุ่น 2026.07.19-12 เข้า main โดยไม่ปะปนงานจากกิ่งเก่า",
+  "task_id": "WRK-GOV-V1",
+  "plan_id": "WRK-GOV",
+  "goal": "สร้างมาตรฐานกลางสำหรับกู้คืนและกำกับงาน Git ที่ค้างในทุกโครงการส่วนตัว โดยใช้ได้กับ Notebook, VPS, เครื่องพนักงาน, แชทเก่า และ Shortcut ทั้งหมด พร้อมคง fix/mw-flow-station-gate เป็นพื้นที่อ่านอย่างเดียว",
   "deliverables": [
-    "คำขอรวมงานไม่เกิน 30 ไฟล์",
-    "ชุดตรวจผ่าน",
-    "ไม่ลบไฟล์จาก main โดยไม่ได้ตั้งใจ"
+    "มาตรฐาน WRK-GOV-V1 พร้อมแบบข้อมูลและใบส่งต่อแชทเก่า",
+    "สิทธิ์ผู้เขียนไฟล์กลางหนึ่งรายพร้อมหลักฐานตรวจได้",
+    "ชุดตรวจความเข้ากันได้กับ Shortcut และหลักฐานว่าพื้นที่กู้คืนไม่เปลี่ยน"
   ],
-  "branch": "codex/scg-shortcut-rollout",
-  "base_sha": "7bf4315fef4e0970c73423b64437873c5757682b",
+  "branch": "codex/wrk-gov-v1",
+  "base_sha": "bb76103ee110f87bac9cae3a301758c0996f19c8",
   "allowed_paths": [
     ".project/active-task.json",
     ".project/active-task.md",
+    ".project/wrk-gov-write-lease.json",
+    "scripts/verify_wrk_gov_v1.py",
+    "tests/scripts/test_verify_wrk_gov_v1.py",
+    "scripts/worktree-lifecycle/contract_check.py",
+    "tests/scripts/test_worktree_lifecycle_contract_check.py",
     "team-shortcuts/VERSION",
+    "team-shortcuts/BUNDLE-MANIFEST.json",
+    "team-shortcuts/check-shortcuts.sh",
     "team-shortcuts/install-shortcuts.sh",
+    "team-shortcuts/verify-bundle.py",
+    "tests/team_shortcuts/test_bundle_manifest.py",
+    "tests/team_shortcuts/test_team_shortcut_distribution.py",
     "team-shortcuts/payload/ai-context/prompt-shortcut-registry.md",
     "team-shortcuts/payload/skills/prompt-shortcuts/Prompt Shortcuts.md",
     "team-shortcuts/payload/skills/prompt-shortcuts/SKILL.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/goal-contract.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/next-action-contract.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-act-as.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-agent.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-close-chat.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-comply.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-continue.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-create-design-system.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-flow-guardian.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-migrate-web.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-new-chat.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-qa-qc.md",
-    "team-shortcuts/payload/skills/prompt-shortcuts/references/use-save-git.md",
-    "team-shortcuts/sync-from-vault.sh",
-    "team-shortcuts/BUNDLE-MANIFEST.json",
-    "tests/run_agent/test_run_agent.py",
-    "tests/team_shortcuts/test_bundle_manifest.py",
-    "tests/team_shortcuts/test_goal_contract_distribution.py",
-    "tests/team_shortcuts/test_goal_drift_real_incidents.py",
-    "tests/team_shortcuts/test_goal_shortcut_chain.py",
-    "tests/team_shortcuts/test_new_chat_write_permit.py",
-    "tests/team_shortcuts/test_phase_goal_contract.py",
-    "tests/team_shortcuts/test_team_shortcut_distribution.py",
-    "tests/team_shortcuts/test_phase_distribution.py"
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/hermes-agent.worktree-adapter.example.json",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/old-chat-recovery-packet.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/project-worktree-adapter.schema.json",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/recovery-cleanup-gate.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/shortcut-worktree-contract.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/worktree-registry-v2.schema.json",
+    "team-shortcuts/payload/skills/prompt-shortcuts/references/wrk-gov-v1.md"
   ],
   "forbidden_paths": [
     ".git/**",
@@ -50,21 +43,23 @@
     "**/secrets/**"
   ],
   "work_types": [
-    "release",
     "code",
     "test",
     "docs",
     "shortcut_governance",
-    "memory"
+    "memory",
+    "release"
   ],
-  "owner_scope_token": "อนุญาตให้สร้างกิ่ง codex/scg-goal-contract-core และ codex/scg-shortcut-rollout สำหรับ SCG-P9-I4 โดยไม่สร้าง Worktree",
+  "owner_scope_token": "SCOPE CHANGE: ล็อกแชทนี้เป็น WRK-GOV-V1 และใช้ fix/mw-flow-station-gate เป็นพื้นที่กู้คืนแบบอ่านอย่างเดียว ให้จัดหมวดไฟล์ค้าง 172 รายการก่อน โดยห้ามบันทึก ส่งขึ้น GitHub สลับกิ่ง ลบ หรือรวมกิ่ง | อนุมัติ WRK-GOV-V1 ใช้สำเนาโครงการแยกต่อกลุ่มงาน โดยคง fix/mw-flow-station-gate เป็นพื้นที่กู้คืนแบบอ่านอย่างเดียว สร้างสำเนาสะอาดจาก origin/main สำหรับ WRK-GOV-V1 บนกิ่ง codex/wrk-gov-v1 และใช้สิทธิ์ผู้เขียนไฟล์กลางหนึ่งราย | อนุมัติ Use Save Git สำหรับ WRK-GOV-V1: ตรวจ 18 ไฟล์ บันทึก และส่งกิ่ง codex/wrk-gov-v1 ขึ้น GitHub โดยห้ามรวม main",
   "status": "active",
   "primary_issues": [
-    "SCG-P9-I4"
+    "WRK-GOV-P1-I1",
+    "WRK-GOV-P1-I2",
+    "WRK-GOV-P1-I3"
   ],
   "support_issues": [],
-  "next_prompt": "AUTO_CONTINUE: ตรวจและรวมกิ่ง codex/scg-shortcut-rollout",
+  "next_prompt": "AUTO_CONTINUE: สร้างสิทธิ์ผู้เขียนไฟล์กลางและย้ายเฉพาะส่วน WRK-GOV-V1 จากพื้นที่กู้คืนเข้าสำเนาสะอาด",
   "frozen_at": null,
   "merge_sha": null,
-  "goal_hash": "a5e5df1cd50dc369d944813fde2f7d724e6d4bcc2a69b8315d1106d6194c7a49"
+  "goal_hash": "1d71681b0748f4e0cb15a29503363bcf6a726507011a38665a5f247d8dfcf50b"
 }

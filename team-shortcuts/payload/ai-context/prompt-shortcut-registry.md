@@ -22,7 +22,7 @@ This is the shared prompt shortcut contract for Codex, Qwen, Claude Code, Gemini
 
 ## Runtime Rule
 
-When the user invokes a shortcut, the AI must read `skills/prompt-shortcuts/references/work-execution-policy.md` and then read the mapped prompt file. Apply both to the current task. Read `worktree-lifecycle-contract.md` only when the owner explicitly asks to inspect or manage an existing Worktree. Work Execution Policy v2.3 takes precedence over older branch/Worktree and Relay rules.
+When the user invokes a shortcut, the AI must read `skills/prompt-shortcuts/references/work-execution-policy.md` and then read the mapped prompt file. Apply both to the current task. When the owner explicitly asks to inspect, preserve, hand off, close, or clean up an existing Worktree, also read `wrk-gov-v1.md`, `shortcut-worktree-contract.md`, `worktree-lifecycle-contract.md`, and `recovery-cleanup-gate.md`. Work Execution Policy v2.3 takes precedence over older branch/Worktree and Relay rules.
 
 ## Current Workspace Only — Shortcut Integration
 
@@ -33,6 +33,7 @@ When the user invokes a shortcut, the AI must read `skills/prompt-shortcuts/refe
 - งานอ่านบันทึก path/branch/SHA; งานเขียนต้องได้ `CURRENT_WORKSPACE_READY`
 - AI Relay เป็นทางเลือกและไม่มีสิทธิ์จัดการ Worktree/กิ่ง
 - Worktree Lifecycle v1 ใช้ตรวจและจัดการ Worktree ที่มีอยู่; ด่าน AI ไม่เปิด Worktree ใหม่
+- WRK-GOV-V1 ใช้แบ่งงานกู้คืนข้าม Notebook, VPS, เครื่องพนักงาน และ Chat เก่า โดยหนึ่ง Git repository มีผู้เคลียร์ที่เปลี่ยนสภาพได้หนึ่ง Chat
 
 ## Shortcut Map
 

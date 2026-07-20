@@ -151,7 +151,7 @@ status: active
 source_of_truth: skills/prompt-shortcuts
 runtime_path: ~/.codex/skills/prompt-shortcuts
 registry: ai-context/prompt-shortcut-registry
-updated: 2026-07-11
+updated: 2026-07-20
 ---
 
 # Prompt Shortcuts
@@ -167,6 +167,8 @@ updated: 2026-07-11
 ชุดนี้ทำตาม [[10-Knowledge/Knowledge Operating Rules|Knowledge Operating Rules]]
 
 งานที่ใช้ `Use Comply` + `Use Continue` ต้องแบ่ง 2 Zone: Zone A ทำต่อเองทั้ง Phase โดยไม่ถามราย issue; Zone B รวมขออนุมัติครั้งเดียวต่อ Phase. `Review Chat` เป็นโหมดพรีวิวของ `Use Close Chat`; `Save Grid` เป็นชื่อเรียกเสริมของ `Use Save Git`.
+
+งานตรวจ กู้คืน ส่งต่อ ปิด หรือเคลียร์ Worktree ใช้ [[skills/prompt-shortcuts/references/wrk-gov-v1|WRK-GOV-V1]] และ [[skills/prompt-shortcuts/references/recovery-cleanup-gate|Recovery and Cleanup Gate]] ร่วมกัน โดยหนึ่ง Git repository มี Chat ผู้เคลียร์ที่เปลี่ยนสภาพได้หนึ่งตัว ส่วน Chat เก่าใช้ [[skills/prompt-shortcuts/references/old-chat-recovery-packet|Old Chat Recovery Packet]] ตรวจเฉพาะโครงการที่มอบหมาย
 
 ## ใช้งานกับ Codex
 
@@ -285,6 +287,10 @@ Claude Code, Gemini, Qwen, Cursor และ AI ตัวอื่นให้เ
 ## ไฟล์หลัก
 
 - [[skills/prompt-shortcuts/SKILL|SKILL]] - ตัวกำหนดวิธีเรียกใช้ prompt shortcut
+- [[skills/prompt-shortcuts/references/wrk-gov-v1|WRK-GOV-V1]] - มาตรฐานกลาง Worktree สำหรับ Notebook, VPS, เครื่องพนักงาน และ Chat เก่า
+- [[skills/prompt-shortcuts/references/shortcut-worktree-contract|Shortcut Worktree Contract]] - สัญญาร่วมของ Shortcut 33 กลุ่ม
+- [[skills/prompt-shortcuts/references/recovery-cleanup-gate|Recovery and Cleanup Gate]] - ด่านรักษา กู้คืน กักพัก และเอา Worktree ออก
+- [[skills/prompt-shortcuts/references/old-chat-recovery-packet|Old Chat Recovery Packet]] - ใบมอบหมายมาตรฐานให้ Chat เก่าตรวจโครงการแยกกัน
 - [[skills/prompt-shortcuts/references/use-act-as|use-act-as]] - prompt เต็มสำหรับกำหนด role และแบ่งงานแบบลึก
 - [[skills/prompt-shortcuts/references/use-comply|use-comply]] - prompt เต็มสำหรับแตก phase, issue checklist, compliance %, และตรวจ localhost/VPS
 - [[skills/prompt-shortcuts/references/use-summary|use-summary]] - prompt สำหรับสรุปและวิเคราะห์ link + content พร้อมเสนอทางเลือกก่อนบันทึก

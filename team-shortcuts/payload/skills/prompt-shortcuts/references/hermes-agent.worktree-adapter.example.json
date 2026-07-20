@@ -1,0 +1,79 @@
+{
+  "schema_version": "wrk-gov-project-adapter-v1",
+  "standard_version": "WRK-GOV-V1",
+  "project_id": "hermes-agent",
+  "display_name": "Hermes Agent",
+  "repository": {
+    "owner_urls": [
+      "https://github.com/rattanasak-ops/hermes-agent.git"
+    ],
+    "base_branch": "main",
+    "protected_branches": [
+      "main",
+      "master",
+      "develop",
+      "development",
+      "production",
+      "prod"
+    ],
+    "branch_patterns": {
+      "task": "task/<staff-id>/<task-id>-<slug>",
+      "rescue": "rescue/<staff-id>/<incident-id>-<slug>",
+      "hotfix": "hotfix/<staff-id>/<task-id>-<slug>"
+    }
+  },
+  "machines": [
+    {
+      "machine_id": "notebook-nat",
+      "kind": "owner_notebook",
+      "role": "writer",
+      "canonical_repo": "/Users/rattanasak/Documents/Viber Project/Tech Tools/Hermes Agent",
+      "worktree_roots": [
+        "/Users/rattanasak/Documents/Worktrees/hermes-agent"
+      ],
+      "remote_alias": "origin",
+      "runtime_root": null
+    },
+    {
+      "machine_id": "vps-linux-nat",
+      "kind": "vps",
+      "role": "runtime",
+      "canonical_repo": "/home/linux-nat/SynerryTools/hermes-agent/main",
+      "worktree_roots": [
+        "/home/linux-nat/.worktree/hermes-agent"
+      ],
+      "remote_alias": "fork",
+      "runtime_root": "/home/linux-nat/SynerryTools/hermes-agent/main"
+    }
+  ],
+  "default_writer_machine_id": "notebook-nat",
+  "runtime_machine_id": "vps-linux-nat",
+  "verification": {
+    "read_only_checks": [
+      "git status --short",
+      "git worktree list --porcelain",
+      "git remote -v",
+      "hermes worktree doctor --json"
+    ],
+    "test_commands": [
+      "scripts/run_tests.sh"
+    ]
+  },
+  "protected_paths": [
+    ".git",
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key"
+  ],
+  "disk_thresholds": {
+    "warn_percent": 70,
+    "freeze_new_worktrees_percent": 85,
+    "recovery_percent": 90
+  },
+  "cleanup": {
+    "manager_only": true,
+    "quarantine_hours": 72,
+    "gate_count": 6
+  }
+}

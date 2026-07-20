@@ -224,6 +224,12 @@ fi
 for required in \
   "$PAYLOAD/skills/prompt-shortcuts/references/use-agent.md" \
   "$PAYLOAD/skills/prompt-shortcuts/references/work-execution-policy.md" \
+  "$PAYLOAD/skills/prompt-shortcuts/references/wrk-gov-v1.md" \
+  "$PAYLOAD/skills/prompt-shortcuts/references/project-worktree-adapter.schema.json" \
+  "$PAYLOAD/skills/prompt-shortcuts/references/worktree-registry-v2.schema.json" \
+  "$PAYLOAD/skills/prompt-shortcuts/references/recovery-cleanup-gate.md" \
+  "$PAYLOAD/skills/prompt-shortcuts/references/shortcut-worktree-contract.md" \
+  "$PAYLOAD/skills/prompt-shortcuts/references/old-chat-recovery-packet.md" \
   "$PAYLOAD/skills/agent-center/SKILL.md"; do
   if [ ! -f "$required" ]; then
     say "ผิดพลาด: ชุดติดตั้งขาดไฟล์ควบคุม $required"

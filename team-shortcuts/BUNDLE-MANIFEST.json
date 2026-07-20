@@ -1,11 +1,11 @@
 {
-  "aggregate_sha256": "b51f7bb3867c4f56759a2e1dd62f52bc399d69daa6208d3222c2bd5df9d6442a",
-  "file_count": 93,
+  "aggregate_sha256": "455cbb7479852a2325a00eb0e2cb5fd82e79e744397953cc2eeb7e7f98e40aa3",
+  "file_count": 100,
   "files": [
     {
       "kind": "package",
       "path": "VERSION",
-      "sha256": "6787aeb9c0fd5e16cad54469ce4d8dfbbdf16bd808bec29c0905ad1f973971be",
+      "sha256": "9cba6ddb199a2d15efa7841271c0ecb7126cacb6c9c6c8e16927cf05bc235266",
       "size": 14
     },
     {
@@ -131,8 +131,8 @@
     {
       "kind": "package",
       "path": "install-shortcuts.sh",
-      "sha256": "6f49921d8b2cf0df0415f42ed6141004b558d2f2fa958ab6f36d3273f62c70d8",
-      "size": 19433
+      "sha256": "83c01247359e6317786f5c2200068cf28d3c67f66e299ed9f0a6e51fbd631274",
+      "size": 19900
     },
     {
       "kind": "package",
@@ -143,8 +143,8 @@
     {
       "kind": "payload",
       "path": "payload/ai-context/prompt-shortcut-registry.md",
-      "sha256": "05b59910803e63f65eb2eb809ac3eed4acf577e3867f088aaeb5eadbb567f7b3",
-      "size": 61378
+      "sha256": "dece54aa45330016989e82b857a0788593e9708343fb616fb3f5b1880802df3a",
+      "size": 61799
     },
     {
       "kind": "payload",
@@ -161,14 +161,14 @@
     {
       "kind": "payload",
       "path": "payload/skills/prompt-shortcuts/Prompt Shortcuts.md",
-      "sha256": "79899f6272b9605dc79869c8e485c2e300129cc7864769b92b3bf52120321e79",
-      "size": 28859
+      "sha256": "6ab5e233894bae1ba883c3b1556e1897433484e77332be829d597b34675d2aad",
+      "size": 30319
     },
     {
       "kind": "payload",
       "path": "payload/skills/prompt-shortcuts/SKILL.md",
-      "sha256": "d4e987c2046a20ae30c59044822a6c0ac8ad920dd0f7d530a5bc8b671067fa4c",
-      "size": 30025
+      "sha256": "297a76ff6b76140811748470ab7da3c29da3c9ed3b29de65629d4cf843e09e49",
+      "size": 30463
     },
     {
       "kind": "payload",
@@ -208,6 +208,12 @@
     },
     {
       "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/hermes-agent.worktree-adapter.example.json",
+      "sha256": "4402899d3d5923524aada99c7cf2c3d53fe6805f7de68041e7b50d7771130ea6",
+      "size": 1983
+    },
+    {
+      "kind": "payload",
       "path": "payload/skills/prompt-shortcuts/references/memory-schema.md",
       "sha256": "67cabdaabc2f7b35b616663a930a85db050d27831d21067b4a755e3ee8a0ebd4",
       "size": 26696
@@ -226,9 +232,33 @@
     },
     {
       "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/old-chat-recovery-packet.md",
+      "sha256": "4bf32f324c01a9276ac099de7e82fef57d4c55d224093ff0f04c675eaa611b37",
+      "size": 4347
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/project-worktree-adapter.schema.json",
+      "sha256": "476b62c356fa92c1c69e828c89e675f5429cdc83574796010b716b94d4248af7",
+      "size": 4323
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/recovery-cleanup-gate.md",
+      "sha256": "05f69bbc4c7ddec5496436da464aa89fdba5f74a7d6a1f0c1ce28a4267917bcd",
+      "size": 6053
+    },
+    {
+      "kind": "payload",
       "path": "payload/skills/prompt-shortcuts/references/review-chat.md",
       "sha256": "9d483f003cecd5b46c0aa0d118c4c1f6c33e1404426d8dddcc84f892dc8586a0",
       "size": 3348
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/shortcut-worktree-contract.md",
+      "sha256": "3491d9f683ebeb64219dfb9694d08d7b13ece96833a77ba29c5552045c1794fe",
+      "size": 5154
     },
     {
       "kind": "payload",
@@ -543,6 +573,18 @@
       "size": 29189
     },
     {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/worktree-registry-v2.schema.json",
+      "sha256": "9db8d8fdae13a90ff28edaf4f89d98cca9a152c8f5702e28d3dc81b0b2f08536",
+      "size": 7118
+    },
+    {
+      "kind": "payload",
+      "path": "payload/skills/prompt-shortcuts/references/wrk-gov-v1.md",
+      "sha256": "7e6d24fae1a24405598bb9d65a3fb02143a6b716be93563a0bb97ad8b031d720",
+      "size": 11718
+    },
+    {
       "kind": "package",
       "path": "sync-from-vault.sh",
       "sha256": "0fb0a87c77e31c0937c8a093dfa0afbaa5d1e6f00dd4b0f87b0a0c3913e89bef",
@@ -562,5 +604,5 @@
     }
   ],
   "schema": "hermes-shortcut-bundle-v1",
-  "version": "2026.07.20-13"
+  "version": "2026.07.20-14"
 }

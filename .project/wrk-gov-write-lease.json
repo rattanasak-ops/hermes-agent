@@ -1,0 +1,28 @@
+{
+  "schema": "wrk-gov-write-lease-v1",
+  "lease_id": "WRK-GOV-V1-codex-019f7ab9-001",
+  "task_id": "WRK-GOV-V1",
+  "repository_id": "hermes-agent",
+  "branch": "codex/wrk-gov-v1",
+  "base_sha": "bb76103ee110f87bac9cae3a301758c0996f19c8",
+  "mode": "exclusive",
+  "holder_kind": "codex_chat",
+  "holder_id": "019f7ab9-d3e1-7240-80ae-4323b3c7e2ff",
+  "machine_id": "notebook-rattanasak",
+  "clone_path": "/Users/rattanasak/Documents/Viber Project/Tech Tools/Hermes Agent WRK-GOV-V1",
+  "exclusive_paths": [
+    "team-shortcuts/install-shortcuts.sh",
+    "team-shortcuts/payload/ai-context/prompt-shortcut-registry.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/Prompt Shortcuts.md",
+    "team-shortcuts/payload/skills/prompt-shortcuts/SKILL.md",
+    "team-shortcuts/BUNDLE-MANIFEST.json"
+  ],
+  "acquired_at": "2026-07-20T10:22:38+07:00",
+  "status": "active",
+  "recovery_source": {
+    "path": "/Users/rattanasak/Documents/Viber Project/Tech Tools/Hermes Agent",
+    "branch": "fix/mw-flow-station-gate",
+    "mode": "read_only",
+    "status_sha256": "5cf83bbaf0bc274f8375a4575eb24e360ecade000ac692b779a0cac89c04ce36"
+  }
+}

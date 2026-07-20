@@ -9,7 +9,7 @@ metadata:
 
 This skill loads standard reusable prompts from HermesAgent. The v2 prompt files in `references/` are the source of truth; do not paraphrase them when the user asks to use a shortcut.
 
-Before applying any mapped prompt, read and enforce `references/next-action-contract.md`. This shared contract applies to every Shortcut, so individual prompt files do not need duplicate closing rules.
+Before applying any mapped prompt, read and enforce `references/next-action-contract.md` and `references/work-execution-policy.md`. This shared contract applies to every Shortcut, so individual prompt files do not need duplicate closing rules. When the owner explicitly asks to inspect, preserve, hand off, close, or clean up a Worktree, also read `references/wrk-gov-v1.md`, `references/shortcut-worktree-contract.md`, `references/worktree-lifecycle-contract.md`, and `references/recovery-cleanup-gate.md` before acting.
 
 ## Shortcut Map
 
@@ -53,7 +53,7 @@ Before applying any mapped prompt, read and enforce `references/next-action-cont
 
 When the user invokes a shortcut:
 
-1. Read `references/next-action-contract.md` and `references/work-execution-policy.md` first, then read the mapped prompt file in full. Read `references/worktree-lifecycle-contract.md` only when the owner explicitly asks to create, hand off, close, inspect, or clean up a Worktree.
+1. Read `references/next-action-contract.md` and `references/work-execution-policy.md` first, then read the mapped prompt file in full. When the owner explicitly asks to preserve, hand off, close, inspect, or clean up a Worktree, also read `references/wrk-gov-v1.md`, `references/shortcut-worktree-contract.md`, `references/worktree-lifecycle-contract.md`, and `references/recovery-cleanup-gate.md`.
 2. Apply the prompt to the user's current task or the task text that follows the shortcut.
 3. If the shortcut is invoked without a target task, ask what task the user wants to apply it to.
 4. Follow any safety or approval constraints inside the loaded prompt exactly. If an older prompt creates/switches a branch or Worktree, requires `NEW_CHAT_READY`/`WTL_READY`, or forces AI Relay, Work Execution Policy v2 takes precedence.
